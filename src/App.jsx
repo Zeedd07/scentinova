@@ -35,7 +35,7 @@ function ScrollToTop() {
       const timer = window.setTimeout(() => {
         const el = document.getElementById(id)
         if (!el) return
-        const top = el.getBoundingClientRect().top + window.scrollY - 72
+        const top = el.getBoundingClientRect().top + window.scrollY - 64
         window.scrollTo({ top, behavior: 'smooth' })
       }, 120)
       return () => window.clearTimeout(timer)
@@ -50,7 +50,7 @@ function ScrollToTop() {
 
 function Storefront() {
   return (
-    <div className="min-h-screen bg-ink text-cream">
+    <div className="min-h-screen bg-ivory text-charcoal">
       <ScrollToTop />
       <Navbar />
       <CartDrawer />

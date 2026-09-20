@@ -12,7 +12,7 @@ import {
 import { useCatalog } from './CatalogContext'
 
 const CartContext = createContext(null)
-const STORAGE_KEY = 'aurum-cart-v1'
+const STORAGE_KEY = 'scentinova-cart-v2'
 
 function loadCart() {
   try {
@@ -80,7 +80,16 @@ export function CartProvider({ children }) {
   )
 
   const subtotal = useMemo(
-    () => items.reduce((sum, i) => sum + i.price * i.qty, 0),
+    () =>
+      items.reduce((sum, i) => {
+        if (i.price == null) return sum
+        return sum + i.price * i.qty
+      }, 0),
+    [items],
+  )
+
+  const hasPricedItems = useMemo(
+    () => items.some((i) => i.price != null),
     [items],
   )
 
@@ -88,6 +97,7 @@ export function CartProvider({ children }) {
     items,
     count,
     subtotal,
+    hasPricedItems,
     drawerOpen,
     setDrawerOpen,
     addItem,

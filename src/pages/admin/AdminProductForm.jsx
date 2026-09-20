@@ -133,7 +133,7 @@ export default function AdminProductForm() {
       .filter(Boolean)
       .filter((s) => !s.startsWith('(uploaded'))
 
-    const image = form.image || gallery[0] || '/products/aurum.png'
+    const image = form.image || gallery[0] || '/products/lunar-leather.png'
 
     setPendingPayload({
       name: form.name,

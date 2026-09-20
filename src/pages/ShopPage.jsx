@@ -1,5 +1,5 @@
 /**
- * Shop — filterable perfume catalog.
+ * Shop — four house signatures.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -9,8 +9,6 @@ import ProductCard, { shopLane } from '../components/ProductCard'
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
-  { value: 'price-asc', label: 'Price · Low to high' },
-  { value: 'price-desc', label: 'Price · High to low' },
   { value: 'name', label: 'Name · A–Z' },
 ]
 
@@ -37,19 +35,17 @@ function SortMenu({ value, onChange }) {
 
   return (
     <div ref={rootRef} className="relative flex items-center gap-3">
-      <span className="text-[11px] tracking-[0.28em] text-bronze uppercase">
-        Sort
-      </span>
+      <span className="text-[11px] tracking-[0.28em] text-muted uppercase">Sort</span>
       <button
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex min-w-[11.5rem] items-center justify-between gap-4 border border-gold/30 bg-ink px-4 py-2.5 text-left text-[11px] tracking-[0.2em] text-cream uppercase transition hover:border-gold/55"
+        className="inline-flex min-w-[11.5rem] items-center justify-between gap-4 border border-stone bg-warm-white px-4 py-2.5 text-left text-[11px] tracking-[0.2em] text-charcoal uppercase transition hover:border-gold"
       >
         <span>{current.label.split(' · ')[0]}</span>
         <span
-          className={`text-bronze transition duration-300 ${open ? 'rotate-180' : ''}`}
+          className={`text-muted transition duration-300 ${open ? 'rotate-180' : ''}`}
           aria-hidden
         >
           ▾
@@ -64,7 +60,7 @@ function SortMenu({ value, onChange }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-[calc(100%+0.4rem)] right-0 z-30 min-w-[14rem] border border-gold/25 bg-ink py-2 shadow-[0_20px_50px_rgba(0,0,0,0.55)]"
+            className="absolute top-[calc(100%+0.4rem)] right-0 z-30 min-w-[14rem] border border-stone bg-warm-white py-2 shadow-[0_16px_40px_rgba(27,25,23,0.12)]"
           >
             {SORT_OPTIONS.map((opt) => {
               const active = opt.value === value
@@ -78,8 +74,8 @@ function SortMenu({ value, onChange }) {
                     }}
                     className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[11px] tracking-[0.18em] uppercase transition ${
                       active
-                        ? 'bg-gold/15 text-gold-light'
-                        : 'text-bronze hover:bg-gold/8 hover:text-cream'
+                        ? 'bg-cream text-gold'
+                        : 'text-muted hover:bg-cream hover:text-charcoal'
                     }`}
                   >
                     {opt.label}
@@ -106,22 +102,20 @@ export default function ShopPage() {
         ? [...activeProducts]
         : activeProducts.filter((p) => p.category === category)
 
-    if (sort === 'price-asc') items.sort((a, b) => a.price - b.price)
-    else if (sort === 'price-desc') items.sort((a, b) => b.price - a.price)
-    else if (sort === 'name') items.sort((a, b) => a.name.localeCompare(b.name))
+    if (sort === 'name') items.sort((a, b) => a.name.localeCompare(b.name))
     else items.sort((a, b) => Number(b.featured) - Number(a.featured))
 
     return items
   }, [category, sort, activeProducts])
 
   return (
-    <div className="pt-16">
-      <section className="border-b border-gold/10 px-6 py-16 sm:px-10 lg:px-16">
+    <div className="bg-ivory pt-16">
+      <section className="border-b border-stone px-6 py-16 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-[11px] tracking-[0.4em] text-bronze uppercase"
+            className="text-[11px] tracking-[0.4em] text-muted uppercase"
           >
             SCENTINOVA
           </motion.p>
@@ -129,13 +123,13 @@ export default function ShopPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mt-3 font-display text-4xl text-cream sm:text-5xl md:text-6xl"
+            className="mt-3 font-display text-4xl text-charcoal sm:text-5xl md:text-6xl"
           >
-            The <span className="gold-text italic">Shop</span>
+            The <span className="italic text-gold">Collection</span>
           </motion.h1>
-          <p className="mt-4 max-w-lg text-sm leading-relaxed text-bronze">
-            Ten compositions in crystal and gold. Explore the full maison
-            collection.
+          <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted">
+            Four signatures. Crystal, gold, and presence — each a private hour,
+            composed in the house.
           </p>
         </div>
       </section>
@@ -150,8 +144,8 @@ export default function ShopPage() {
                 onClick={() => setCategory(c)}
                 className={`border px-3 py-1.5 text-[11px] tracking-[0.22em] uppercase transition ${
                   category === c
-                    ? 'border-gold bg-gold/15 text-gold-light'
-                    : 'border-gold/20 text-bronze hover:border-gold/50 hover:text-cream'
+                    ? 'border-charcoal bg-charcoal text-warm-white'
+                    : 'border-stone text-muted hover:border-charcoal hover:text-charcoal'
                 }`}
               >
                 {c}
@@ -161,14 +155,14 @@ export default function ShopPage() {
           <SortMenu value={sort} onChange={setSort} />
         </div>
 
-        <div className="mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-x-8 gap-y-20 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto mt-10 grid max-w-6xl grid-cols-2 gap-x-3 gap-y-12 sm:mt-16 sm:gap-x-8 sm:gap-y-20 lg:grid-cols-4">
           {list.map((p, i) => (
             <ProductCard key={p.id} product={p} index={i} lane={shopLane(i)} />
           ))}
         </div>
 
         {list.length === 0 && (
-          <p className="py-20 text-center text-bronze">No fragrances in this category.</p>
+          <p className="py-20 text-center text-muted">No fragrances in this category.</p>
         )}
       </section>
     </div>

@@ -11,9 +11,9 @@ import {
 } from 'react'
 import { PRODUCTS as SEED_PRODUCTS } from '../data/products'
 
-const PRODUCTS_KEY = 'aurum-admin-products-v1'
-const ANALYTICS_KEY = 'aurum-admin-analytics-v1'
-const ORDERS_KEY = 'aurum-admin-orders-v1'
+const PRODUCTS_KEY = 'scentinova-admin-products-v4'
+const ANALYTICS_KEY = 'scentinova-admin-analytics-v4'
+const ORDERS_KEY = 'scentinova-admin-orders-v4'
 
 function slugify(name) {
   return String(name)
@@ -37,6 +37,41 @@ function withDefaults(p) {
   }
 }
 
+/** Keep house-signature imagery + notes in sync with seed catalog. */
+function hydrateSeedImagery(products) {
+  const byId = Object.fromEntries(SEED_PRODUCTS.map((p) => [p.id, p]))
+  const bySlug = Object.fromEntries(SEED_PRODUCTS.map((p) => [p.slug, p]))
+
+  return products.map((p) => {
+    const seed = byId[p.id] || bySlug[p.slug]
+    if (!seed) return withDefaults(p)
+
+    const imageBroken =
+      !p.image ||
+      String(p.image).startsWith('data:') ||
+      String(p.image).includes('/images/products/') ||
+      String(p.image).includes('/products/aurum')
+
+    return withDefaults({
+      ...p,
+      image: imageBroken ? seed.image : p.image,
+      gallery:
+        imageBroken || !p.gallery?.length
+          ? [...seed.gallery]
+          : p.gallery,
+      // Always refresh official house notes / descriptors from seed
+      notes: {
+        top: [...(seed.notes?.top ?? [])],
+        heart: [...(seed.notes?.heart ?? [])],
+        base: [...(seed.notes?.base ?? [])],
+      },
+      descriptors: [...(seed.descriptors ?? [])],
+      description: seed.description ?? p.description,
+      tagline: seed.tagline ?? p.tagline,
+    })
+  })
+}
+
 function seedAnalytics(products) {
   const out = {}
   products.forEach((p, i) => {
@@ -47,7 +82,7 @@ function seedAnalytics(products) {
       views,
       addToCarts,
       purchases,
-      revenue: purchases * p.price,
+      revenue: purchases * (Number(p.price) || 0),
     }
   })
   return out
@@ -133,7 +168,9 @@ const CatalogContext = createContext(null)
 export function CatalogProvider({ children }) {
   const [products, setProducts] = useState(() => {
     const saved = loadJson(PRODUCTS_KEY, null)
-    if (Array.isArray(saved) && saved.length) return saved.map(withDefaults)
+    if (Array.isArray(saved) && saved.length) {
+      return hydrateSeedImagery(saved)
+    }
     return SEED_PRODUCTS.map(withDefaults)
   })
 
@@ -225,7 +262,8 @@ export function CatalogProvider({ children }) {
       const clash = prev.some((p) => p.slug === slug && p.id !== id)
       if (clash) slug = `${slug}-${Date.now().toString(36).slice(-4)}`
 
-      const image = input.image || input.gallery?.[0] || '/products/aurum.png'
+      const image =
+        input.image || input.gallery?.[0] || '/products/lunar-leather.png'
 
       savedProduct = withDefaults({
         ...input,
@@ -319,7 +357,7 @@ export function CatalogProvider({ children }) {
     record.items?.forEach((item) => {
       bumpAnalytics(item.id, (c) => ({
         purchases: c.purchases + item.qty,
-        revenue: c.revenue + item.price * item.qty,
+        revenue: c.revenue + (Number(item.price) || 0) * item.qty,
       }))
       setProducts((prev) =>
         prev.map((p) =>

@@ -10,7 +10,7 @@ export default function Loader({ progress, priorityReady, visible }) {
     <AnimatePresence>
       {visible && (
         <motion.div
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-ink"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden bg-black"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } }}
           aria-live="polite"
@@ -41,11 +41,14 @@ export default function Loader({ progress, priorityReady, visible }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <p className="font-display text-[1.65rem] tracking-[0.42em] text-cream uppercase sm:text-3xl md:text-[2.15rem]">
-              Aurum
-            </p>
-            <p className="mt-3 text-[10px] tracking-[0.38em] text-bronze uppercase sm:text-[11px]">
-              Preparing the scent
+            <img
+              src="/brand/logo.png"
+              alt="Scentinova"
+              className="h-12 w-auto object-contain sm:h-14 md:h-16"
+              draggable={false}
+            />
+            <p className="mt-5 text-[10px] tracking-[0.38em] text-sand uppercase sm:text-[11px]">
+              Loading experience
             </p>
 
             <div className="mt-12 h-px w-52 overflow-hidden bg-gold/15 sm:w-64">

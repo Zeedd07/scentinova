@@ -1,5 +1,6 @@
 /**
  * Fragrance Journey — infinite marquee of ingredient orbs.
+ * Sharp cream→black cut from Four Signatures above.
  */
 import { useState } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
@@ -43,7 +44,7 @@ const INGREDIENTS = [
   },
 ]
 
-function IngredientOrb({ ing, index, active, setActive, pauseMarquee }) {
+function IngredientOrb({ ing, active, setActive, pauseMarquee }) {
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
   const spring = { stiffness: 120, damping: 18 }
@@ -109,7 +110,7 @@ function IngredientOrb({ ing, index, active, setActive, pauseMarquee }) {
             padding: 1,
           }}
         >
-          <div className="relative h-full w-full overflow-hidden rounded-full bg-ink">
+          <div className="relative h-full w-full overflow-hidden rounded-full bg-black">
             <img
               src={ing.img}
               alt=""
@@ -124,24 +125,20 @@ function IngredientOrb({ ing, index, active, setActive, pauseMarquee }) {
                   'radial-gradient(circle at 30% 22%, rgba(255,255,255,0.35), transparent 32%), radial-gradient(circle at 70% 80%, rgba(212,175,55,0.15), transparent 40%)',
               }}
             />
-            <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-gold-light/25" />
+            <div className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-champagne/25" />
           </div>
         </div>
-
-        <span className="absolute -bottom-1 left-1/2 z-10 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full border border-gold/40 bg-ink text-[10px] tracking-wider text-gold">
-          {String((index % INGREDIENTS.length) + 1).padStart(2, '0')}
-        </span>
       </motion.div>
 
-      <span className="mt-7 text-[11px] tracking-[0.35em] text-bronze uppercase">
+      <span className="mt-7 text-[11px] tracking-[0.35em] text-sand uppercase">
         {ing.layer}
       </span>
-      <span className="mt-1.5 font-display text-xl text-cream transition group-hover:text-gold-light sm:text-2xl">
+      <span className="mt-1.5 font-display text-xl text-warm-white transition group-hover:text-champagne sm:text-2xl">
         {ing.name}
       </span>
 
       <p
-        className={`mt-3 max-w-[150px] text-center text-[12px] leading-relaxed text-bronze transition-opacity duration-300 ${
+        className={`mt-3 max-w-[150px] text-center text-[12px] leading-relaxed text-sand/90 transition-opacity duration-300 ${
           active === ing.name ? 'opacity-100' : 'opacity-0'
         }`}
       >
@@ -155,31 +152,30 @@ export default function FragranceJourney() {
   const [active, setActive] = useState(null)
   const [paused, setPaused] = useState(false)
 
-  const loop = [...INGREDIENTS, ...INGREDIENTS]
+  // Three identical sets so the ribbon never shows empty space on wide screens.
+  // Each set carries trailing padding equal to the gap → -33.333% lands on a perfect seam.
+  const sets = [0, 1, 2]
 
   return (
     <section
       id="notes"
-      className="bg-luxury relative overflow-hidden py-16 sm:py-24"
+      className="relative scroll-mt-16 overflow-hidden bg-black py-16 text-warm-white sm:scroll-mt-20 sm:py-24 lg:scroll-mt-24"
     >
-      <div className="section-fade-top" />
-      <div className="section-fade-bottom" />
-
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-[100px]"
         style={{
           background:
-            'radial-gradient(circle, rgba(212,175,55,0.14), transparent 68%)',
+            'radial-gradient(circle, rgba(180,151,90,0.16), transparent 68%)',
         }}
       />
 
-      <div className="relative mx-auto mb-12 max-w-6xl px-6 sm:px-10 lg:mb-16 lg:px-16">
+      <div className="relative mx-auto mb-12 max-w-6xl px-6 pt-4 sm:px-10 lg:mb-16 lg:px-16">
         <div className="max-w-xl">
           <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="mb-4 text-[11px] tracking-[0.42em] text-bronze uppercase"
+            className="mb-4 text-[11px] tracking-[0.42em] text-sand uppercase"
           >
             The Fragrance Journey
           </motion.p>
@@ -188,17 +184,17 @@ export default function FragranceJourney() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 1 }}
-            className="font-display text-4xl leading-tight text-cream sm:text-5xl lg:text-6xl"
+            className="font-display text-4xl leading-tight text-warm-white sm:text-5xl lg:text-6xl"
           >
             A world of{' '}
-            <span className="gold-text italic">precious ingredients</span>
+            <span className="italic text-champagne">precious ingredients</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.15, duration: 0.8 }}
-            className="mt-5 max-w-md text-sm leading-relaxed text-bronze sm:text-[15px]"
+            className="mt-5 max-w-md text-sm leading-relaxed text-sand sm:text-[15px]"
           >
             Six notes in crystal light — drifting in a continuous ribbon. Hover
             to pause and open each chapter.
@@ -206,25 +202,29 @@ export default function FragranceJourney() {
         </div>
       </div>
 
-      {/* Marquee track */}
       <div className="journey-marquee relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-ink to-transparent sm:w-28" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-ink to-transparent sm:w-28" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-black to-transparent sm:w-28" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-black to-transparent sm:w-28" />
 
         <div
-          className={`journey-marquee-track flex w-max gap-10 py-4 sm:gap-14 ${
-            paused ? 'is-paused' : ''
-          }`}
+          className={`journey-marquee-track flex w-max ${paused ? 'is-paused' : ''}`}
         >
-          {loop.map((ing, i) => (
-            <IngredientOrb
-              key={`${ing.name}-${i}`}
-              ing={ing}
-              index={i}
-              active={active}
-              setActive={setActive}
-              pauseMarquee={setPaused}
-            />
+          {sets.map((setIndex) => (
+            <div
+              key={setIndex}
+              className="flex shrink-0 gap-10 py-4 pr-10 sm:gap-14 sm:pr-14"
+              aria-hidden={setIndex > 0 ? true : undefined}
+            >
+              {INGREDIENTS.map((ing) => (
+                <IngredientOrb
+                  key={`${setIndex}-${ing.name}`}
+                  ing={ing}
+                  active={active}
+                  setActive={setActive}
+                  pauseMarquee={setPaused}
+                />
+              ))}
+            </div>
           ))}
         </div>
       </div>
@@ -234,16 +234,16 @@ export default function FragranceJourney() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ delay: 0.2, duration: 0.8 }}
-        className="mt-12 flex flex-wrap items-center justify-center gap-8 px-6 text-[11px] tracking-[0.3em] text-bronze uppercase"
+        className="mt-12 flex flex-wrap items-center justify-center gap-8 px-6 text-[11px] tracking-[0.3em] text-sand uppercase"
       >
         <span className="flex items-center gap-2">
-          <span className="h-1 w-1 rounded-full bg-gold" /> Top
+          <span className="h-1 w-1 rounded-full bg-champagne" /> Top
         </span>
         <span className="flex items-center gap-2">
-          <span className="h-1 w-1 rounded-full bg-gold/70" /> Heart
+          <span className="h-1 w-1 rounded-full bg-champagne/70" /> Heart
         </span>
         <span className="flex items-center gap-2">
-          <span className="h-1 w-1 rounded-full bg-gold/40" /> Base
+          <span className="h-1 w-1 rounded-full bg-champagne/40" /> Base
         </span>
       </motion.div>
     </section>

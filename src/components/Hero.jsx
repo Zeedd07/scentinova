@@ -1,5 +1,5 @@
 /**
- * Editorial hero — pinned canvas frame-scrub + cinematic overlays.
+ * Editorial hero — pinned canvas frame-scrub on scroll (desktop + mobile).
  * React state only updates on chapter/CTA gates; progress/frame via refs.
  */
 import { useEffect, useRef, useState } from 'react'
@@ -16,7 +16,6 @@ gsap.registerPlugin(ScrollTrigger)
 export default function Hero({ getFrame, priorityReady, isMobile }) {
   const pinRef = useRef(null)
   const canvasRef = useRef(null)
-  const videoRef = useRef(null)
   const progressBarRef = useRef(null)
   const frameLabelRef = useRef(null)
   const frameState = useRef({ current: 1, target: 1 })
@@ -56,15 +55,15 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
     setShowEndCta((prev) => (prev === atEnd ? prev : atEnd))
   }
 
-  // Canvas draw loop
+  // Canvas draw loop — desktop and mobile
   useEffect(() => {
-    if (isMobile || !priorityReady) return undefined
+    if (!priorityReady) return undefined
     const canvas = canvasRef.current
     if (!canvas) return undefined
     const ctx = canvas.getContext('2d', { alpha: false })
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2)
       const { clientWidth: w, clientHeight: h } = canvas
       canvas.width = Math.floor(w * dpr)
       canvas.height = Math.floor(h * dpr)
@@ -108,7 +107,11 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
         dx = (cw - dw) / 2
         dy = 0
       }
-      ctx.fillStyle = '#050403'
+      // Mobile: bias frame upward so the bottle clears the bottom copy band
+      if (isMobile) {
+        dy -= ch * 0.12
+      }
+      ctx.fillStyle = '#0d0c0b'
       ctx.fillRect(0, 0, cw, ch)
       ctx.drawImage(img, dx, dy, dw, dh)
     }
@@ -136,11 +139,11 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       window.removeEventListener('resize', resize)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, priorityReady, getFrame])
+  }, [priorityReady, getFrame, isMobile])
 
-  // ScrollTrigger scrub
+  // ScrollTrigger scrub — same pin + scroll-driven frames on mobile
   useEffect(() => {
-    if (isMobile || !priorityReady) return undefined
+    if (!priorityReady) return undefined
     const pin = pinRef.current
     if (!pin) return undefined
 
@@ -148,67 +151,64 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       trigger: pin,
       start: 'top top',
       end: 'bottom bottom',
-      scrub: 0.35,
+      scrub: isMobile ? 0.55 : 0.35,
+      anticipatePin: 1,
       onUpdate: (self) => {
         frameState.current.target = 1 + self.progress * (TOTAL_FRAMES - 1)
         applyProgress(self.progress)
       },
     })
-    return () => st.kill()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, priorityReady])
 
-  // Mobile video
-  useEffect(() => {
-    if (!isMobile || !priorityReady) return undefined
-    const video = videoRef.current
-    if (!video) return undefined
-    applyProgress(0)
-    const onTime = () => {
-      const dur = video.duration || 10
-      applyProgress(video.currentTime / dur)
+    // iOS URL bar / orientation can change viewport — keep pin accurate
+    const onOrient = () => ScrollTrigger.refresh()
+    window.addEventListener('orientationchange', onOrient)
+    const refreshId = requestAnimationFrame(() => ScrollTrigger.refresh())
+
+    return () => {
+      cancelAnimationFrame(refreshId)
+      window.removeEventListener('orientationchange', onOrient)
+      st.kill()
     }
-    video.addEventListener('timeupdate', onTime)
-    return () => video.removeEventListener('timeupdate', onTime)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, priorityReady])
+  }, [priorityReady, isMobile])
 
   return (
     <section
       id="hero"
       ref={pinRef}
-      className="relative"
-      style={{ height: isMobile ? '100vh' : '420vh' }}
+      className="relative bg-black"
+      style={{ height: '420vh' }}
       aria-label="SCENTINOVA — cinematic frame sequence"
     >
-      <div className="sticky top-0 h-screen w-full overflow-hidden bg-ink">
-        <div className="pointer-events-none absolute inset-0 z-0 bg-luxury" />
+      <div className="sticky top-0 flex h-screen w-full flex-col overflow-hidden bg-black">
+        {/* Match fixed navbar height so frames never sit under it */}
+        <div
+          className="shrink-0 bg-black"
+          style={{
+            height: 'calc(var(--nav-h) + env(safe-area-inset-top, 0px))',
+          }}
+          aria-hidden
+        />
 
-        {isMobile ? (
-          <video
-            ref={videoRef}
-            className="absolute inset-0 z-[1] h-full w-full object-cover"
-            src="/hero-mobile.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            poster="/frames/frame-001.jpg"
+        <div className="relative min-h-0 flex-1">
+          <div className="pointer-events-none absolute inset-0 z-0 bg-luxury-dark" />
+
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 z-[1] h-full w-full"
           />
-        ) : (
-          <canvas ref={canvasRef} className="absolute inset-0 z-[1] h-full w-full" />
-        )}
 
-        <div className="hero-vignette pointer-events-none absolute inset-0 z-[2]" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-72 bg-gradient-to-t from-ink via-ink/70 to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-1/3 bg-gradient-to-r from-ink/80 via-ink/30 to-transparent" />
+          <div className="hero-vignette pointer-events-none absolute inset-0 z-[2]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[55%] bg-gradient-to-t from-black via-black/90 to-transparent sm:h-72 sm:via-black/80" />
+          {/* Solid black footing — sharp cut into cream below + mobile copy band */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-28 bg-black sm:h-20" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-1/3 bg-gradient-to-r from-black/80 via-black/30 to-transparent max-sm:hidden" />
 
-        <div className="absolute inset-0 z-[3]">
-          <Particles density={isMobile ? 28 : 64} />
-        </div>
+          <div className="absolute inset-0 z-[3]">
+            <Particles density={isMobile ? 28 : 64} />
+          </div>
 
-        {/* Vertical frame scrub indicator */}
-        {!isMobile && (
+          {/* Vertical frame scrub indicator — desktop */}
           <div className="pointer-events-none absolute left-5 top-1/2 z-[6] hidden h-[42vh] -translate-y-1/2 flex-col items-center sm:left-8 md:flex lg:left-12">
             <span
               ref={frameLabelRef}
@@ -227,99 +227,101 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
               {String(TOTAL_FRAMES).padStart(2, '0')}
             </span>
           </div>
-        )}
 
-        {/* Editorial copy — left */}
-        <div className="pointer-events-none absolute inset-0 z-[5] flex items-end px-6 pb-28 sm:items-center sm:px-10 sm:pb-0 md:pl-24 lg:pl-36">
-          <AnimatePresence>
-            {ready && (
-              <motion.div
-                className="max-w-md pointer-events-auto"
-                initial={{ opacity: 0, x: -24 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <p className="mb-5 text-[11px] tracking-[0.42em] text-bronze uppercase">
-                  SCENTINOVA Parfums
-                </p>
-                <h1 className="font-display text-[2.35rem] leading-[1.08] text-cream sm:text-5xl lg:text-6xl">
-                  Not perfume.
-                  <br />
-                  <span className="gold-text italic">A private hour in gold.</span>
-                </h1>
-                <p className="mt-6 max-w-sm text-sm leading-relaxed text-bronze sm:text-[15px]">
-                  A fragrance to be remembered. A moment that lingers. A world
-                  that is yours.
-                </p>
+          {/* Editorial copy — bottom-left on phone (clear of bottle), left-center on desktop */}
+          <div className="pointer-events-none absolute inset-0 z-[5] flex items-end px-5 pb-[5.5rem] sm:items-center sm:px-10 sm:pb-0 md:pl-24 lg:pl-36">
+            <AnimatePresence>
+              {ready && (
+                <motion.div
+                  className="max-w-[20rem] pointer-events-auto text-left sm:max-w-md"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <p className="mb-3 text-[10px] tracking-[0.38em] text-sand uppercase sm:mb-5 sm:text-[11px] sm:tracking-[0.42em]">
+                    SCENTINOVA · Heavenly Crafted
+                  </p>
+                  <h1 className="font-display text-[2rem] leading-[1.1] text-warm-white sm:text-5xl lg:text-6xl">
+                    Fragrance as
+                    <br />
+                    <span className="italic text-champagne">presence.</span>
+                  </h1>
+                  <p className="mt-4 max-w-[17rem] text-[13px] leading-relaxed text-sand/95 sm:mt-6 sm:max-w-sm sm:text-[15px]">
+                    Four signatures. Crystal, gold, and a private hour that stays.
+                  </p>
 
-                <AnimatePresence mode="wait">
-                  {chapter && progressRef.current > 0.08 && !showEndCta && (
-                    <motion.p
-                      key={chapter.id}
-                      className="mt-5 text-[11px] tracking-[0.2em] text-gold/80 uppercase"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
+                  <AnimatePresence mode="wait">
+                    {chapter && progressRef.current > 0.08 && !showEndCta && (
+                      <motion.p
+                        key={chapter.id}
+                        className="mt-4 text-[10px] tracking-[0.2em] text-gold/80 uppercase sm:mt-5 sm:text-[11px]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        {chapter.eyebrow} — {chapter.title}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="mt-7 flex flex-wrap items-center gap-4 sm:mt-10 sm:gap-5">
+                    <Link
+                      to="/shop"
+                      className="btn-luxury inline-flex items-center gap-2 border border-champagne/50 px-6 py-3 text-[11px] text-warm-white hover:bg-champagne hover:text-charcoal sm:gap-3 sm:px-8 sm:py-3.5"
                     >
-                      {chapter.eyebrow} — {chapter.title}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
+                      Discover the collection
+                      <span aria-hidden>→</span>
+                    </Link>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-                <div className="mt-10 flex flex-wrap items-center gap-5">
-                  <Link
-                    to="/shop"
-                    className="btn-luxury gold-border inline-flex items-center gap-3 rounded-sm px-8 py-3.5 text-cream"
-                  >
-                    Discover the collection
-                    <span aria-hidden>→</span>
-                  </Link>
-                </div>
+          {/* Scroll cue */}
+          {!showEndCta && (
+            <motion.div
+              className="pointer-events-none absolute bottom-5 left-5 z-[5] flex items-center gap-3 sm:bottom-10 sm:left-auto sm:right-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: ready ? 0.7 : 0 }}
+              transition={{ delay: 1.2 }}
+            >
+              <span className="text-[10px] tracking-[0.32em] text-bronze uppercase sm:text-[11px] sm:tracking-[0.35em]">
+                Scroll to explore
+              </span>
+              <span className="h-px w-8 bg-gradient-to-r from-gold to-transparent sm:w-10" />
+            </motion.div>
+          )}
+
+          {/* Seamless handoff cue at end */}
+          <AnimatePresence>
+            {showEndCta && (
+              <motion.div
+                className="pointer-events-none absolute inset-x-0 bottom-16 z-[6] flex justify-center"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const el = document.getElementById('collection')
+                    if (!el) return
+                    const nav = document.querySelector('.site-nav')
+                    const navH = nav?.getBoundingClientRect().height || 56
+                    const top =
+                      el.getBoundingClientRect().top + window.scrollY - navH - 8
+                    window.scrollTo({ top, behavior: 'smooth' })
+                  }}
+                  className="pointer-events-auto text-[11px] tracking-[0.4em] text-gold uppercase"
+                >
+                  Enter the collection ↓
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Scroll cue */}
-        {!isMobile && !showEndCta && (
-          <motion.div
-            className="pointer-events-none absolute bottom-10 right-8 z-[5] hidden items-center gap-3 sm:flex"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: ready ? 0.7 : 0 }}
-            transition={{ delay: 1.2 }}
-          >
-            <span className="text-[11px] tracking-[0.35em] text-bronze uppercase">
-              Scroll to explore
-            </span>
-            <span className="h-px w-10 bg-gradient-to-r from-gold to-transparent" />
-          </motion.div>
-        )}
-
-        {/* Seamless handoff cue at end */}
-        <AnimatePresence>
-          {showEndCta && (
-            <motion.div
-              className="pointer-events-none absolute inset-x-0 bottom-16 z-[6] flex justify-center"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-            >
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault()
-                  const el = document.getElementById('collection')
-                  if (!el) return
-                  const top = el.getBoundingClientRect().top + window.scrollY - 72
-                  window.scrollTo({ top, behavior: 'smooth' })
-                }}
-                className="pointer-events-auto text-[11px] tracking-[0.4em] text-gold uppercase"
-              >
-                Enter the collection ↓
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </section>
   )

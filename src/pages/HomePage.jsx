@@ -17,12 +17,13 @@ gsap.registerPlugin(ScrollTrigger)
 export default function HomePage() {
   const isMobile = useIsMobile()
   const { getFrame, progress, priorityReady, fullyLoaded } = useFrameSequence({
-    enabled: !isMobile,
-    priorityCount: 48,
-    batchSize: 16,
+    enabled: true,
+    // Slightly leaner priority gate on phones so scrub can start sooner
+    priorityCount: isMobile ? 36 : 48,
+    batchSize: isMobile ? 12 : 16,
   })
 
-  const appReady = isMobile || priorityReady
+  const appReady = priorityReady
   const [loaderVisible, setLoaderVisible] = useState(true)
 
   useEffect(() => {
@@ -47,11 +48,11 @@ export default function HomePage() {
   return (
     <>
       <Loader
-        progress={isMobile ? 1 : progress}
+        progress={progress}
         priorityReady={appReady}
         visible={loaderVisible}
       />
-      <div className="bg-ink">
+      <div className="bg-ivory">
         <Hero
           getFrame={getFrame}
           priorityReady={appReady}

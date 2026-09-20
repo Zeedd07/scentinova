@@ -1,6 +1,6 @@
 /**
- * Editorial navigation — SCENTINOVA Parfums
- * Anchor clicks scroll without bounce (no native hash jump vs sticky hero).
+ * Maison navbar — Vizzari-inspired: logo left, gold links right.
+ * Same destinations: Collection · Notes · Our Story · Shop · Cart
  */
 import { useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
@@ -13,17 +13,25 @@ const HOME_ANCHORS = [
   { to: '/about', label: 'Our Story' },
 ]
 
+const linkBase =
+  'relative border-0 bg-transparent pb-1 text-[11px] tracking-[0.28em] text-[#d2b879] uppercase transition outline-none hover:text-[#e8d49a]'
+
+const linkActive =
+  'after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-[#d2b879]'
+
 function scrollToId(id) {
   const el = document.getElementById(id)
   if (!el) return
-  const top = el.getBoundingClientRect().top + window.scrollY - 72
+  const nav = document.querySelector('.site-nav')
+  const navH = nav?.getBoundingClientRect().height || 56
+  const top = el.getBoundingClientRect().top + window.scrollY - navH - 8
   window.scrollTo({ top, behavior: 'smooth' })
 }
 
 export default function Navbar() {
   const { count, setDrawerOpen } = useCart()
   const [menuOpen, setMenuOpen] = useState(false)
-  const { pathname } = useLocation()
+  const { pathname, hash } = useLocation()
   const navigate = useNavigate()
   const onHome = pathname === '/'
 
@@ -33,59 +41,60 @@ export default function Navbar() {
     const id = href.replace('#', '')
     if (onHome) {
       scrollToId(id)
-      // update hash without triggering another scroll jump
       window.history.replaceState(null, '', href)
     } else {
       navigate({ pathname: '/', hash: href })
     }
   }
 
+  const isAnchorActive = (href) => onHome && hash === href
+
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-gold/10 bg-ink [&_a]:outline-none [&_a]:shadow-none [&_button]:outline-none [&_button]:shadow-none">
-      <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-12">
-        <BrandLogo onClick={() => setMenuOpen(false)} />
+    <header className="site-nav fixed inset-x-0 top-0 z-[100] bg-black text-[#d2b879] pt-[env(safe-area-inset-top,0px)] [&_a]:outline-none [&_button]:outline-none">
+      <div className="mx-auto flex h-[var(--nav-h)] max-w-[1400px] items-center justify-between px-4 sm:px-8 lg:px-16">
+        <BrandLogo onClick={() => setMenuOpen(false)} light />
 
-        <nav
-          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-9 md:flex"
-          aria-label="Primary"
-        >
-          {HOME_ANCHORS.map((l) =>
-            l.to ? (
-              <NavLink
-                key={l.label}
-                to={l.to}
-                className={({ isActive }) =>
-                  `border-0 bg-transparent text-[11px] tracking-[0.28em] uppercase transition outline-none ring-0 ${
-                    isActive ? 'text-gold-light' : 'text-bronze hover:text-cream'
-                  }`
-                }
-              >
-                {l.label}
-              </NavLink>
-            ) : (
-              <a
-                key={l.label}
-                href={l.href}
-                onClick={(e) => onAnchorClick(e, l.href)}
-                className="border-0 bg-transparent text-[11px] tracking-[0.32em] text-bronze uppercase transition outline-none ring-0 hover:text-cream"
-              >
-                {l.label}
-              </a>
-            ),
-          )}
-        </nav>
-
-        <div className="flex items-center gap-5">
-          <Link
-            to="/shop"
-            className="hidden border-0 bg-transparent text-[11px] tracking-[0.28em] text-bronze uppercase transition outline-none ring-0 hover:text-cream sm:inline"
+        <div className="flex items-center gap-3 sm:gap-6">
+          <nav
+            className="hidden items-center gap-8 lg:gap-10 md:flex"
+            aria-label="Primary"
           >
-            Shop
-          </Link>
+            {HOME_ANCHORS.map((l) =>
+              l.to ? (
+                <NavLink
+                  key={l.label}
+                  to={l.to}
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : ''}`
+                  }
+                >
+                  {l.label}
+                </NavLink>
+              ) : (
+                <a
+                  key={l.label}
+                  href={l.href}
+                  onClick={(e) => onAnchorClick(e, l.href)}
+                  className={`${linkBase} ${isAnchorActive(l.href) ? linkActive : ''}`}
+                >
+                  {l.label}
+                </a>
+              ),
+            )}
+            <NavLink
+              to="/shop"
+              className={({ isActive }) =>
+                `${linkBase} ${isActive ? linkActive : ''}`
+              }
+            >
+              Shop
+            </NavLink>
+          </nav>
+
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="relative border-0 bg-transparent text-bronze transition outline-none ring-0 hover:text-cream"
+            className="relative border-0 bg-transparent text-[#d2b879] transition outline-none hover:text-[#e8d49a]"
             aria-label={`Bag, ${count} items`}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -96,7 +105,7 @@ export default function Navbar() {
               />
             </svg>
             {count > 0 && (
-              <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-ink">
+              <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d2b879] px-1 text-[10px] font-medium text-black">
                 {count}
               </span>
             )}
@@ -104,7 +113,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            className="border-0 bg-transparent text-bronze outline-none ring-0 md:hidden"
+            className="border-0 bg-transparent text-[#d2b879] outline-none md:hidden"
             aria-label="Menu"
             onClick={() => setMenuOpen((o) => !o)}
           >
@@ -114,14 +123,14 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <nav className="border-t border-gold/10 bg-ink px-6 py-5 md:hidden">
+        <nav className="border-t border-[#d2b879]/15 bg-black px-6 py-4 md:hidden">
           {HOME_ANCHORS.map((l) =>
             l.to ? (
               <NavLink
                 key={l.label}
                 to={l.to}
                 onClick={() => setMenuOpen(false)}
-                className="block py-3 text-[11px] tracking-[0.3em] text-bronze uppercase"
+                className="block py-3 text-[11px] tracking-[0.3em] text-[#d2b879] uppercase"
               >
                 {l.label}
               </NavLink>
@@ -130,7 +139,7 @@ export default function Navbar() {
                 key={l.label}
                 href={l.href}
                 onClick={(e) => onAnchorClick(e, l.href)}
-                className="block py-3 text-[11px] tracking-[0.3em] text-bronze uppercase"
+                className="block py-3 text-[11px] tracking-[0.3em] text-[#d2b879] uppercase"
               >
                 {l.label}
               </a>
@@ -139,7 +148,7 @@ export default function Navbar() {
           <Link
             to="/shop"
             onClick={() => setMenuOpen(false)}
-            className="block py-3 text-[11px] tracking-[0.3em] text-gold uppercase"
+            className="block py-3 text-[11px] tracking-[0.3em] text-[#d2b879] uppercase"
           >
             Shop
           </Link>

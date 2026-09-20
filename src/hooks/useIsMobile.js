@@ -1,6 +1,6 @@
 /**
- * Detect coarse pointer / narrow viewport → mobile experience
- * (autoplay video instead of scroll-scrub canvas).
+ * Detect coarse pointer / narrow viewport → mobile layout tweaks
+ * (lighter particles, leaner frame preload). Hero scroll-scrub runs on all devices.
  */
 import { useEffect, useState } from 'react'
 

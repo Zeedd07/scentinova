@@ -1,15 +1,31 @@
 @import "tailwindcss";
 
-/* ─── Design tokens ─────────────────────────────────────────── */
+/* ─── Scentinova redesign tokens (ivory + charcoal + gold) ─── */
 @theme {
-  --color-ink: #050403;
-  --color-ink-soft: #0c0a08;
-  --color-panel: #14100c;
-  --color-cream: #faf6ec;
-  --color-bronze: #c9b48a;
-  --color-gold: #e0c56a;
-  --color-gold-light: #f7ecc4;
-  --color-champagne: #efe0b8;
+  --color-ivory: #f5f2eb;
+  --color-cream: #eee9de;
+  --color-warm-white: #faf9f6;
+  --color-stone: #d8d0c2;
+  --color-sand: #c9bdaa;
+
+  --color-charcoal: #1b1917;
+  --color-espresso: #24201c;
+  --color-black: #0d0c0b;
+
+  --color-muted: #766f66;
+  --color-gold: #b4975a;
+  --color-champagne: #d2b879;
+
+  --color-burgundy: #6e1118;
+  --color-deep-red: #420a0e;
+
+  /* Legacy aliases used across existing components */
+  --color-ink: #0d0c0b;
+  --color-ink-soft: #1b1917;
+  --color-panel: #24201c;
+  --color-bronze: #766f66;
+  --color-gold-light: #d2b879;
+
   --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
@@ -24,13 +40,36 @@ html {
   scroll-behavior: auto;
   overflow-anchor: none;
   -webkit-text-size-adjust: 100%;
+  --nav-h: 3.5rem;
+}
+
+@media (min-width: 640px) {
+  html {
+    --nav-h: 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    --nav-h: 4.5rem;
+  }
+}
+
+/* Keep maison bar pinned to viewport on all scroll / pin contexts */
+.site-nav {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  transform: none !important;
+  will-change: auto;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: #050403;
-  color: #faf6ec;
+  background: #f5f2eb;
+  color: #1b1917;
   font-family: var(--font-sans);
   font-weight: 400;
   font-size: 16px;
@@ -43,8 +82,8 @@ body {
 }
 
 ::selection {
-  background: rgba(224, 197, 106, 0.35);
-  color: #faf6ec;
+  background: rgba(180, 151, 90, 0.28);
+  color: #1b1917;
 }
 
 .font-display {
@@ -54,34 +93,23 @@ body {
 }
 
 .gold-text {
-  background: linear-gradient(135deg, #e0c56a 0%, #f7ecc4 50%, #e0c56a 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #b4975a;
 }
 
 .gold-border {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(#0c0a08, #0c0a08) padding-box,
-    linear-gradient(135deg, #e0c56a, #f7ecc4, #e0c56a) border-box;
+  border: 1px solid #b4975a;
 }
 
-/* Brand monogram — soft gold disc, no hard ring */
+/* Brand monogram */
 .brand-monogram {
-  background:
-    radial-gradient(circle at 35% 30%, rgba(244, 229, 178, 0.18), transparent 55%),
-    radial-gradient(circle at 70% 75%, rgba(212, 175, 55, 0.12), transparent 50%),
-    #0c0a08;
-  box-shadow: inset 0 1px 0 rgba(244, 229, 178, 0.1);
-  transition: box-shadow 0.45s ease, transform 0.45s ease;
+  background: #0d0c0b;
+  border: 1px solid rgba(180, 151, 90, 0.45);
+  transition: border-color 0.45s ease, transform 0.45s ease;
 }
 
 .brand-logo:hover .brand-monogram {
-  box-shadow:
-    0 0 16px rgba(212, 175, 55, 0.14),
-    inset 0 1px 0 rgba(244, 229, 178, 0.18);
-  transform: scale(1.04);
+  border-color: rgba(210, 184, 121, 0.75);
+  transform: scale(1.03);
 }
 
 .brand-logo:focus,
@@ -90,13 +118,19 @@ body {
   box-shadow: none;
 }
 
-/* Subtle film grain / texture over dark grounds */
+/* Subtle warm texture for light grounds */
 .bg-luxury {
-  background-color: #050403;
+  background-color: #f5f2eb;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 175, 55, 0.07), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(138, 109, 59, 0.08), transparent 50%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    radial-gradient(ellipse 70% 45% at 50% -5%, rgba(180, 151, 90, 0.08), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 100%, rgba(110, 17, 24, 0.04), transparent 50%);
+}
+
+.bg-luxury-dark {
+  background-color: #0d0c0b;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(180, 151, 90, 0.07), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(110, 17, 24, 0.12), transparent 50%);
 }
 
 .btn-luxury {
@@ -107,122 +141,54 @@ body {
   text-transform: uppercase;
   font-size: 12px;
   font-weight: 500;
-  transition: color 0.4s ease, border-color 0.4s ease, transform 0.4s ease;
-}
-
-.btn-luxury::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(244, 229, 178, 0.35) 50%,
-    transparent 60%
-  );
-  transform: translateX(-120%);
-  transition: transform 0.7s ease;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.btn-luxury:hover::after {
-  transform: translateX(120%);
+  transition: color 0.4s ease, border-color 0.4s ease, background 0.4s ease;
 }
 
 .btn-luxury:hover {
-  color: #f4e5b2;
+  color: #0d0c0b;
+  background: #b4975a;
+  border-color: #b4975a;
 }
 
-/* Legacy alias used across shop pages */
 .btn-shimmer {
   position: relative;
   overflow: hidden;
   isolation: isolate;
 }
 
-.btn-shimmer::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(244, 229, 178, 0.45) 50%,
-    transparent 60%
-  );
-  transform: translateX(-120%);
-  transition: transform 0.65s ease;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.btn-shimmer:hover::after {
-  transform: translateX(120%);
+.btn-shimmer:hover {
+  color: #0d0c0b;
+  background: #b4975a;
 }
 
 .glass-card {
-  background: rgba(20, 16, 12, 0.55);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(212, 175, 55, 0.22);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  background: rgba(250, 249, 246, 0.85);
+  border: 1px solid rgba(216, 208, 194, 0.9);
 }
 
-/* Marble pedestal under bottles */
 .marble-pedestal {
   width: 72%;
   max-width: 180px;
-  height: 14px;
-  margin: -6px auto 0;
+  height: 10px;
+  margin: -4px auto 0;
   border-radius: 50%;
-  background:
-    radial-gradient(ellipse at 35% 30%, rgba(244, 229, 178, 0.25), transparent 45%),
-    radial-gradient(ellipse at 70% 60%, rgba(40, 36, 32, 0.9), transparent 50%),
-    linear-gradient(180deg, #2a2622 0%, #0e0c0a 55%, #1a1612 100%);
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.65),
-    0 0 40px rgba(212, 175, 55, 0.08),
-    inset 0 1px 0 rgba(244, 229, 178, 0.2);
+  background: radial-gradient(ellipse at center, rgba(27, 25, 23, 0.12), transparent 70%);
   position: relative;
 }
 
-.marble-pedestal::after {
-  content: "";
-  position: absolute;
-  inset: -8px -20% auto;
-  height: 40px;
-  background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.18), transparent 70%);
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Crystal ingredient sphere */
 .crystal-sphere {
   width: 120px;
   height: 120px;
   border-radius: 50%;
   position: relative;
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.35), transparent 35%),
-    radial-gradient(circle at 70% 70%, rgba(212, 175, 55, 0.15), transparent 50%),
-    rgba(20, 16, 12, 0.4);
-  border: 1px solid rgba(244, 229, 178, 0.35);
-  box-shadow:
-    0 0 40px rgba(212, 175, 55, 0.12),
-    inset 0 0 30px rgba(244, 229, 178, 0.08),
-    0 20px 40px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+  background: #eee9de;
+  border: 1px solid rgba(180, 151, 90, 0.35);
   overflow: hidden;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.6s ease;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .crystal-sphere:hover {
-  transform: translateY(-8px) scale(1.04);
-  box-shadow:
-    0 0 60px rgba(212, 175, 55, 0.28),
-    inset 0 0 40px rgba(244, 229, 178, 0.12),
-    0 28px 50px rgba(0, 0, 0, 0.55);
+  transform: translateY(-6px) scale(1.03);
 }
 
 .crystal-sphere img {
@@ -268,16 +234,15 @@ body {
   background: radial-gradient(
     ellipse at center,
     transparent 35%,
-    rgba(5, 4, 3, 0.45) 70%,
-    rgba(5, 4, 3, 0.88) 100%
+    rgba(13, 12, 11, 0.45) 70%,
+    rgba(13, 12, 11, 0.88) 100%
   );
 }
 
 .loader-bar {
-  background: linear-gradient(90deg, #c9b48a, #e0c56a, #f7ecc4, #e0c56a);
+  background: linear-gradient(90deg, #766f66, #b4975a, #d2b879, #b4975a);
   background-size: 200% 100%;
   animation: shimmer-bar 1.6s linear infinite;
-  box-shadow: 0 0 12px rgba(224, 197, 106, 0.35);
 }
 
 @keyframes shimmer-bar {
@@ -289,13 +254,13 @@ body {
   }
 }
 
-/* Fragrance Journey — infinite ingredient marquee */
 @keyframes journey-marquee {
   from {
     transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translate3d(-50%, 0, 0);
+    /* Three equal sets → shift by exactly one set (perfect loop, no gap) */
+    transform: translate3d(-33.333333%, 0, 0);
   }
 }
 
@@ -305,7 +270,7 @@ body {
 }
 
 .journey-marquee-track {
-  animation: journey-marquee 42s linear infinite;
+  animation: journey-marquee 48s linear infinite;
   will-change: transform;
 }
 
@@ -323,39 +288,33 @@ body {
     margin-inline: auto;
     padding-inline: 1.5rem;
   }
+
+  .journey-marquee-track > [aria-hidden='true'] {
+    display: none;
+  }
 }
 
 .journey-line {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(212, 175, 55, 0.15) 10%,
-    rgba(244, 229, 178, 0.55) 50%,
-    rgba(212, 175, 55, 0.15) 90%,
+    rgba(180, 151, 90, 0.2) 10%,
+    rgba(180, 151, 90, 0.55) 50%,
+    rgba(180, 151, 90, 0.2) 90%,
     transparent
   );
   height: 1px;
 }
 
+/* Four Signatures — product grid (2×2 mobile / 4 desktop) */
+
 .sunset-sky {
-  /* Starts identical to page ink, warms slowly — no hard seam */
   background:
-    radial-gradient(ellipse 90% 55% at 50% 55%, rgba(232, 160, 90, 0.28), transparent 60%),
-    radial-gradient(ellipse 70% 45% at 72% 40%, rgba(212, 175, 55, 0.16), transparent 55%),
-    linear-gradient(
-      180deg,
-      #050403 0%,
-      #050403 18%,
-      #0c0907 32%,
-      #1a120e 48%,
-      #2e1c14 62%,
-      #3d2418 75%,
-      #1a100c 88%,
-      #050403 100%
-    );
+    radial-gradient(ellipse 90% 55% at 50% 55%, rgba(110, 17, 24, 0.12), transparent 60%),
+    radial-gradient(ellipse 70% 45% at 72% 40%, rgba(180, 151, 90, 0.1), transparent 55%),
+    linear-gradient(180deg, #eee9de 0%, #f5f2eb 40%, #e8e0d2 100%);
 }
 
-/* Soft blends — sections feel continuous without tall empty bands */
 .section-fade-top {
   position: absolute;
   inset-inline: 0;
@@ -363,12 +322,7 @@ body {
   height: min(12vh, 6rem);
   pointer-events: none;
   z-index: 5;
-  background: linear-gradient(
-    180deg,
-    #050403 0%,
-    rgba(5, 4, 3, 0.65) 40%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg, #f5f2eb 0%, rgba(245, 242, 235, 0.65) 40%, transparent 100%);
 }
 
 .section-fade-bottom {
@@ -378,12 +332,7 @@ body {
   height: min(12vh, 6rem);
   pointer-events: none;
   z-index: 5;
-  background: linear-gradient(
-    0deg,
-    #050403 0%,
-    rgba(5, 4, 3, 0.65) 40%,
-    transparent 100%
-  );
+  background: linear-gradient(0deg, #f5f2eb 0%, rgba(245, 242, 235, 0.65) 40%, transparent 100%);
 }
 
 .section-fade-bottom-warm {
@@ -393,13 +342,7 @@ body {
   height: min(14vh, 7rem);
   pointer-events: none;
   z-index: 5;
-  background: linear-gradient(
-    0deg,
-    #050403 0%,
-    rgba(12, 9, 7, 0.85) 30%,
-    rgba(26, 18, 14, 0.4) 60%,
-    transparent 100%
-  );
+  background: linear-gradient(0deg, #f5f2eb 0%, rgba(238, 233, 222, 0.85) 30%, transparent 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
