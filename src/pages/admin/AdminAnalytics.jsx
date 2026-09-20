@@ -1,91 +1,138 @@
 /**
- * Product analytics — views, cart, sales, category mix.
+ * Product analytics — live backend metrics (no fake seed data).
  */
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useCatalog } from '../../context/CatalogContext'
 import { formatPrice } from '../../data/products'
+import {
+  adminAnalyticsOverview,
+  adminAnalyticsProducts,
+} from '../../services/analyticsApi'
+import { ApiClientError } from '../../services/apiClient'
 
 function Bar({ value, max, label, display }) {
   const pct = max ? Math.max(4, Math.round((value / max) * 100)) : 0
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-[11px]">
-        <span className="text-cream">{label}</span>
-        <span className="text-bronze">{display ?? value}</span>
+      <div className="flex justify-between text-[14px]">
+        <span className="text-[#1b1917]">{label}</span>
+        <span className="admin-muted">{display ?? value}</span>
       </div>
-      <div className="h-1.5 bg-ink-soft">
-        <div className="h-full bg-gold/70" style={{ width: `${pct}%` }} />
+      <div className="h-2 rounded-sm bg-[#ebe4d6]">
+        <div
+          className="h-full rounded-sm bg-[#b4975a]"
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   )
 }
 
 export default function AdminAnalytics() {
-  const { stats } = useCatalog()
-  const { rows, totals, byCategory, topSellers, slowMovers } = stats
+  const [overview, setOverview] = useState(null)
+  const [rows, setRows] = useState([])
+  const [byCategory, setByCategory] = useState([])
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const [ov, prod] = await Promise.all([
+          adminAnalyticsOverview(),
+          adminAnalyticsProducts(),
+        ])
+        if (cancelled) return
+        setOverview(ov)
+        setRows(prod.products || [])
+        setByCategory(prod.byCategory || [])
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof ApiClientError
+              ? err.message
+              : 'Could not load analytics.',
+          )
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) return <p className="admin-muted">Loading analytics…</p>
+  if (error) return <p className="text-[#6e1118]">{error}</p>
+
   const maxRev = Math.max(...rows.map((r) => r.revenue), 1)
   const maxViews = Math.max(...rows.map((r) => r.views), 1)
-  const catEntries = Object.entries(byCategory).sort(
-    (a, b) => b[1].revenue - a[1].revenue,
-  )
-  const maxCatRev = Math.max(...catEntries.map(([, v]) => v.revenue), 1)
+  const maxCat = Math.max(...byCategory.map((c) => c.units), 1)
+  const topSellers = [...rows].sort((a, b) => b.revenue - a.revenue)
+  const slowMovers = [...rows].sort((a, b) => a.purchases - b.purchases)
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div>
-        <p className="text-[11px] tracking-[0.32em] text-bronze uppercase">
-          Intelligence
-        </p>
-        <h2 className="mt-1 font-display text-3xl text-cream">
-          Product <span className="gold-text italic">analytics</span>
-        </h2>
-        <p className="mt-3 max-w-xl text-sm text-bronze">
-          Mock + live signals: product page views, add-to-cart, and checkout
-          revenue stored in this browser.
+        <h2 className="admin-title">Analytics</h2>
+        <p className="mt-1 max-w-xl text-[15px] admin-muted">
+          Views and carts from the storefront; purchases and revenue from real
+          orders.
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          ['Views', totals.views.toLocaleString()],
-          ['Add to cart', totals.addToCarts.toLocaleString()],
-          ['Purchases', totals.purchases.toLocaleString()],
-          ['Revenue', formatPrice(totals.revenue)],
+          ['Views', (overview?.views ?? 0).toLocaleString()],
+          ['Add to cart', (overview?.addToCarts ?? 0).toLocaleString()],
+          ['Orders', (overview?.orders ?? 0).toLocaleString()],
+          [
+            'Revenue',
+            formatPrice(
+              overview?.revenue === 0 ? null : overview?.revenue ?? null,
+            ),
+          ],
         ].map(([l, v]) => (
-          <div key={l} className="border border-gold/15 bg-ink-soft px-4 py-4">
-            <p className="text-[10px] tracking-[0.28em] text-bronze uppercase">
-              {l}
+          <div key={l} className="admin-surface px-4 py-3">
+            <p className="text-[13px] text-[#766f66]">{l}</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-[#1b1917]">
+              {v}
             </p>
-            <p className="mt-2 font-display text-2xl text-cream">{v}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section className="border border-gold/15 p-5">
-          <h3 className="font-display text-xl text-cream">Revenue by product</h3>
-          <div className="mt-5 space-y-4">
-            {topSellers.map((r) => (
-              <Bar
-                key={r.product.id}
-                label={r.product.name}
-                value={r.revenue}
-                display={formatPrice(r.revenue)}
-                max={maxRev}
-              />
-            ))}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="admin-surface p-4 sm:p-5">
+          <h3 className="text-base font-semibold">Revenue by product</h3>
+          <div className="mt-4 space-y-3">
+            {topSellers.every((r) => r.revenue === 0) ? (
+              <p className="admin-muted text-[15px]">No priced sales yet.</p>
+            ) : (
+              topSellers.map((r) => (
+                <Bar
+                  key={r.id}
+                  label={r.name}
+                  value={r.revenue}
+                  display={formatPrice(r.revenue || null)}
+                  max={maxRev}
+                />
+              ))
+            )}
           </div>
         </section>
 
-        <section className="border border-gold/15 p-5">
-          <h3 className="font-display text-xl text-cream">Views by product</h3>
-          <div className="mt-5 space-y-4">
+        <section className="admin-surface p-4 sm:p-5">
+          <h3 className="text-base font-semibold">Views by product</h3>
+          <div className="mt-4 space-y-3">
             {[...rows]
               .sort((a, b) => b.views - a.views)
               .map((r) => (
                 <Bar
-                  key={r.product.id}
-                  label={r.product.name}
+                  key={r.id}
+                  label={r.name}
                   value={r.views}
                   max={maxViews}
                 />
@@ -94,85 +141,57 @@ export default function AdminAnalytics() {
         </section>
       </div>
 
-      <section className="border border-gold/15 p-5">
-        <h3 className="font-display text-xl text-cream">By category</h3>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {catEntries.map(([cat, v]) => (
-            <div key={cat}>
+      <section className="admin-surface p-4 sm:p-5">
+        <h3 className="text-base font-semibold">Units by category</h3>
+        <div className="mt-4 space-y-3">
+          {byCategory.length === 0 ? (
+            <p className="admin-muted text-[15px]">No sales yet.</p>
+          ) : (
+            byCategory.map((c) => (
               <Bar
-                label={cat}
-                value={v.revenue}
-                display={formatPrice(v.revenue)}
-                max={maxCatRev}
+                key={c.category}
+                label={c.category}
+                value={c.units}
+                max={maxCat}
               />
-              <p className="mt-1 text-[11px] text-bronze">
-                {v.purchases} sold · {v.views} views
-              </p>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
 
-      <div className="overflow-x-auto border border-gold/15">
-        <table className="w-full min-w-[800px] text-left text-sm">
-          <thead className="border-b border-gold/15 bg-ink-soft text-[10px] tracking-[0.2em] text-bronze uppercase">
+      <div className="admin-surface overflow-x-auto">
+        <table className="admin-table w-full min-w-[640px] text-left">
+          <thead className="border-b border-[#e0d6c4]">
             <tr>
-              <th className="px-4 py-3 font-normal">Product</th>
-              <th className="px-4 py-3 font-normal">Views</th>
-              <th className="px-4 py-3 font-normal">Carts</th>
-              <th className="px-4 py-3 font-normal">Sold</th>
-              <th className="px-4 py-3 font-normal">Cart %</th>
-              <th className="px-4 py-3 font-normal">Buy %</th>
-              <th className="px-4 py-3 font-normal">Revenue</th>
-              <th className="px-4 py-3 font-normal" />
+              <th className="px-3 py-2.5">Product</th>
+              <th className="px-3 py-2.5">Views</th>
+              <th className="px-3 py-2.5">ATC</th>
+              <th className="px-3 py-2.5">Sold</th>
+              <th className="px-3 py-2.5">Revenue</th>
             </tr>
           </thead>
           <tbody>
-            {rows
-              .sort((a, b) => b.revenue - a.revenue)
-              .map((r) => (
-                <tr key={r.product.id} className="border-b border-gold/10">
-                  <td className="px-4 py-3 text-cream">{r.product.name}</td>
-                  <td className="px-4 py-3 text-bronze">{r.views}</td>
-                  <td className="px-4 py-3 text-bronze">{r.addToCarts}</td>
-                  <td className="px-4 py-3 text-bronze">{r.purchases}</td>
-                  <td className="px-4 py-3 text-bronze">
-                    {r.cartRate.toFixed(1)}%
-                  </td>
-                  <td className="px-4 py-3 text-bronze">
-                    {r.buyRate.toFixed(1)}%
-                  </td>
-                  <td className="px-4 py-3 text-cream">
-                    {formatPrice(r.revenue)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      to={`/admin/products/${r.product.id}`}
-                      className="text-[11px] tracking-[0.2em] text-gold uppercase"
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+            {slowMovers.map((r) => (
+              <tr key={r.id} className="border-b border-[#ebe4d6]">
+                <td className="px-3 py-2.5">
+                  <Link
+                    to={`/admin/products/${r.id}`}
+                    className="hover:underline"
+                  >
+                    {r.name}
+                  </Link>
+                </td>
+                <td className="px-3 py-2.5">{r.views}</td>
+                <td className="px-3 py-2.5">{r.addToCarts}</td>
+                <td className="px-3 py-2.5">{r.purchases}</td>
+                <td className="px-3 py-2.5">
+                  {formatPrice(r.revenue || null)}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-
-      <section className="border border-gold/15 p-5">
-        <h3 className="font-display text-xl text-cream">Slow movers</h3>
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-          {slowMovers.slice(0, 6).map((r) => (
-            <li
-              key={r.product.id}
-              className="flex justify-between text-sm text-bronze"
-            >
-              <span className="text-cream">{r.product.name}</span>
-              <span>{r.purchases} sold</span>
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   )
 }

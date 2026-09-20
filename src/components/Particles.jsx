@@ -36,22 +36,27 @@ export default function Particles({ density = 48, className = '' }) {
     let w = 0
     let h = 0
 
+    let resizeTimer = 0
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
       const rect = canvas.getBoundingClientRect()
       w = rect.width
       h = rect.height
       canvas.width = Math.floor(w * dpr)
       canvas.height = Math.floor(h * dpr)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      // Reseed if empty
       if (particles.length === 0) {
         particles = Array.from({ length: density }, () => spawnParticle(w, h))
       }
     }
 
+    const onResize = () => {
+      window.clearTimeout(resizeTimer)
+      resizeTimer = window.setTimeout(resize, 140)
+    }
+
     resize()
-    window.addEventListener('resize', resize)
+    window.addEventListener('resize', onResize, { passive: true })
 
     const io = new IntersectionObserver(
       ([entry]) => {
@@ -89,7 +94,8 @@ export default function Particles({ density = 48, className = '' }) {
 
     return () => {
       cancelAnimationFrame(rafRef.current)
-      window.removeEventListener('resize', resize)
+      window.clearTimeout(resizeTimer)
+      window.removeEventListener('resize', onResize)
       io.disconnect()
     }
   }, [density])

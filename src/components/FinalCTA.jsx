@@ -3,6 +3,7 @@
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
 
 export default function FinalCTA() {
   return (
@@ -20,10 +21,10 @@ export default function FinalCTA() {
 
       <div className="relative z-10 mx-auto flex max-w-6xl justify-center">
         <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, amount: 0.35 }}
-          transition={{ duration: 0.9 }}
+          initial={fadeUp.initial}
+          whileInView={fadeUp.animate}
+          viewport={viewportOnce}
+          transition={{ duration: 0.9, ease: easeOutExpo }}
           className="max-w-md text-center"
         >
           <p className="mb-4 text-[11px] tracking-[0.42em] text-[#7a6438] uppercase">

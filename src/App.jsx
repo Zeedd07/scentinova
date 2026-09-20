@@ -1,6 +1,6 @@
 /**
- * Aurum — luxury perfume boutique.
- * Storefront + hidden /admin (mock catalog & analytics).
+ * Scentinova — luxury perfume boutique.
+ * Storefront + protected /admin (MongoDB via API).
  */
 import { useEffect } from 'react'
 import {
@@ -12,20 +12,28 @@ import {
 } from 'react-router-dom'
 import { CartProvider } from './context/CartContext'
 import { CatalogProvider } from './context/CatalogContext'
+import { AdminAuthProvider } from './context/AdminAuthContext'
+import MotionProvider from './components/MotionProvider'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
+import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute'
 import HomePage from './pages/HomePage'
 import ShopPage from './pages/ShopPage'
 import ProductPage from './pages/ProductPage'
 import CartPage from './pages/CartPage'
+import CheckoutPage from './pages/CheckoutPage'
+import OrderConfirmationPage from './pages/OrderConfirmationPage'
+import TrackOrderPage from './pages/TrackOrderPage'
 import AboutPage from './pages/AboutPage'
 import AdminLayout from './pages/admin/AdminLayout'
+import AdminLogin from './pages/admin/AdminLogin'
 import AdminOverview from './pages/admin/AdminOverview'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminProductForm from './pages/admin/AdminProductForm'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminOrders from './pages/admin/AdminOrders'
+import AdminOrderDetail from './pages/admin/AdminOrderDetail'
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
@@ -60,6 +68,12 @@ function Storefront() {
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/product/:slug" element={<ProductPage />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route
+            path="/order-confirmation/:orderNumber"
+            element={<OrderConfirmationPage />}
+          />
+          <Route path="/track-order" element={<TrackOrderPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -75,19 +89,28 @@ function AppShell() {
 
   if (isAdmin) {
     return (
-      <>
+      <AdminAuthProvider>
         <ScrollToTop />
         <Routes>
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedAdminRoute>
+                <AdminLayout />
+              </ProtectedAdminRoute>
+            }
+          >
             <Route index element={<AdminOverview />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="products/new" element={<AdminProductForm />} />
             <Route path="products/:id" element={<AdminProductForm />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="orders/:id" element={<AdminOrderDetail />} />
           </Route>
         </Routes>
-      </>
+      </AdminAuthProvider>
     )
   }
 
@@ -97,11 +120,13 @@ function AppShell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <CatalogProvider>
-        <CartProvider>
-          <AppShell />
-        </CartProvider>
-      </CatalogProvider>
+      <MotionProvider>
+        <CatalogProvider>
+          <CartProvider>
+            <AppShell />
+          </CartProvider>
+        </CatalogProvider>
+      </MotionProvider>
     </BrowserRouter>
   )
 }

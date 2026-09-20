@@ -4,14 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host --port 5178",
+    "dev": "vite --host --port 5173",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview",
+    "preview": "vite preview --host --port 5173",
     "frames:extract": "bash scripts/extract-frames.sh",
     "frames:clean": "bash scripts/clean-frames.sh",
     "frames:webp": "bash scripts/convert-webp.sh",
-    "frames:pipeline": "bash scripts/run-frame-pipeline.sh"
+    "frames:pipeline": "bash scripts/run-frame-pipeline.sh",
+    "frames:rebuild": "node scripts/rebuild-hero-frames.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.43.0",
@@ -21,6 +22,7 @@
     "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

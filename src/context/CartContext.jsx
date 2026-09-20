@@ -24,13 +24,47 @@ function loadCart() {
 }
 
 export function CartProvider({ children }) {
-  const { trackAddToCart } = useCatalog()
+  const { trackAddToCart, products, loading } = useCatalog()
   const [items, setItems] = useState(loadCart)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
   }, [items])
+
+  // Remap cart lines to current Mongo product ids (by slug) after catalog loads
+  useEffect(() => {
+    if (loading || !products?.length) return
+    setItems((prev) => {
+      if (!prev.length) return prev
+      let changed = false
+      const next = []
+      for (const line of prev) {
+        const match =
+          products.find((p) => p.id === line.id) ||
+          products.find((p) => p.slug === line.slug)
+        if (!match) {
+          changed = true
+          continue
+        }
+        if (match.id !== line.id || match.name !== line.name || match.price !== line.price) {
+          changed = true
+          next.push({
+            ...line,
+            id: match.id,
+            slug: match.slug,
+            name: match.name,
+            price: match.price,
+            image: match.image || line.image,
+            size: match.size || line.size,
+          })
+        } else {
+          next.push(line)
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [loading, products])
 
   const addItem = useCallback(
     (product, qty = 1) => {

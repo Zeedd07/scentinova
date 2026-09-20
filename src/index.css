@@ -8,7 +8,7 @@
   --color-stone: #d8d0c2;
   --color-sand: #c9bdaa;
 
-  --color-charcoal: #1b1917;
+  --color-charcoal: #171512;
   --color-espresso: #24201c;
   --color-black: #0d0c0b;
 
@@ -21,13 +21,16 @@
 
   /* Legacy aliases used across existing components */
   --color-ink: #0d0c0b;
-  --color-ink-soft: #1b1917;
+  --color-ink-soft: #171512;
   --color-panel: #24201c;
   --color-bronze: #766f66;
   --color-gold-light: #d2b879;
 
-  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Iowan Old Style on Apple; Libre Baskerville web fallback elsewhere */
+  --font-display: "Iowan Old Style", Baskerville, "Libre Baskerville",
+    "Palatino Linotype", Palatino, "Times New Roman", serif;
+  --font-sans: "Iowan Old Style", Baskerville, "Libre Baskerville",
+    "Palatino Linotype", Palatino, "Times New Roman", serif;
 }
 
 *,
@@ -69,7 +72,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: #f5f2eb;
-  color: #1b1917;
+  color: #171512;
   font-family: var(--font-sans);
   font-weight: 400;
   font-size: 16px;
@@ -79,16 +82,37 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+img,
+canvas,
+video {
+  max-width: 100%;
+}
+
+/* GPU-friendly sticky hero — reduces iOS / scroll jitter */
+.hero-sticky {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.journey-marquee-track,
+.signatures img,
+.group img {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 ::selection {
   background: rgba(180, 151, 90, 0.28);
-  color: #1b1917;
+  color: #171512;
 }
 
 .font-display {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.02em;
 }
 
@@ -233,9 +257,9 @@ body {
 .hero-vignette {
   background: radial-gradient(
     ellipse at center,
-    transparent 35%,
-    rgba(13, 12, 11, 0.45) 70%,
-    rgba(13, 12, 11, 0.88) 100%
+    transparent 42%,
+    rgba(13, 12, 11, 0.28) 72%,
+    rgba(13, 12, 11, 0.72) 100%
   );
 }
 
@@ -270,8 +294,10 @@ body {
 }
 
 .journey-marquee-track {
-  animation: journey-marquee 48s linear infinite;
+  animation: journey-marquee 56s linear infinite;
   will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .journey-marquee-track.is-paused {
@@ -343,6 +369,147 @@ body {
   pointer-events: none;
   z-index: 5;
   background: linear-gradient(0deg, #f5f2eb 0%, rgba(238, 233, 222, 0.85) 30%, transparent 100%);
+}
+
+/* ─── Admin — cream, minimal, readable ─── */
+.admin-shell {
+  min-height: 100vh;
+  color: #1b1917;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  background: #f7f2e8;
+}
+
+.admin-eyebrow {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #766f66;
+}
+
+.admin-surface {
+  background: #fffcf7;
+  border: 1px solid #e0d6c4;
+}
+
+.admin-input {
+  margin-top: 0.35rem;
+  width: 100%;
+  border: 1px solid #d8d0c2;
+  background: #fff;
+  padding: 0.55rem 0.75rem;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #1b1917;
+  outline: none;
+}
+
+.admin-input::placeholder {
+  color: #9a9288;
+}
+
+.admin-input:focus {
+  border-color: #b4975a;
+}
+
+.admin-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4a4136;
+}
+
+.admin-link {
+  font-size: 14px;
+  color: #7a6438;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+
+.admin-link:hover {
+  color: #1b1917;
+}
+
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c9bdaa;
+  background: #fff;
+  padding: 0.5rem 1rem;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1b1917;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.admin-btn:hover {
+  border-color: #b4975a;
+  background: #faf6ee;
+}
+
+.admin-btn-primary {
+  border-color: #1b1917;
+  background: #1b1917;
+  color: #faf9f6;
+}
+
+.admin-btn-primary:hover {
+  border-color: #1b1917;
+  background: #2a2218;
+  color: #faf9f6;
+}
+
+.admin-btn-quiet {
+  border-color: #d8d0c2;
+  background: transparent;
+  color: #766f66;
+}
+
+.admin-btn-quiet:hover {
+  border-color: #c9bdaa;
+  color: #1b1917;
+  background: #fff;
+}
+
+.admin-btn-danger {
+  border-color: #6e1118;
+  background: #fff;
+  color: #6e1118;
+}
+
+.admin-btn-danger:hover {
+  background: #f8f0f0;
+}
+
+.admin-title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #1b1917;
+}
+
+.admin-muted {
+  color: #766f66;
+}
+
+.admin-table th {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  color: #4a4136;
+  background: #f0e9dc;
+}
+
+.admin-table td {
+  font-size: 14px;
+  color: #1b1917;
+  vertical-align: middle;
 }
 
 @media (prefers-reduced-motion: reduce) {

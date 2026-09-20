@@ -1,7 +1,8 @@
 /**
- * Admin chrome — hidden route /admin (not linked in storefront nav).
+ * Admin chrome — cream, minimal, readable.
  */
 import { NavLink, Outlet, Link } from 'react-router-dom'
+import { useAdminAuth } from '../../context/AdminAuthContext'
 
 const LINKS = [
   { to: '/admin', end: true, label: 'Overview' },
@@ -11,34 +12,46 @@ const LINKS = [
 ]
 
 export default function AdminLayout() {
+  const { user, logout } = useAdminAuth()
+
   return (
-    <div className="min-h-screen bg-ink text-cream">
-      <header className="border-b border-gold/15 bg-ink-soft">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4 sm:px-10">
+    <div className="admin-shell">
+      <header className="border-b border-[#e0d6c4] bg-[#fffcf7]">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <div>
-            <p className="text-[10px] tracking-[0.35em] text-bronze uppercase">
-              SCENTINOVA
-            </p>
-            <h1 className="font-display text-2xl text-cream">Admin</h1>
+            <p className="admin-eyebrow">Scentinova</p>
+            <h1 className="admin-title text-2xl">Admin</h1>
+            {user?.email && (
+              <p className="mt-0.5 text-[13px] text-[#766f66]">{user.email}</p>
+            )}
           </div>
-          <Link
-            to="/"
-            className="text-[11px] tracking-[0.28em] text-bronze uppercase transition hover:text-gold-light"
-          >
-            ← Storefront
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="admin-link border-0 bg-transparent hover:underline"
+            >
+              Sign out
+            </button>
+            <Link to="/" className="admin-link no-underline hover:underline">
+              ← Back to store
+            </Link>
+          </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-6 pb-3 sm:px-10">
+        <nav
+          className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-5 pb-3 sm:px-8"
+          aria-label="Admin"
+        >
           {LINKS.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
               end={l.end}
               className={({ isActive }) =>
-                `shrink-0 border px-4 py-2 text-[11px] tracking-[0.22em] uppercase transition ${
+                `shrink-0 rounded-sm px-3 py-2 text-[15px] font-medium transition ${
                   isActive
-                    ? 'border-gold bg-gold/15 text-gold-light'
-                    : 'border-transparent text-bronze hover:border-gold/30 hover:text-cream'
+                    ? 'bg-[#1b1917] text-[#faf9f6]'
+                    : 'text-[#4a4136] hover:bg-[#f0e9dc]'
                 }`
               }
             >
@@ -47,7 +60,7 @@ export default function AdminLayout() {
           ))}
         </nav>
       </header>
-      <div className="mx-auto max-w-6xl px-6 py-10 sm:px-10">
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
         <Outlet />
       </div>
     </div>

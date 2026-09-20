@@ -35,7 +35,7 @@ export default function CartDrawer() {
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+            transition={{ type: 'spring', damping: 32, stiffness: 320, mass: 0.85 }}
             role="dialog"
             aria-label="Shopping cart"
           >
@@ -92,9 +92,7 @@ export default function CartDrawer() {
                             <p className="text-[11px] text-muted">{item.size}</p>
                           </div>
                           <p className="text-sm text-gold">
-                            {formatPrice(
-                              item.price == null ? null : item.price * item.qty,
-                            )}
+                            {formatPrice(item.price * item.qty)}
                           </p>
                         </div>
                         <div className="mt-3 flex items-center gap-3">
@@ -139,19 +137,18 @@ export default function CartDrawer() {
                 <div className="mb-4 flex justify-between text-sm">
                   <span className="text-muted">Subtotal</span>
                   <span className="font-display text-xl text-charcoal">
-                    {formatPrice(subtotal || null)}
+                    {formatPrice(subtotal)}
                   </span>
                 </div>
                 <p className="mb-4 text-[11px] text-muted">
-                  Shipping calculated at checkout · Mock store — no payment
-                  processed.
+                  Prices in INR · Shipping calculated at checkout
                 </p>
                 <Link
-                  to="/cart"
+                  to="/checkout"
                   onClick={() => setDrawerOpen(false)}
                   className="btn-luxury mb-3 block w-full border border-charcoal py-3.5 text-center text-charcoal"
                 >
-                  View Cart & Checkout
+                  Checkout
                 </Link>
                 <button
                   type="button"

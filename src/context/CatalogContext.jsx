@@ -1,5 +1,6 @@
 /**
- * Catalog + analytics + mock orders — localStorage-backed admin source of truth.
+ * Catalog — MongoDB via Scentinova API (storefront source of truth).
+ * Cart remains localStorage; orders/analytics go to the backend.
  */
 import {
   createContext,
@@ -9,194 +10,73 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { PRODUCTS as SEED_PRODUCTS } from '../data/products'
+import { fetchProducts } from '../services/productApi'
+import { createOrder } from '../services/orderApi'
+import { trackEvent } from '../services/analyticsApi'
+import { ApiClientError } from '../services/apiClient'
 
-const PRODUCTS_KEY = 'scentinova-admin-products-v4'
-const ANALYTICS_KEY = 'scentinova-admin-analytics-v4'
-const ORDERS_KEY = 'scentinova-admin-orders-v4'
+const LEGACY_KEYS = [
+  'scentinova-admin-products-v4',
+  'scentinova-admin-analytics-v4',
+  'scentinova-admin-orders-v4',
+]
 
-function slugify(name) {
-  return String(name)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-}
-
-function withDefaults(p) {
-  return {
-    active: true,
-    stock: 48,
-    ...p,
-    notes: {
-      top: p.notes?.top ?? [],
-      heart: p.notes?.heart ?? [],
-      base: p.notes?.base ?? [],
-    },
-    gallery: p.gallery?.length ? p.gallery : p.image ? [p.image] : [],
-  }
-}
-
-/** Keep house-signature imagery + notes in sync with seed catalog. */
-function hydrateSeedImagery(products) {
-  const byId = Object.fromEntries(SEED_PRODUCTS.map((p) => [p.id, p]))
-  const bySlug = Object.fromEntries(SEED_PRODUCTS.map((p) => [p.slug, p]))
-
-  return products.map((p) => {
-    const seed = byId[p.id] || bySlug[p.slug]
-    if (!seed) return withDefaults(p)
-
-    const imageBroken =
-      !p.image ||
-      String(p.image).startsWith('data:') ||
-      String(p.image).includes('/images/products/') ||
-      String(p.image).includes('/products/aurum')
-
-    return withDefaults({
-      ...p,
-      image: imageBroken ? seed.image : p.image,
-      gallery:
-        imageBroken || !p.gallery?.length
-          ? [...seed.gallery]
-          : p.gallery,
-      // Always refresh official house notes / descriptors from seed
-      notes: {
-        top: [...(seed.notes?.top ?? [])],
-        heart: [...(seed.notes?.heart ?? [])],
-        base: [...(seed.notes?.base ?? [])],
-      },
-      descriptors: [...(seed.descriptors ?? [])],
-      description: seed.description ?? p.description,
-      tagline: seed.tagline ?? p.tagline,
-    })
-  })
-}
-
-function seedAnalytics(products) {
-  const out = {}
-  products.forEach((p, i) => {
-    const views = 180 + ((i * 97) % 420)
-    const addToCarts = Math.round(views * (0.08 + (i % 5) * 0.02))
-    const purchases = Math.round(addToCarts * (0.35 + (i % 4) * 0.05))
-    out[p.id] = {
-      views,
-      addToCarts,
-      purchases,
-      revenue: purchases * (Number(p.price) || 0),
-    }
-  })
-  return out
-}
-
-function seedOrders(products) {
-  const picks = products.slice(0, 4)
-  const now = Date.now()
-  return [
-    {
-      id: 'ord-demo-1',
-      createdAt: new Date(now - 1000 * 60 * 60 * 26).toISOString(),
-      status: 'Shipped',
-      email: 'claire@atelier.fr',
-      name: 'Claire Moreau',
-      address: '12 Rue des Ateliers, 75003 Paris',
-      items: [
-        { id: picks[0]?.id, name: picks[0]?.name, qty: 1, price: picks[0]?.price },
-        { id: picks[1]?.id, name: picks[1]?.name, qty: 2, price: picks[1]?.price },
-      ].filter((i) => i.id),
-      total:
-        (picks[0]?.price ?? 0) + (picks[1]?.price ?? 0) * 2,
-    },
-    {
-      id: 'ord-demo-2',
-      createdAt: new Date(now - 1000 * 60 * 60 * 8).toISOString(),
-      status: 'Packed',
-      email: 'james@studio.co',
-      name: 'James Whit',
-      address: '88 King St, London',
-      items: [
-        { id: picks[2]?.id, name: picks[2]?.name, qty: 1, price: picks[2]?.price },
-      ].filter((i) => i.id),
-      total: picks[2]?.price ?? 0,
-    },
-    {
-      id: 'ord-demo-3',
-      createdAt: new Date(now - 1000 * 60 * 45).toISOString(),
-      status: 'New',
-      email: 'aisha@mail.com',
-      name: 'Aisha Khan',
-      address: 'Dubai Marina, UAE',
-      items: [
-        { id: picks[0]?.id, name: picks[0]?.name, qty: 1, price: picks[0]?.price },
-        { id: picks[3]?.id, name: picks[3]?.name, qty: 1, price: picks[3]?.price },
-      ].filter((i) => i.id),
-      total: (picks[0]?.price ?? 0) + (picks[3]?.price ?? 0),
-    },
-  ]
-}
-
-function loadJson(key, fallback) {
+function clearLegacyCatalogStorage() {
   try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return fallback
-    return JSON.parse(raw)
+    LEGACY_KEYS.forEach((k) => localStorage.removeItem(k))
   } catch {
-    return fallback
+    /* ignore */
   }
-}
-
-function persist(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-    return { ok: true }
-  } catch (err) {
-    console.error('localStorage write failed', key, err)
-    return {
-      ok: false,
-      error:
-        'Could not save (storage full). Use a smaller image or an image URL path like /products/name.png.',
-    }
-  }
-}
-
-function toNumber(value, fallback = 0) {
-  const n = Number(value)
-  return Number.isFinite(n) ? n : fallback
 }
 
 const CatalogContext = createContext(null)
 
 export function CatalogProvider({ children }) {
-  const [products, setProducts] = useState(() => {
-    const saved = loadJson(PRODUCTS_KEY, null)
-    if (Array.isArray(saved) && saved.length) {
-      return hydrateSeedImagery(saved)
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    clearLegacyCatalogStorage()
+    let alive = true
+    ;(async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { products: list } = await fetchProducts({ limit: 100 })
+        if (!alive) return
+        setProducts(Array.isArray(list) ? list : [])
+      } catch (err) {
+        if (!alive) return
+        const message =
+          err instanceof ApiClientError
+            ? err.message
+            : 'The Scentinova service is temporarily unavailable. Please try again.'
+        setError(message)
+      } finally {
+        if (alive) setLoading(false)
+      }
+    })()
+    return () => {
+      alive = false
     }
-    return SEED_PRODUCTS.map(withDefaults)
-  })
+  }, [])
 
-  const [analytics, setAnalytics] = useState(() => {
-    const saved = loadJson(ANALYTICS_KEY, null)
-    if (saved && typeof saved === 'object') return saved
-    return seedAnalytics(SEED_PRODUCTS)
-  })
-
-  const [orders, setOrders] = useState(() => {
-    const saved = loadJson(ORDERS_KEY, null)
-    if (Array.isArray(saved)) return saved
-    return seedOrders(SEED_PRODUCTS)
-  })
-
-  useEffect(() => {
-    persist(PRODUCTS_KEY, products)
-  }, [products])
-
-  useEffect(() => {
-    persist(ANALYTICS_KEY, analytics)
-  }, [analytics])
-
-  useEffect(() => {
-    persist(ORDERS_KEY, orders)
-  }, [orders])
+  const refreshProducts = useCallback(async () => {
+    setError(null)
+    try {
+      const { products: list } = await fetchProducts({ limit: 100 })
+      setProducts(Array.isArray(list) ? list : [])
+      return { ok: true }
+    } catch (err) {
+      const message =
+        err instanceof ApiClientError
+          ? err.message
+          : 'The Scentinova service is temporarily unavailable. Please try again.'
+      setError(message)
+      return { ok: false, error: message }
+    }
+  }, [])
 
   const activeProducts = useMemo(
     () => products.filter((p) => p.active !== false),
@@ -218,241 +98,56 @@ export function CatalogProvider({ children }) {
     [activeProducts],
   )
 
-  const bumpAnalytics = useCallback((id, patch) => {
-    setAnalytics((prev) => {
-      const cur = prev[id] ?? {
-        views: 0,
-        addToCarts: 0,
-        purchases: 0,
-        revenue: 0,
-      }
-      return { ...prev, [id]: { ...cur, ...patch(cur) } }
-    })
+  const trackView = useCallback((id) => {
+    if (!id) return
+    trackEvent('product_view', { productId: id }).catch(() => {})
   }, [])
 
-  const trackView = useCallback(
-    (id) => {
-      if (!id) return
-      bumpAnalytics(id, (c) => ({ views: c.views + 1 }))
-    },
-    [bumpAnalytics],
-  )
-
-  const trackAddToCart = useCallback(
-    (id, qty = 1) => {
-      if (!id) return
-      bumpAnalytics(id, (c) => ({ addToCarts: c.addToCarts + qty }))
-    },
-    [bumpAnalytics],
-  )
-
-  const saveProduct = useCallback((input, existingId = null) => {
-    const name = input.name?.trim() || 'Untitled'
-    const baseSlug = input.slug?.trim() || slugify(name)
-    const id =
-      existingId ||
-      input.id ||
-      `p-${slugify(name) || 'perfume'}-${Date.now().toString(36)}`
-
-    let savedProduct = null
-    let write = { ok: true }
-
-    setProducts((prev) => {
-      let slug = baseSlug || id
-      const clash = prev.some((p) => p.slug === slug && p.id !== id)
-      if (clash) slug = `${slug}-${Date.now().toString(36).slice(-4)}`
-
-      const image =
-        input.image || input.gallery?.[0] || '/products/lunar-leather.png'
-
-      savedProduct = withDefaults({
-        ...input,
-        id,
-        name,
-        slug,
-        price: toNumber(input.price, 0),
-        stock: toNumber(input.stock, 0),
-        featured: Boolean(input.featured),
-        active: input.active !== false,
-        badge: input.badge || null,
-        image,
-        gallery: input.gallery?.length ? input.gallery : [image],
-        notes: {
-          top: parseNotes(input.notes?.top),
-          heart: parseNotes(input.notes?.heart),
-          base: parseNotes(input.notes?.base),
-        },
-      })
-
-      const idx = prev.findIndex((p) => p.id === id)
-      const next =
-        idx === -1
-          ? [...prev, savedProduct]
-          : prev.map((p, i) => (i === idx ? savedProduct : p))
-
-      write = persist(PRODUCTS_KEY, next)
-      return write.ok ? next : prev
-    })
-
-    if (write.ok) {
-      setAnalytics((a) => {
-        if (a[id]) return a
-        const nextA = {
-          ...a,
-          [id]: { views: 0, addToCarts: 0, purchases: 0, revenue: 0 },
-        }
-        persist(ANALYTICS_KEY, nextA)
-        return nextA
-      })
-    }
-
-    return {
-      ok: write.ok,
-      id,
-      product: savedProduct,
-      error: write.ok ? null : write.error,
-    }
+  const trackAddToCart = useCallback((id, qty = 1) => {
+    if (!id) return
+    trackEvent('add_to_cart', {
+      productId: id,
+      metadata: { quantity: qty },
+    }).catch(() => {})
   }, [])
 
-  const deleteProduct = useCallback((id) => {
-    let write = { ok: true }
-    setProducts((prev) => {
-      const next = prev.filter((p) => p.id !== id)
-      write = persist(PRODUCTS_KEY, next)
-      return write.ok ? next : prev
-    })
-    if (write.ok) {
-      setAnalytics((prev) => {
-        const copy = { ...prev }
-        delete copy[id]
-        persist(ANALYTICS_KEY, copy)
-        return copy
-      })
-    }
-    return { ok: write.ok, error: write.error || null }
+  const placeOrder = useCallback(async (payload) => {
+    const order = await createOrder(payload)
+    return order
   }, [])
-
-  const resetCatalog = useCallback(() => {
-    const seeded = SEED_PRODUCTS.map(withDefaults)
-    const a = seedAnalytics(SEED_PRODUCTS)
-    const o = seedOrders(SEED_PRODUCTS)
-    setProducts(seeded)
-    setAnalytics(a)
-    setOrders(o)
-    persist(PRODUCTS_KEY, seeded)
-    persist(ANALYTICS_KEY, a)
-    persist(ORDERS_KEY, o)
-  }, [])
-
-  const placeOrder = useCallback((order) => {
-    const id = `ord-${Date.now().toString(36)}`
-    const record = {
-      id,
-      createdAt: new Date().toISOString(),
-      status: 'New',
-      ...order,
-    }
-    setOrders((prev) => [record, ...prev])
-
-    record.items?.forEach((item) => {
-      bumpAnalytics(item.id, (c) => ({
-        purchases: c.purchases + item.qty,
-        revenue: c.revenue + (Number(item.price) || 0) * item.qty,
-      }))
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === item.id
-            ? { ...p, stock: Math.max(0, (p.stock ?? 0) - item.qty) }
-            : p,
-        ),
-      )
-    })
-
-    return id
-  }, [bumpAnalytics])
-
-  const updateOrderStatus = useCallback((id, status) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status } : o)),
-    )
-  }, [])
-
-  const stats = useMemo(() => {
-    const rows = products.map((p) => {
-      const a = analytics[p.id] ?? {
-        views: 0,
-        addToCarts: 0,
-        purchases: 0,
-        revenue: 0,
-      }
-      const cartRate = a.views ? (a.addToCarts / a.views) * 100 : 0
-      const buyRate = a.addToCarts ? (a.purchases / a.addToCarts) * 100 : 0
-      return { product: p, ...a, cartRate, buyRate }
-    })
-
-    const totals = rows.reduce(
-      (acc, r) => {
-        acc.views += r.views
-        acc.addToCarts += r.addToCarts
-        acc.purchases += r.purchases
-        acc.revenue += r.revenue
-        return acc
-      },
-      { views: 0, addToCarts: 0, purchases: 0, revenue: 0 },
-    )
-
-    const byCategory = {}
-    rows.forEach((r) => {
-      const cat = r.product.category || 'Other'
-      if (!byCategory[cat]) {
-        byCategory[cat] = { revenue: 0, purchases: 0, views: 0 }
-      }
-      byCategory[cat].revenue += r.revenue
-      byCategory[cat].purchases += r.purchases
-      byCategory[cat].views += r.views
-    })
-
-    const topSellers = [...rows].sort((a, b) => b.revenue - a.revenue)
-    const slowMovers = [...rows].sort((a, b) => a.purchases - b.purchases)
-    const lowStock = products.filter((p) => (p.stock ?? 0) <= 8)
-
-    return { rows, totals, byCategory, topSellers, slowMovers, lowStock }
-  }, [products, analytics])
 
   const value = {
     products,
     activeProducts,
     featuredProducts,
-    analytics,
-    orders,
-    stats,
+    loading,
+    error,
+    refreshProducts,
     getBySlug,
     getById,
-    saveProduct,
-    deleteProduct,
-    resetCatalog,
     trackView,
     trackAddToCart,
     placeOrder,
-    updateOrderStatus,
+    // Admin compatibility stubs — real admin uses AdminData / API services
+    analytics: {},
+    orders: [],
+    stats: {
+      rows: [],
+      totals: { views: 0, addToCarts: 0, purchases: 0, revenue: 0 },
+      byCategory: {},
+      topSellers: [],
+      slowMovers: [],
+      lowStock: [],
+    },
+    saveProduct: async () => ({ ok: false, error: 'Use admin API' }),
+    deleteProduct: async () => ({ ok: false, error: 'Use admin API' }),
+    resetCatalog: async () => {},
+    updateOrderStatus: async () => {},
   }
 
   return (
     <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
   )
-}
-
-function parseNotes(value) {
-  if (Array.isArray(value)) {
-    return value.map((n) => String(n).trim()).filter(Boolean)
-  }
-  if (typeof value === 'string') {
-    return value
-      .split(',')
-      .map((n) => n.trim())
-      .filter(Boolean)
-  }
-  return []
 }
 
 export function useCatalog() {

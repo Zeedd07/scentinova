@@ -1,71 +1,86 @@
 /**
- * Admin overview — KPI cards + quick product health.
+ * Admin overview — live MongoDB KPIs.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useCatalog } from '../../context/CatalogContext'
 import { formatPrice } from '../../data/products'
-import AdminModal from '../../components/admin/AdminModal'
+import { adminDashboard } from '../../services/analyticsApi'
+import { ApiClientError } from '../../services/apiClient'
 
 export default function AdminOverview() {
-  const { products, orders, stats, resetCatalog } = useCatalog()
-  const { totals, topSellers, lowStock } = stats
-  const [confirmReset, setConfirmReset] = useState(false)
-  const [resetDone, setResetDone] = useState(false)
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const d = await adminDashboard()
+        if (!cancelled) setData(d)
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof ApiClientError
+              ? err.message
+              : 'Could not load dashboard.',
+          )
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) {
+    return <p className="admin-muted">Loading overview…</p>
+  }
+
+  if (error) {
+    return <p className="text-[#6e1118]">{error}</p>
+  }
 
   const kpis = [
-    { label: 'Products', value: String(products.length) },
-    { label: 'Catalog views', value: totals.views.toLocaleString() },
-    { label: 'Units sold', value: totals.purchases.toLocaleString() },
-    { label: 'Revenue', value: formatPrice(totals.revenue) },
-    { label: 'Orders', value: String(orders.length) },
+    { label: 'Products', value: String(data.products ?? 0) },
+    { label: 'Catalog views', value: String(data.views ?? 0) },
+    { label: 'Add to cart', value: String(data.addToCarts ?? 0) },
+    { label: 'Units sold', value: String(data.unitsSold ?? 0) },
+    {
+      label: 'Revenue',
+      value: formatPrice(data.revenue === 0 ? null : data.revenue),
+    },
+    { label: 'Orders', value: String(data.orders ?? 0) },
     {
       label: 'Low stock',
-      value: String(lowStock.length),
-      warn: lowStock.length > 0,
+      value: String(data.lowStock?.length ?? 0),
+      warn: (data.lowStock?.length ?? 0) > 0,
     },
   ]
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] tracking-[0.32em] text-bronze uppercase">
-            Dashboard
+          <h2 className="admin-title">Overview</h2>
+          <p className="mt-1 admin-muted text-[15px]">
+            Live data stored in Scentinova.
           </p>
-          <h2 className="mt-1 font-display text-3xl text-cream">
-            Product <span className="gold-text italic">command</span>
-          </h2>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            to="/admin/products/new"
-            className="btn-luxury border border-gold/40 px-5 py-2.5 text-cream hover:border-gold"
-          >
-            Add perfume
-          </Link>
-          <button
-            type="button"
-            onClick={() => setConfirmReset(true)}
-            className="border border-gold/20 px-4 py-2.5 text-[11px] tracking-[0.22em] text-bronze uppercase transition hover:text-cream"
-          >
-            Reset mock data
-          </button>
-        </div>
+        <Link to="/admin/products/new" className="admin-btn admin-btn-primary">
+          Add perfume
+        </Link>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {kpis.map((k) => (
-          <div
-            key={k.label}
-            className="border border-gold/15 bg-ink-soft px-5 py-4"
-          >
-            <p className="text-[10px] tracking-[0.28em] text-bronze uppercase">
-              {k.label}
-            </p>
+          <div key={k.label} className="admin-surface px-4 py-3">
+            <p className="text-[13px] text-[#766f66]">{k.label}</p>
             <p
-              className={`mt-2 font-display text-3xl ${
-                k.warn ? 'text-champagne' : 'text-cream'
+              className={`mt-1 text-2xl font-semibold tabular-nums ${
+                k.warn ? 'text-[#6e1118]' : 'text-[#1b1917]'
               }`}
             >
               {k.value}
@@ -74,80 +89,60 @@ export default function AdminOverview() {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section className="border border-gold/15 p-5">
-          <h3 className="font-display text-xl text-cream">Top sellers</h3>
-          <ul className="mt-4 space-y-3">
-            {topSellers.slice(0, 5).map((r) => (
-              <li
-                key={r.product.id}
-                className="flex items-center justify-between gap-3 text-sm"
-              >
-                <span className="text-cream">{r.product.name}</span>
-                <span className="text-bronze">
-                  {r.purchases} sold · {formatPrice(r.revenue)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="border border-gold/15 p-5">
-          <h3 className="font-display text-xl text-cream">Needs attention</h3>
-          {lowStock.length === 0 ? (
-            <p className="mt-4 text-sm text-bronze">Stock levels look healthy.</p>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="admin-surface p-4 sm:p-5">
+          <h3 className="text-base font-semibold text-[#1b1917]">
+            Recent orders
+          </h3>
+          {(data.recentOrders?.length ?? 0) === 0 ? (
+            <p className="mt-3 text-[15px] admin-muted">No orders yet.</p>
           ) : (
-            <ul className="mt-4 space-y-3">
-              {lowStock.map((p) => (
+            <ul className="mt-3 space-y-2">
+              {data.recentOrders.map((o) => (
                 <li
-                  key={p.id}
-                  className="flex items-center justify-between text-sm"
+                  key={o.id}
+                  className="flex items-center justify-between gap-3 text-[15px]"
                 >
-                  <Link
-                    to={`/admin/products/${p.id}`}
-                    className="text-cream hover:text-gold-light"
-                  >
-                    {p.name}
-                  </Link>
-                  <span className="text-champagne">{p.stock} left</span>
+                  <span>
+                    {o.orderNumber} · {o.customer?.name}
+                  </span>
+                  <span className="admin-muted shrink-0">
+                    {formatPrice(o.total)}
+                  </span>
                 </li>
               ))}
             </ul>
           )}
-          <Link
-            to="/admin/analytics"
-            className="mt-6 inline-block text-[11px] tracking-[0.28em] text-gold uppercase"
-          >
-            Full analytics →
-          </Link>
+        </section>
+
+        <section className="admin-surface p-4 sm:p-5">
+          <h3 className="text-base font-semibold text-[#1b1917]">
+            Needs attention
+          </h3>
+          {(data.lowStock?.length ?? 0) === 0 ? (
+            <p className="mt-3 text-[15px] admin-muted">
+              Stock levels look healthy.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {data.lowStock.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between text-[15px]"
+                >
+                  <Link
+                    to={`/admin/products/${p.id}`}
+                    className="text-[#1b1917] hover:underline"
+                  >
+                    {p.name}
+                  </Link>
+                  <span className="text-[#6e1118]">{p.stock} left</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
-
-      <AdminModal
-        open={confirmReset}
-        tone="danger"
-        title="Reset mock data?"
-        message="This restores the original seed products, analytics, and demo orders. Custom products you added will be lost."
-        confirmLabel="Reset"
-        cancelLabel="Cancel"
-        onConfirm={() => {
-          resetCatalog()
-          setConfirmReset(false)
-          setResetDone(true)
-        }}
-        onCancel={() => setConfirmReset(false)}
-      />
-
-      <AdminModal
-        open={resetDone}
-        tone="success"
-        title="Data reset"
-        message="Catalog, analytics, and orders were restored to the seed mock data."
-        confirmLabel="OK"
-        hideCancel
-        onConfirm={() => setResetDone(false)}
-        onCancel={() => setResetDone(false)}
-      />
     </div>
   )
 }

@@ -4,6 +4,7 @@
  */
 import { useState } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
 
 const INGREDIENTS = [
   {
@@ -47,7 +48,7 @@ const INGREDIENTS = [
 function IngredientOrb({ ing, active, setActive, pauseMarquee }) {
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
-  const spring = { stiffness: 120, damping: 18 }
+  const spring = { stiffness: 90, damping: 22, mass: 0.6 }
   const rx = useSpring(my, spring)
   const ry = useSpring(mx, spring)
 
@@ -172,28 +173,29 @@ export default function FragranceJourney() {
       <div className="relative mx-auto mb-12 max-w-6xl px-6 pt-4 sm:px-10 lg:mb-16 lg:px-16">
         <div className="max-w-xl">
           <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
+            initial={fadeUp.initial}
+            whileInView={fadeUp.animate}
+            viewport={viewportOnce}
+            transition={{ duration: 0.7, ease: easeOutExpo }}
             className="mb-4 text-[11px] tracking-[0.42em] text-sand uppercase"
           >
             The Fragrance Journey
           </motion.p>
           <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1 }}
+            initial={fadeUp.initial}
+            whileInView={fadeUp.animate}
+            viewport={viewportOnce}
+            transition={{ duration: 0.9, ease: easeOutExpo }}
             className="font-display text-4xl leading-tight text-warm-white sm:text-5xl lg:text-6xl"
           >
             A world of{' '}
             <span className="italic text-champagne">precious ingredients</span>
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.15, duration: 0.8 }}
+            initial={fadeUp.initial}
+            whileInView={fadeUp.animate}
+            viewport={viewportOnce}
+            transition={{ delay: 0.08, duration: 0.8, ease: easeOutExpo }}
             className="mt-5 max-w-md text-sm leading-relaxed text-sand sm:text-[15px]"
           >
             Six notes in crystal light — drifting in a continuous ribbon. Hover
@@ -230,10 +232,10 @@ export default function FragranceJourney() {
       </div>
 
       <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.2, duration: 0.8 }}
+        initial={fadeUp.initial}
+        whileInView={fadeUp.animate}
+        viewport={viewportOnce}
+        transition={{ delay: 0.1, duration: 0.75, ease: easeOutExpo }}
         className="mt-12 flex flex-wrap items-center justify-center gap-8 px-6 text-[11px] tracking-[0.3em] text-sand uppercase"
       >
         <span className="flex items-center gap-2">

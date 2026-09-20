@@ -4,6 +4,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useCatalog } from '../context/CatalogContext'
+import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
 
 const SHOWCASE = [
   {
@@ -71,26 +72,28 @@ export default function SignatureCollection() {
         <div className="relative z-10 px-6 pb-10 pt-10 sm:px-10 sm:pb-12 sm:pt-12 lg:px-16 lg:pt-14">
           <div className="mx-auto flex max-w-6xl flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 0.8 }}
+              initial={fadeUp.initial}
+              whileInView={fadeUp.animate}
+              viewport={viewportOnce}
+              transition={{ duration: 0.85, ease: easeOutExpo }}
               className="max-w-xl"
             >
               <p className="mb-4 text-[11px] font-medium tracking-[0.42em] text-[#a07838] uppercase">
                 The Four Signatures
               </p>
-              <h2 className="font-display text-4xl leading-[1.1] text-[#2a2218] sm:text-5xl lg:text-[3.35rem]">
-                Precious, potent,{' '}
-                <span className="italic text-[#c4a04a]">personal</span>
+              <h2
+                id="featured-perfumes-title"
+                className="font-display text-4xl leading-[1.1] text-[#171512] uppercase sm:text-5xl lg:text-[3.35rem]"
+              >
+                Precious, potent, personal
               </h2>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.1 }}
+              initial={fadeUp.initial}
+              whileInView={fadeUp.animate}
+              viewport={viewportOnce}
+              transition={{ duration: 0.85, delay: 0.08, ease: easeOutExpo }}
               className="max-w-sm border-l-2 border-[#c9a84a]/70 pl-5 lg:border-l-0 lg:pl-0 lg:text-right"
             >
               <p className="font-display text-lg leading-relaxed text-[#3d3428] sm:text-xl">
@@ -132,10 +135,14 @@ export default function SignatureCollection() {
                 <motion.article
                   key={item.slug}
                   role="listitem"
-                  initial={{ opacity: 0, y: 36 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{ duration: 0.85, delay: Math.min(i, 1) * 0.08 }}
+                  initial={fadeUp.initial}
+                  whileInView={fadeUp.animate}
+                  viewport={viewportOnce}
+                  transition={{
+                    duration: 0.85,
+                    delay: Math.min(i, 3) * 0.06,
+                    ease: easeOutExpo,
+                  }}
                   className={`group relative flex flex-col items-center px-3 py-10 text-center sm:px-5 sm:py-14 lg:border-r lg:border-[#d4c4a0]/80 lg:py-20 lg:last:border-r-0 ${
                     isOddCol ? 'border-r border-[#d4c4a0]/80 lg:border-r' : ''
                   } ${
@@ -145,8 +152,7 @@ export default function SignatureCollection() {
                   }`}
                 >
                   <p className="mb-5 text-[9px] font-medium tracking-[0.28em] text-[#8a6e3a] uppercase sm:mb-8 sm:text-[10px] sm:tracking-[0.4em]">
-                    {item.number}{' '}
-                    <span className="text-[#c9a84a]">/</span> {item.family}
+                    {item.family}
                   </p>
 
                   <Link
@@ -156,8 +162,9 @@ export default function SignatureCollection() {
                     <img
                       src={item.product.image || `/products/${item.slug}.png`}
                       alt={item.product.name}
-                      className="max-h-full w-auto max-w-full object-contain drop-shadow-[0_24px_40px_rgba(90,70,30,0.18)] transition duration-700 group-hover:-translate-y-2 group-hover:scale-[1.03]"
+                      className="max-h-full w-auto max-w-full object-contain drop-shadow-[0_24px_40px_rgba(90,70,30,0.18)] transition duration-500 ease-out group-hover:-translate-y-1.5 group-hover:scale-[1.02]"
                       loading="eager"
+                      decoding="async"
                       draggable={false}
                       onError={(e) => {
                         const fallback = `/products/${item.slug}.png`

@@ -4,10 +4,10 @@ Luxury fragrance boutique frontend. Four house signatures · scroll-driven hero 
 
 ## Stack
 
-- React + Vite (port **5178**)
+- React + Vite (port **5173**)
 - Tailwind CSS v4
 - GSAP ScrollTrigger + Framer Motion
-- React Router · localStorage cart / catalog
+- React Router · API-backed catalog (MongoDB)
 
 ## Run
 
@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5178/**
+Open **http://localhost:5173/**
 
 ## Products
 

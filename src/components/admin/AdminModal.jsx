@@ -1,5 +1,5 @@
 /**
- * Admin confirmation / success modal.
+ * Admin confirmation modal — simple and readable.
  */
 import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -10,7 +10,7 @@ export default function AdminModal({
   message,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
-  tone = 'default', // default | danger | success
+  tone = 'default',
   onConfirm,
   onCancel,
   hideCancel = false,
@@ -26,10 +26,8 @@ export default function AdminModal({
 
   const confirmClass =
     tone === 'danger'
-      ? 'border-champagne/50 bg-champagne/10 text-champagne hover:border-champagne'
-      : tone === 'success'
-        ? 'gold-border text-cream'
-        : 'border-gold/40 text-cream hover:border-gold'
+      ? 'admin-btn admin-btn-danger'
+      : 'admin-btn admin-btn-primary'
 
   return (
     <AnimatePresence>
@@ -38,7 +36,7 @@ export default function AdminModal({
           <motion.button
             type="button"
             aria-label="Close dialog"
-            className="absolute inset-0 bg-ink/80"
+            className="absolute inset-0 bg-black/30"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -48,39 +46,34 @@ export default function AdminModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-modal-title"
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className="relative z-10 w-full max-w-md border border-gold/25 bg-ink-soft p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-8"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="admin-surface relative z-10 w-full max-w-md p-5 shadow-lg sm:p-6"
           >
-            <p className="text-[10px] tracking-[0.35em] text-bronze uppercase">
-              SCENTINOVA Admin
-            </p>
             <h2
               id="admin-modal-title"
-              className="mt-2 font-display text-2xl text-cream"
+              className="text-lg font-semibold text-[#1b1917]"
             >
               {title}
             </h2>
             {message && (
-              <p className="mt-3 text-sm leading-relaxed text-bronze">{message}</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-[#4a4136]">
+                {message}
+              </p>
             )}
-            <div className="mt-8 flex flex-wrap justify-end gap-3">
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
               {!hideCancel && (
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="border border-gold/20 px-5 py-2.5 text-[11px] tracking-[0.22em] text-bronze uppercase transition hover:text-cream"
+                  className="admin-btn admin-btn-quiet"
                 >
                   {cancelLabel}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={onConfirm}
-                className={`btn-luxury border px-5 py-2.5 ${confirmClass}`}
-              >
+              <button type="button" onClick={onConfirm} className={confirmClass}>
                 {confirmLabel}
               </button>
             </div>

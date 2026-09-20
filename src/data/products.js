@@ -1,5 +1,5 @@
-/**
- * SCENTINOVA — four house signatures.
+﻿/**
+ * SCENTINOVA - four house signatures.
  * Imagery: transparent PNGs under /products/
  */
 
@@ -9,7 +9,7 @@ export const PRODUCTS = [
     slug: 'lunar-leather',
     name: 'Lunar Leather',
     tagline: 'Dark. Warm. Magnetic.',
-    price: null,
+    price: 999,
     size: '50ML',
     concentration: 'Parfum',
     category: 'Oriental',
@@ -27,7 +27,7 @@ export const PRODUCTS = [
     },
     descriptors: ['Pink Pepper', 'Leather', 'Agarwood', 'Bakhoor'],
     description:
-      'Pink pepper and raspberry open into amber, leather, and saffron — grounded in agarwood and bakhoor.',
+      'Pink pepper and raspberry open into amber, leather, and saffron - grounded in agarwood and bakhoor.',
     story: 'The night, bottled.',
     accent: 'lunar',
   },
@@ -36,7 +36,7 @@ export const PRODUCTS = [
     slug: 'oud-on-the-petals',
     name: 'Oud on the Petals',
     tagline: 'Floral elegance wrapped in precious oud.',
-    price: null,
+    price: 999,
     size: '50ML',
     concentration: 'Pure Parfum',
     category: 'Floral',
@@ -54,7 +54,7 @@ export const PRODUCTS = [
     },
     descriptors: ['White Florals', 'Jasmine Sambac', 'Indian Agarwood', 'Incense'],
     description:
-      'White florals and orange blossom into jasmine sambac and amber — finished with Indian agarwood and incense.',
+      'White florals and orange blossom into jasmine sambac and amber - finished with Indian agarwood and incense.',
     story: 'A bloom held in resin.',
     accent: 'petals',
   },
@@ -63,7 +63,7 @@ export const PRODUCTS = [
     slug: 'masai-mara',
     name: 'Masai-Mara',
     tagline: 'Wild. Smoldering. Unrestrained.',
-    price: null,
+    price: 999,
     size: '50ML',
     concentration: 'Pure Parfum',
     category: 'Woody',
@@ -81,7 +81,7 @@ export const PRODUCTS = [
     },
     descriptors: ['Saffron', 'Taif Rose', 'Sandalwood', 'Leather'],
     description:
-      'Saffron, leather, and wild berries open into nutmeg, Taif rose, and frankincense — settling into sandalwood, amber, leather, and olibanum.',
+      'Saffron, leather, and wild berries open into nutmeg, Taif rose, and frankincense - settling into sandalwood, amber, leather, and olibanum.',
     story: 'Open land. Ember air.',
     accent: 'mara',
   },
@@ -90,7 +90,7 @@ export const PRODUCTS = [
     slug: 'seaweed',
     name: 'Seaweed',
     tagline: 'Marine clarity with a darker skin of musk.',
-    price: null,
+    price: 999,
     size: '50ML',
     concentration: 'Pure Parfum',
     category: 'Fresh',
@@ -108,7 +108,7 @@ export const PRODUCTS = [
     },
     descriptors: ['Calabrian Bergamot', 'Sea Water', 'Musk', 'Cedarwood'],
     description:
-      'Calabrian bergamot into calone, hedione, and sea water — drying down to musk and cedarwood.',
+      'Calabrian bergamot into calone, hedione, and sea water - drying down to musk and cedarwood.',
     story: 'Tide, then silence.',
     accent: 'marine',
   },
@@ -124,14 +124,14 @@ export function getFeaturedProducts() {
   return PRODUCTS.filter((p) => p.featured)
 }
 
-/** Format price — null shows elegant fallback (no invented prices). */
+/** Format price in Indian Rupees. */
 export function formatPrice(n) {
   if (n == null || n === '' || Number.isNaN(Number(n))) {
-    return 'Price on request'
+    return '-'
   }
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     maximumFractionDigits: 0,
   }).format(Number(n))
 }

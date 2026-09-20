@@ -1,72 +1,16 @@
 /**
- * Cart & checkout — editorial maison layout.
+ * Cart bag — checkout happens on /checkout via Razorpay.
  */
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useCart } from '../context/CartContext'
-import { useCatalog } from '../context/CatalogContext'
 import { formatPrice } from '../data/products'
 
 export default function CartPage() {
-  const { items, subtotal, hasPricedItems, count, setQty, removeItem, clearCart } =
-    useCart()
-  const { placeOrder } = useCatalog()
-  const [placed, setPlaced] = useState(false)
+  const { items, subtotal, count, setQty, removeItem, clearCart } = useCart()
 
-  const shipping = !hasPricedItems || subtotal >= 250 || subtotal === 0 ? 0 : 18
-  const total = hasPricedItems ? subtotal + shipping : null
-
-  const checkout = (e) => {
-    e.preventDefault()
-    const data = new FormData(e.currentTarget)
-    placeOrder({
-      email: String(data.get('email') || ''),
-      name: String(data.get('name') || ''),
-      address: String(data.get('address') || ''),
-      items: items.map((i) => ({
-        id: i.id,
-        name: i.name,
-        qty: i.qty,
-        price: i.price,
-      })),
-      total,
-    })
-    setPlaced(true)
-    clearCart()
-  }
-
-  if (placed) {
-    return (
-      <div className="relative flex min-h-[80vh] flex-col items-center justify-center bg-ivory px-6 pt-24 pb-20 text-center">
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-[11px] tracking-[0.42em] text-muted uppercase"
-        >
-          SCENTINOVA
-        </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mt-4 font-display text-4xl text-charcoal sm:text-6xl"
-        >
-          Order <span className="italic text-gold">received</span>
-        </motion.h1>
-        <p className="mt-5 max-w-md text-sm leading-relaxed text-muted">
-          A mock boutique receipt — no payment was taken. Your cart is clear for
-          the next visit.
-        </p>
-        <Link
-          to="/shop"
-          className="btn-luxury mt-12 inline-flex border border-charcoal px-10 py-3.5 text-charcoal"
-        >
-          Continue shopping
-        </Link>
-      </div>
-    )
-  }
+  const shipping = subtotal >= 2500 || subtotal === 0 ? 0 : 99
+  const total = subtotal + shipping
 
   return (
     <div className="bg-ivory pt-16">
@@ -85,12 +29,12 @@ export default function CartPage() {
             transition={{ delay: 0.08 }}
             className="mt-3 font-display text-4xl leading-tight text-charcoal sm:text-5xl md:text-6xl"
           >
-            Cart & <span className="italic text-gold">Checkout</span>
+            Cart & <span className="italic text-gold">Bag</span>
           </motion.h1>
           <p className="mt-4 text-sm text-muted">
             {count === 0
               ? 'No fragrances selected yet.'
-              : `${count} ${count === 1 ? 'piece' : 'pieces'} · Atelier packing`}
+              : `${count} ${count === 1 ? 'piece' : 'pieces'} · Prepaid checkout`}
           </p>
         </div>
       </section>
@@ -104,9 +48,6 @@ export default function CartPage() {
               className="flex flex-col items-start border-t border-stone py-16"
             >
               <p className="font-display text-3xl text-charcoal">Your cart is empty</p>
-              <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
-                Explore the collection and set aside a fragrance that stays.
-              </p>
               <Link
                 to="/shop"
                 className="btn-luxury mt-10 inline-flex border border-charcoal px-8 py-3 text-charcoal"
@@ -134,7 +75,6 @@ export default function CartPage() {
                       className="relative z-[1] h-[88%] w-auto max-w-[85%] object-contain"
                     />
                   </Link>
-
                   <div className="flex min-w-0 flex-col">
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -152,19 +92,15 @@ export default function CartPage() {
                         </p>
                       </div>
                       <p className="shrink-0 font-display text-xl text-gold sm:text-2xl">
-                        {formatPrice(
-                          item.price == null ? null : item.price * item.qty,
-                        )}
+                        {formatPrice(item.price * item.qty)}
                       </p>
                     </div>
-
                     <div className="mt-auto flex flex-wrap items-center gap-5 pt-6">
                       <div className="flex items-center border border-stone">
                         <button
                           type="button"
                           className="px-3.5 py-2 text-muted transition hover:text-charcoal"
                           onClick={() => setQty(item.id, item.qty - 1)}
-                          aria-label="Decrease quantity"
                         >
                           −
                         </button>
@@ -175,7 +111,6 @@ export default function CartPage() {
                           type="button"
                           className="px-3.5 py-2 text-muted transition hover:text-charcoal"
                           onClick={() => setQty(item.id, item.qty + 1)}
-                          aria-label="Increase quantity"
                         >
                           +
                         </button>
@@ -221,22 +156,15 @@ export default function CartPage() {
             <h2 className="mt-2 font-display text-3xl text-charcoal">
               Ready to <span className="italic text-gold">seal</span>
             </h2>
-
             <dl className="mt-8 space-y-4 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted">Subtotal</dt>
-                <dd className="text-charcoal">
-                  {formatPrice(hasPricedItems ? subtotal : null)}
-                </dd>
+                <dd className="text-charcoal">{formatPrice(subtotal)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Shipping</dt>
                 <dd className="text-charcoal">
-                  {!hasPricedItems
-                    ? '—'
-                    : shipping === 0
-                      ? 'Complimentary'
-                      : formatPrice(shipping)}
+                  {shipping === 0 ? 'Complimentary' : formatPrice(shipping)}
                 </dd>
               </div>
               <div className="flex justify-between border-t border-stone pt-4">
@@ -246,56 +174,17 @@ export default function CartPage() {
                 </dd>
               </div>
             </dl>
-
             <p className="mt-4 text-[11px] leading-relaxed text-muted">
-              Prices on request for house signatures. Place a mock enquiry below.
+              Final total is confirmed on the checkout page. Prepaid via Razorpay.
             </p>
-
-            <form onSubmit={checkout} className="mt-8 space-y-3">
-              <label className="block">
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Email
-                </span>
-                <input
-                  required
-                  name="email"
-                  type="email"
-                  placeholder="you@atelier.com"
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-sm text-charcoal outline-none placeholder:text-muted/70 focus:border-gold"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Full name
-                </span>
-                <input
-                  required
-                  name="name"
-                  type="text"
-                  placeholder="Name on the order"
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-sm text-charcoal outline-none placeholder:text-muted/70 focus:border-gold"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Address
-                </span>
-                <input
-                  required
-                  name="address"
-                  type="text"
-                  placeholder="Delivery address"
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-sm text-charcoal outline-none placeholder:text-muted/70 focus:border-gold"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={items.length === 0}
-                className="btn-luxury mt-4 w-full border border-charcoal py-4 text-charcoal disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Place mock order
-              </button>
-            </form>
+            <Link
+              to="/checkout"
+              className={`btn-luxury mt-8 block w-full border border-charcoal py-4 text-center text-charcoal ${
+                items.length === 0 ? 'pointer-events-none opacity-40' : ''
+              }`}
+            >
+              Proceed to checkout
+            </Link>
           </div>
         </aside>
       </div>

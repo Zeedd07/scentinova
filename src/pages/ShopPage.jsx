@@ -3,9 +3,9 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CATEGORIES } from '../data/products'
 import { useCatalog } from '../context/CatalogContext'
-import ProductCard, { shopLane } from '../components/ProductCard'
+import ProductCard from '../components/ProductCard'
+import { easeOutExpo, fadeUp } from '../lib/motion'
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
@@ -92,37 +92,32 @@ function SortMenu({ value, onChange }) {
 }
 
 export default function ShopPage() {
-  const { activeProducts } = useCatalog()
-  const [category, setCategory] = useState('All')
+  const { activeProducts, loading, error } = useCatalog()
   const [sort, setSort] = useState('featured')
 
   const list = useMemo(() => {
-    let items =
-      category === 'All'
-        ? [...activeProducts]
-        : activeProducts.filter((p) => p.category === category)
-
+    const items = [...activeProducts]
     if (sort === 'name') items.sort((a, b) => a.name.localeCompare(b.name))
     else items.sort((a, b) => Number(b.featured) - Number(a.featured))
-
     return items
-  }, [category, sort, activeProducts])
+  }, [sort, activeProducts])
 
   return (
     <div className="bg-ivory pt-16">
       <section className="border-b border-stone px-6 py-16 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={fadeUp.initial}
+            animate={fadeUp.animate}
+            transition={{ duration: 0.7, ease: easeOutExpo }}
             className="text-[11px] tracking-[0.4em] text-muted uppercase"
           >
             SCENTINOVA
           </motion.p>
           <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            initial={fadeUp.initial}
+            animate={fadeUp.animate}
+            transition={{ delay: 0.06, duration: 0.85, ease: easeOutExpo }}
             className="mt-3 font-display text-4xl text-charcoal sm:text-5xl md:text-6xl"
           >
             The <span className="italic text-gold">Collection</span>
@@ -135,34 +130,26 @@ export default function ShopPage() {
       </section>
 
       <section className="px-6 py-10 sm:px-10 lg:px-16">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className={`border px-3 py-1.5 text-[11px] tracking-[0.22em] uppercase transition ${
-                  category === c
-                    ? 'border-charcoal bg-charcoal text-warm-white'
-                    : 'border-stone text-muted hover:border-charcoal hover:text-charcoal'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
+        <div className="mx-auto flex max-w-6xl justify-end">
           <SortMenu value={sort} onChange={setSort} />
         </div>
 
-        <div className="mx-auto mt-10 grid max-w-6xl grid-cols-2 gap-x-3 gap-y-12 sm:mt-16 sm:gap-x-8 sm:gap-y-20 lg:grid-cols-4">
-          {list.map((p, i) => (
-            <ProductCard key={p.id} product={p} index={i} lane={shopLane(i)} />
-          ))}
-        </div>
+        {loading ? (
+          <p className="py-20 text-center text-[11px] tracking-[0.4em] text-muted uppercase">
+            SCENTINOVA · composing the collection
+          </p>
+        ) : error ? (
+          <p className="py-20 text-center text-muted">{error}</p>
+        ) : (
+          <div className="mx-auto mt-10 grid max-w-6xl grid-cols-2 gap-x-3 gap-y-12 sm:mt-16 sm:gap-x-8 sm:gap-y-20 lg:grid-cols-4">
+            {list.map((p, i) => (
+              <ProductCard key={p.id} product={p} index={i} />
+            ))}
+          </div>
+        )}
 
-        {list.length === 0 && (
-          <p className="py-20 text-center text-muted">No fragrances in this category.</p>
+        {!loading && !error && list.length === 0 && (
+          <p className="py-20 text-center text-muted">No fragrances available.</p>
         )}
       </section>
     </div>

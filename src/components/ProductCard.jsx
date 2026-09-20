@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { formatPrice } from '../data/products'
 import { useCart } from '../context/CartContext'
+import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
 
 export function shopLane(index) {
   const col = index % 4
@@ -13,25 +14,8 @@ export function shopLane(index) {
   return 'center'
 }
 
-const ENTRANCE = {
-  left: {
-    initial: { opacity: 0, x: -48 },
-    animate: { opacity: 1, x: 0 },
-  },
-  center: {
-    initial: { opacity: 0, y: 28 },
-    animate: { opacity: 1, y: 0 },
-  },
-  right: {
-    initial: { opacity: 0, x: 48 },
-    animate: { opacity: 1, x: 0 },
-  },
-}
-
-export default function ProductCard({ product, index = 0, lane }) {
+export default function ProductCard({ product, index = 0 }) {
   const { addItem } = useCart()
-  const side = lane || shopLane(index)
-  const motionProps = ENTRANCE[side] || ENTRANCE.center
   const notes =
     product.descriptors?.join(' · ') ||
     [
@@ -44,26 +28,27 @@ export default function ProductCard({ product, index = 0, lane }) {
 
   return (
     <motion.article
-      initial={motionProps.initial}
-      whileInView={motionProps.animate}
-      viewport={{ once: true, amount: 0.2 }}
+      initial={fadeUp.initial}
+      whileInView={fadeUp.animate}
+      viewport={viewportOnce}
       transition={{
-        duration: 1.1,
-        delay: (index % 4) * 0.1,
-        ease: [0.22, 1, 0.36, 1],
+        duration: 0.85,
+        delay: Math.min(index, 3) * 0.06,
+        ease: easeOutExpo,
       }}
       className="group flex flex-col items-center text-center"
     >
       <div className="relative mb-2 w-full max-w-[140px] sm:max-w-[220px]">
         <Link
           to={`/product/${product.slug}`}
-          className="relative mx-auto flex aspect-[3/4] w-full items-center justify-center overflow-visible transition duration-700 group-hover:-translate-y-2"
+          className="relative mx-auto flex aspect-[3/4] w-full items-center justify-center overflow-visible transition duration-500 ease-out group-hover:-translate-y-1.5"
         >
           <img
             src={product.image || `/products/${product.slug}.png`}
             alt={product.name}
-            className="absolute left-1/2 top-1/2 z-[1] h-[92%] w-auto max-w-[90%] -translate-x-1/2 -translate-y-1/2 object-contain drop-shadow-[0_20px_36px_rgba(27,25,23,0.16)] transition duration-700 group-hover:scale-[1.03]"
+            className="absolute left-1/2 top-1/2 z-[1] h-[92%] w-auto max-w-[90%] -translate-x-1/2 -translate-y-1/2 object-contain drop-shadow-[0_20px_36px_rgba(27,25,23,0.16)] transition duration-500 ease-out group-hover:scale-[1.02]"
             loading="eager"
+            decoding="async"
             onError={(e) => {
               const fallback = `/products/${product.slug}.png`
               if (!e.currentTarget.src.includes(fallback)) {
@@ -80,11 +65,11 @@ export default function ProductCard({ product, index = 0, lane }) {
       </div>
 
       <p className="mt-5 text-[9px] tracking-[0.24em] text-muted uppercase sm:mt-8 sm:text-[10px] sm:tracking-[0.32em]">
-        {String(index + 1).padStart(2, '0')} / {product.concentration}
+        {product.concentration}
       </p>
       <Link
         to={`/product/${product.slug}`}
-        className="mt-1.5 font-display text-base leading-tight tracking-[0.04em] text-charcoal uppercase transition hover:text-gold sm:mt-2 sm:text-2xl"
+        className="mt-1.5 font-display text-base leading-tight tracking-[0.04em] text-charcoal uppercase transition duration-300 hover:text-gold sm:mt-2 sm:text-2xl"
       >
         {product.name}
       </Link>

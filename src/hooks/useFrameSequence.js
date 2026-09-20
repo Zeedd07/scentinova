@@ -1,41 +1,42 @@
 /**
  * Batch-preload frame sequence with progress reporting.
- * Prefers WebP (`/frames-webp/`) with JPEG fallback (`/frames/` or `/frames-clean/`).
- * Priority: first `priorityCount` frames (for blur-up / early scrub),
- * then remaining frames in concurrent batches.
+ * Desktop prefers sharp cleaned JPEGs; mobile prefers lighter WebP.
+ * Uses decode() so first paints aren't soft half-decoded bitmaps.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export const TOTAL_FRAMES = 240
-export const PRIORITY_FRAMES = 48
+export const PRIORITY_FRAMES = 64
 
-/** Preferred production path (cleaned + WebP). */
 export function frameSrcWebp(index) {
   const n = String(index).padStart(3, '0')
   return `/frames-webp/frame-${n}.webp`
 }
 
-/** Fallback JPEG (cleaned if present in deploy, else original). */
 export function frameSrcJpg(index) {
   const n = String(index).padStart(3, '0')
-  // Prefer cleaned JPEGs when WebP unavailable; originals remain as last resort via onerror chain
   return `/frames-clean/frame-${n}.jpg`
 }
 
-/** Legacy / poster path — original or cleaned JPEG. */
 export function frameSrc(index) {
   return frameSrcWebp(index)
 }
 
+function candidatesFor(index, preferSharp) {
+  const webp = frameSrcWebp(index)
+  const clean = frameSrcJpg(index)
+  const original = `/frames/frame-${String(index).padStart(3, '0')}.jpg`
+  // Sharp path first on desktop/retina; weight-first on mobile
+  return preferSharp
+    ? [clean, original, webp]
+    : [webp, clean, original]
+}
+
 /**
- * Load a single Image; tries WebP first, then cleaned JPG, then original JPG.
+ * Load a single Image and fully decode it before resolving.
  */
-function loadImage(index) {
-  const candidates = [
-    frameSrcWebp(index),
-    frameSrcJpg(index),
-    `/frames/frame-${String(index).padStart(3, '0')}.jpg`,
-  ]
+function loadImage(index, preferSharp) {
+  const candidates = candidatesFor(index, preferSharp)
 
   return new Promise((resolve, reject) => {
     let attempt = 0
@@ -49,7 +50,20 @@ function loadImage(index) {
       attempt += 1
       const img = new Image()
       img.decoding = 'async'
-      img.onload = () => resolve(img)
+      // Hint browser to keep decoded pixels for canvas draw
+      if ('fetchPriority' in img) {
+        img.fetchPriority = index <= 24 ? 'high' : 'auto'
+      }
+      img.onload = async () => {
+        try {
+          if (typeof img.decode === 'function') {
+            await img.decode()
+          }
+        } catch {
+          /* decode can fail on some browsers; still usable */
+        }
+        resolve(img)
+      }
       img.onerror = () => tryNext()
       img.src = src
     }
@@ -61,15 +75,17 @@ function loadImage(index) {
 /**
  * @param {object} opts
  * @param {number} [opts.total=240]
- * @param {number} [opts.priorityCount=60] — gate the loader until these are ready
- * @param {number} [opts.batchSize=12] — concurrent loads after priority
+ * @param {number} [opts.priorityCount]
+ * @param {number} [opts.batchSize]
  * @param {boolean} [opts.enabled=true]
+ * @param {boolean} [opts.preferSharp=true] — use cleaned JPEG first when true
  */
 export function useFrameSequence({
   total = TOTAL_FRAMES,
   priorityCount = PRIORITY_FRAMES,
-  batchSize = 12,
+  batchSize = 16,
   enabled = true,
+  preferSharp = true,
 } = {}) {
   const framesRef = useRef(/** @type {(HTMLImageElement|null)[]} */ ([]))
   const [readyCount, setReadyCount] = useState(0)
@@ -77,10 +93,13 @@ export function useFrameSequence({
   const [fullyLoaded, setFullyLoaded] = useState(false)
   const [error, setError] = useState(null)
 
-  const getFrame = useCallback((index1Based) => {
-    const i = Math.max(1, Math.min(total, Math.round(index1Based))) - 1
-    return framesRef.current[i] ?? null
-  }, [total])
+  const getFrame = useCallback(
+    (index1Based) => {
+      const i = Math.max(1, Math.min(total, Math.round(index1Based))) - 1
+      return framesRef.current[i] ?? null
+    },
+    [total],
+  )
 
   useEffect(() => {
     if (!enabled) return undefined
@@ -93,7 +112,7 @@ export function useFrameSequence({
       for (let i = from; i <= to; i += 1) {
         const idx = i
         jobs.push(
-          loadImage(idx)
+          loadImage(idx, preferSharp)
             .then((img) => {
               if (cancelled) return
               framesRef.current[idx - 1] = img
@@ -108,16 +127,18 @@ export function useFrameSequence({
     }
 
     ;(async () => {
-      // Phase 1 — priority frames for first paint / early scrub
-      await loadRange(1, Math.min(priorityCount, total))
+      const priority = Math.min(priorityCount, total)
+      await loadRange(1, priority)
       if (cancelled) return
       setPriorityReady(true)
 
-      // Phase 2 — remaining frames in batches (keeps network calm)
-      for (let start = priorityCount + 1; start <= total; start += batchSize) {
+      // Spread remaining loads; slightly larger batches after gate opens
+      for (let start = priority + 1; start <= total; start += batchSize) {
         if (cancelled) return
         const end = Math.min(start + batchSize - 1, total)
         await loadRange(start, end)
+        // Yield so scroll/draw stay responsive while loading
+        await new Promise((r) => setTimeout(r, 0))
       }
       if (!cancelled) setFullyLoaded(true)
     })()
@@ -125,7 +146,7 @@ export function useFrameSequence({
     return () => {
       cancelled = true
     }
-  }, [enabled, total, priorityCount, batchSize])
+  }, [enabled, total, priorityCount, batchSize, preferSharp])
 
   const progress = readyCount / total
 

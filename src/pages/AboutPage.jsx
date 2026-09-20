@@ -1,68 +1,100 @@
 /**
- * About the maison — Scentinova.
+ * About — maison story, cream editorial frame.
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { easeOutExpo, fadeUp } from '../lib/motion'
+
+const SIGNATURES = [
+  'Lunar Leather',
+  'Oud on the Petals',
+  'Masai-Mara',
+  'Seaweed',
+]
 
 export default function AboutPage() {
   return (
-    <div className="bg-ivory pt-16">
-      <section className="relative overflow-hidden px-6 py-20 sm:px-10 sm:py-28 lg:px-16">
+    <div className="bg-[#f7f3eb] pt-[calc(var(--nav-h)+0.5rem)]">
+      <section className="relative overflow-hidden px-6 py-16 sm:px-10 sm:py-24 lg:px-16 lg:py-28">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{
+            background:
+              'radial-gradient(ellipse 70% 55% at 18% 20%, rgba(180,151,90,0.16), transparent 62%), radial-gradient(ellipse 50% 40% at 88% 78%, rgba(196,160,74,0.1), transparent 65%)',
+          }}
+        />
+
         <div className="relative mx-auto max-w-3xl">
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-[11px] tracking-[0.4em] text-muted uppercase"
+            initial={fadeUp.initial}
+            animate={fadeUp.animate}
+            transition={{ duration: 0.7, ease: easeOutExpo }}
+            className="text-[11px] tracking-[0.4em] text-[#7a6438] uppercase"
           >
             Our story
           </motion.p>
+
           <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 font-display text-4xl text-charcoal sm:text-6xl"
+            initial={fadeUp.initial}
+            animate={fadeUp.animate}
+            transition={{ delay: 0.05, duration: 0.85, ease: easeOutExpo }}
+            className="mt-4 font-display text-5xl leading-[1.05] text-charcoal sm:text-6xl md:text-7xl"
           >
-            Maison <span className="italic text-gold">Scentinova</span>
+            <span className="block tracking-[0.06em]">SCENTINOVA</span>
+            <span className="mt-2 block font-display text-3xl italic font-normal text-[#9a7b3c] sm:text-4xl">
+              Heavenly Crafted Perfume
+            </span>
           </motion.h1>
+
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="mt-10 space-y-6 text-base leading-relaxed text-muted sm:text-lg"
+            initial={fadeUp.initial}
+            animate={fadeUp.animate}
+            transition={{ delay: 0.12, duration: 0.85, ease: easeOutExpo }}
+            className="mt-10 max-w-xl space-y-5 text-sm leading-relaxed text-[#4a4136] sm:mt-12 sm:text-base"
           >
             <p>
-              Heavenly Crafted Perfume — four signatures composed for presence.
-              Each flacon is crystal and gold; each formula is built to linger
-              past the first hour.
+              Four signatures composed for presence. Each flacon is crystal and
+              gold; each formula is built to linger past the first hour.
             </p>
             <p>
-              Lunar Leather. Oud on the Petals. Masai-Mara. Seaweed. A house
-              built on contrast — dark leather and white florals, burnt rose and
-              marine musk — always with the same restraint.
-            </p>
-            <p className="font-display text-xl italic text-charcoal/90">
-              “A fragrance is not what you wear. It is what remains.”
+              A house built on contrast — dark leather and white florals, burnt
+              rose and marine musk — always with the same restraint.
             </p>
           </motion.div>
 
-          <div className="mt-14 grid gap-8 border-t border-stone pt-12 sm:grid-cols-3">
-            {[
-              { t: 'Four signatures', d: 'A focused house — never diluted' },
-              { t: 'Honest notes', d: 'Top, heart, base — nothing masked' },
-              { t: 'Pure Parfum', d: 'Concentration that stays on skin' },
-            ].map((item) => (
-              <div key={item.t}>
-                <p className="font-display text-xl text-charcoal">{item.t}</p>
-                <p className="mt-2 text-sm text-muted">{item.d}</p>
-              </div>
-            ))}
-          </div>
-
-          <Link
-            to="/shop"
-            className="btn-luxury mt-14 inline-block border border-charcoal px-10 py-3.5 text-charcoal"
+          <motion.p
+            initial={fadeUp.initial}
+            animate={fadeUp.animate}
+            transition={{ delay: 0.18, duration: 0.85, ease: easeOutExpo }}
+            className="mt-12 font-display text-2xl italic leading-snug text-charcoal/90 sm:mt-14 sm:text-3xl"
           >
-            Explore the shop
-          </Link>
+            “A fragrance is not what you wear. It is what remains.”
+          </motion.p>
+
+          <motion.ul
+            initial={fadeUp.initial}
+            animate={fadeUp.animate}
+            transition={{ delay: 0.24, duration: 0.85, ease: easeOutExpo }}
+            className="mt-14 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#d4c4a0]/70 pt-10 text-[11px] tracking-[0.28em] text-[#8a6e3a] uppercase sm:gap-x-10"
+          >
+            {SIGNATURES.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </motion.ul>
+
+          <motion.div
+            initial={fadeUp.initial}
+            animate={fadeUp.animate}
+            transition={{ delay: 0.3, duration: 0.85, ease: easeOutExpo }}
+          >
+            <Link
+              to="/shop"
+              className="btn-luxury mt-12 inline-flex items-center gap-3 border border-[#1b1917]/70 px-10 py-4 text-[#1b1917] transition hover:border-[#9a7b3c] hover:bg-[#1b1917] hover:text-[#f7f3eb] sm:mt-14"
+            >
+              Explore the collection
+              <span aria-hidden>→</span>
+            </Link>
+          </motion.div>
         </div>
       </section>
     </div>

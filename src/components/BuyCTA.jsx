@@ -81,7 +81,7 @@ export default function BuyCTA() {
         </p>
 
         <p className="mt-8 font-display text-3xl gold-text">
-          {aurum ? formatPrice(aurum.price) : '$285'}
+          {aurum ? formatPrice(aurum.price) : '₹999'}
         </p>
         <p className="mt-2 text-xs tracking-wide text-bronze">
           Eau de Parfum · 50 ml · Limited atelier run
