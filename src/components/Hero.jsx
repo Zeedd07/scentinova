@@ -1,6 +1,6 @@
 /**
  * Editorial hero — pinned canvas frame-scrub on scroll (desktop + mobile).
- * Frame-rate-independent lerp + high-quality canvas draw for smooth scrub.
+ * Mobile path targets ~60fps: DPR 1, cheap draws, tight scrub, no particle overlay.
  */
 import { useEffect, useRef, useState, startTransition } from 'react'
 import { Link } from 'react-router-dom'
@@ -30,6 +30,8 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
   const chapterIdRef = useRef(null)
   const progressRef = useRef(0)
   const lastTsRef = useRef(0)
+  const pendingProgressRef = useRef(null)
+  const progressRafRef = useRef(0)
 
   const [ready, setReady] = useState(false)
   const [chapter, setChapter] = useState(null)
@@ -43,7 +45,11 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
     return undefined
   }, [priorityReady])
 
-  const applyProgress = (progress) => {
+  const flushProgress = () => {
+    progressRafRef.current = 0
+    const progress = pendingProgressRef.current
+    if (progress == null) return
+
     progressRef.current = progress
     if (progressBarRef.current) {
       progressBarRef.current.style.height = `${progress * 100}%`
@@ -63,6 +69,12 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
     setShowEndCta((prev) => (prev === atEnd ? prev : atEnd))
   }
 
+  const applyProgress = (progress) => {
+    pendingProgressRef.current = progress
+    if (progressRafRef.current) return
+    progressRafRef.current = requestAnimationFrame(flushProgress)
+  }
+
   useEffect(() => {
     if (!priorityReady) return undefined
     const canvas = canvasRef.current
@@ -75,21 +87,21 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
     })
     if (!ctx) return undefined
 
-    ctx.imageSmoothingEnabled = true
-    ctx.imageSmoothingQuality = 'high'
+    // Mobile: no smoothing + DPR 1 keeps drawImage under ~16ms
+    ctx.imageSmoothingEnabled = !isMobile
+    if (!isMobile) ctx.imageSmoothingQuality = 'high'
 
     let resizeTimer = 0
     const resize = () => {
-      // Keep canvas sharp on retina; cap slightly on weak phones
       const rawDpr = window.devicePixelRatio || 1
-      const dpr = Math.min(rawDpr, isMobile ? 2 : 2.5)
+      const dpr = isMobile ? 1 : Math.min(rawDpr, 2)
       const { clientWidth: w, clientHeight: h } = canvas
       if (w < 2 || h < 2) return
       canvas.width = Math.max(1, Math.floor(w * dpr))
       canvas.height = Math.max(1, Math.floor(h * dpr))
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
+      ctx.imageSmoothingEnabled = !isMobile
+      if (!isMobile) ctx.imageSmoothingQuality = 'high'
       frameState.current.lastDrawn = -1
       frameState.current.lastDrawnExact = false
       drawFrame(frameState.current.current)
@@ -107,12 +119,10 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
         frameState.current.lastGood = rounded
         return { img: direct, drawnIndex: rounded }
       }
-      // Prefer holding last good frame over distant substitutes (avoids blurry jumps)
       const lastGood = getFrame(frameState.current.lastGood)
       if (lastGood?.complete && lastGood.naturalWidth > 0) {
         return { img: lastGood, drawnIndex: frameState.current.lastDrawn }
       }
-      // Tiny local search only (±4) while early frames are still loading
       for (let d = 1; d <= 4; d += 1) {
         const a = getFrame(rounded - d)
         if (a?.complete && a.naturalWidth > 0) {
@@ -149,7 +159,6 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       let dh
       let dx
       let dy
-      // Cover crop — fills viewport without letterboxing soft edges
       if (cr > ir) {
         dw = cw
         dh = cw / ir
@@ -188,8 +197,16 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
         return
       }
 
-      // Frame-rate independent smoothing; catch up faster on big jumps
-      const base = isMobile ? 18 : 22
+      // Mobile: snap harder to scroll so scrub stays at ~60fps without trailing lag
+      if (isMobile) {
+        const t = 1 - Math.exp(-48 * dt)
+        const next = current + delta * t
+        frameState.current.current = next
+        drawFrame(next)
+        return
+      }
+
+      const base = 22
       const catchUp = Math.min(1, Math.abs(delta) / 12)
       const lambda = base + catchUp * 28
       const t = 1 - Math.exp(-lambda * dt)
@@ -206,6 +223,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
     window.addEventListener('resize', onResize, { passive: true })
     return () => {
       cancelAnimationFrame(rafRef.current)
+      cancelAnimationFrame(progressRafRef.current)
       window.clearTimeout(resizeTimer)
       window.removeEventListener('resize', onResize)
     }
@@ -221,10 +239,11 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       trigger: pin,
       start: 'top top',
       end: 'bottom bottom',
-      // Low scrub = snappier, still soft enough to avoid jitter
-      scrub: isMobile ? 0.45 : 0.3,
+      // Mobile: near-zero scrub lag so frames track the finger at 60Hz
+      scrub: isMobile ? 0.05 : 0.3,
       anticipatePin: 1,
       invalidateOnRefresh: true,
+      fastScrollEnd: true,
       onUpdate: (self) => {
         frameState.current.target = 1 + self.progress * (TOTAL_FRAMES - 1)
         applyProgress(self.progress)
@@ -248,7 +267,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       id="hero"
       ref={pinRef}
       className="relative bg-black"
-      style={{ height: isMobile ? '360vh' : '400vh' }}
+      style={{ height: isMobile ? '320vh' : '400vh' }}
       aria-label="SCENTINOVA — cinematic frame sequence"
     >
       <div className="hero-sticky sticky top-0 flex h-dvh w-full flex-col overflow-hidden bg-black">
@@ -270,6 +289,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
               imageRendering: 'auto',
               transform: 'translateZ(0)',
               backfaceVisibility: 'hidden',
+              willChange: 'contents',
             }}
           />
 
@@ -278,9 +298,11 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-28 bg-black sm:h-20" />
           <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-1/3 bg-gradient-to-r from-black/80 via-black/30 to-transparent max-sm:hidden" />
 
-          <div className="absolute inset-0 z-[3]">
-            <Particles density={isMobile ? 10 : 28} />
-          </div>
+          {!isMobile && (
+            <div className="absolute inset-0 z-[3]">
+              <Particles density={28} />
+            </div>
+          )}
 
           <div className="pointer-events-none absolute left-5 top-1/2 z-[6] hidden h-[42vh] -translate-y-1/2 flex-col items-center sm:left-8 md:flex lg:left-12">
             <span

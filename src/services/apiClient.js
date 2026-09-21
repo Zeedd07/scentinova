@@ -71,13 +71,14 @@ async function refreshAccessToken() {
 
 export async function apiRequest(
   path,
-  { method = 'GET', body, auth = false, retry = true, headers = {} } = {},
+  { method = 'GET', body, auth = false, retry = true, headers = {}, signal } = {},
 ) {
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
 
   const opts = {
     method,
     credentials: 'include',
+    signal,
     headers: {
       ...(!isFormData && body !== undefined
         ? { 'Content-Type': 'application/json' }
@@ -97,7 +98,13 @@ export async function apiRequest(
   let res
   try {
     res = await fetch(`${API_URL}${path}`, opts)
-  } catch {
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new ApiClientError('Request timed out. Please try again.', {
+        code: 'TIMEOUT',
+        status: 0,
+      })
+    }
     throw new ApiClientError(
       'The Scentinova service is temporarily unavailable. Please try again.',
       { code: 'NETWORK_ERROR', status: 0 },
@@ -107,7 +114,7 @@ export async function apiRequest(
   if (res.status === 401 && auth && retry) {
     try {
       await refreshAccessToken()
-      return apiRequest(path, { method, body, auth, retry: false, headers })
+      return apiRequest(path, { method, body, auth, retry: false, headers, signal })
     } catch (err) {
       throw err
     }

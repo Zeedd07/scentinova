@@ -2,6 +2,7 @@
  * Batch-preload frame sequence with progress reporting.
  * Desktop prefers sharp cleaned JPEGs; mobile prefers lighter WebP.
  * Uses decode() so first paints aren't soft half-decoded bitmaps.
+ * Progress state is throttled so loads don't thrash React during scrub.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -26,15 +27,11 @@ function candidatesFor(index, preferSharp) {
   const webp = frameSrcWebp(index)
   const clean = frameSrcJpg(index)
   const original = `/frames/frame-${String(index).padStart(3, '0')}.jpg`
-  // Sharp path first on desktop/retina; weight-first on mobile
   return preferSharp
     ? [clean, original, webp]
     : [webp, clean, original]
 }
 
-/**
- * Load a single Image and fully decode it before resolving.
- */
 function loadImage(index, preferSharp) {
   const candidates = candidatesFor(index, preferSharp)
 
@@ -50,7 +47,6 @@ function loadImage(index, preferSharp) {
       attempt += 1
       const img = new Image()
       img.decoding = 'async'
-      // Hint browser to keep decoded pixels for canvas draw
       if ('fetchPriority' in img) {
         img.fetchPriority = index <= 24 ? 'high' : 'auto'
       }
@@ -78,7 +74,8 @@ function loadImage(index, preferSharp) {
  * @param {number} [opts.priorityCount]
  * @param {number} [opts.batchSize]
  * @param {boolean} [opts.enabled=true]
- * @param {boolean} [opts.preferSharp=true] — use cleaned JPEG first when true
+ * @param {boolean} [opts.preferSharp=true]
+ * @param {number} [opts.yieldMs=0] — pause between batches (mobile needs more)
  */
 export function useFrameSequence({
   total = TOTAL_FRAMES,
@@ -86,12 +83,24 @@ export function useFrameSequence({
   batchSize = 16,
   enabled = true,
   preferSharp = true,
+  yieldMs = 0,
 } = {}) {
   const framesRef = useRef(/** @type {(HTMLImageElement|null)[]} */ ([]))
+  const readyCountRef = useRef(0)
   const [readyCount, setReadyCount] = useState(0)
   const [priorityReady, setPriorityReady] = useState(false)
   const [fullyLoaded, setFullyLoaded] = useState(false)
   const [error, setError] = useState(null)
+  const progressFlushRef = useRef(0)
+
+  const bumpReady = useCallback(() => {
+    readyCountRef.current += 1
+    if (progressFlushRef.current) return
+    progressFlushRef.current = requestAnimationFrame(() => {
+      progressFlushRef.current = 0
+      setReadyCount(readyCountRef.current)
+    })
+  }, [])
 
   const getFrame = useCallback(
     (index1Based) => {
@@ -106,6 +115,10 @@ export function useFrameSequence({
 
     let cancelled = false
     framesRef.current = new Array(total).fill(null)
+    readyCountRef.current = 0
+    setReadyCount(0)
+    setPriorityReady(false)
+    setFullyLoaded(false)
 
     async function loadRange(from, to) {
       const jobs = []
@@ -116,7 +129,7 @@ export function useFrameSequence({
             .then((img) => {
               if (cancelled) return
               framesRef.current[idx - 1] = img
-              setReadyCount((c) => c + 1)
+              bumpReady()
             })
             .catch((err) => {
               if (!cancelled) setError(err)
@@ -130,23 +143,26 @@ export function useFrameSequence({
       const priority = Math.min(priorityCount, total)
       await loadRange(1, priority)
       if (cancelled) return
+      setReadyCount(readyCountRef.current)
       setPriorityReady(true)
 
-      // Spread remaining loads; slightly larger batches after gate opens
       for (let start = priority + 1; start <= total; start += batchSize) {
         if (cancelled) return
         const end = Math.min(start + batchSize - 1, total)
         await loadRange(start, end)
-        // Yield so scroll/draw stay responsive while loading
-        await new Promise((r) => setTimeout(r, 0))
+        await new Promise((r) => setTimeout(r, yieldMs))
       }
-      if (!cancelled) setFullyLoaded(true)
+      if (!cancelled) {
+        setReadyCount(readyCountRef.current)
+        setFullyLoaded(true)
+      }
     })()
 
     return () => {
       cancelled = true
+      cancelAnimationFrame(progressFlushRef.current)
     }
-  }, [enabled, total, priorityCount, batchSize, preferSharp])
+  }, [enabled, total, priorityCount, batchSize, preferSharp, yieldMs, bumpReady])
 
   const progress = readyCount / total
 

@@ -9,8 +9,8 @@ export async function login(email, password) {
   return data.data
 }
 
-export async function refreshSession() {
-  const data = await apiRequest('/auth/refresh', { method: 'POST' })
+export async function refreshSession(opts = {}) {
+  const data = await apiRequest('/auth/refresh', { method: 'POST', ...opts })
   setAccessToken(data.data.accessToken)
   return data.data
 }

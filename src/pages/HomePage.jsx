@@ -18,10 +18,11 @@ export default function HomePage() {
   const isMobile = useIsMobile()
   const { getFrame, progress, priorityReady, fullyLoaded } = useFrameSequence({
     enabled: true,
-    // Load enough frames before unlock so early scrub never looks soft/missing
-    priorityCount: isMobile ? 48 : 72,
-    batchSize: isMobile ? 10 : 20,
+    // Mobile: fewer priority frames + longer yields so scrub stays near 60fps while loading
+    priorityCount: isMobile ? 32 : 72,
+    batchSize: isMobile ? 6 : 20,
     preferSharp: !isMobile,
+    yieldMs: isMobile ? 24 : 0,
   })
 
   const appReady = priorityReady

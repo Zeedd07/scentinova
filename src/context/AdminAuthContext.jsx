@@ -20,19 +20,25 @@ export function AdminAuthProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 12000)
+
     ;(async () => {
       try {
-        const data = await authApi.refreshSession()
+        const data = await authApi.refreshSession({ signal: controller.signal })
         if (!cancelled) setUser(data.user)
       } catch {
         clearAccessToken()
         if (!cancelled) setUser(null)
       } finally {
+        window.clearTimeout(timeout)
         if (!cancelled) setBootstrapping(false)
       }
     })()
     return () => {
       cancelled = true
+      window.clearTimeout(timeout)
+      controller.abort()
     }
   }, [])
 
