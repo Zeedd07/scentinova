@@ -1,4 +1,13 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+function resolveApiUrl() {
+  const raw = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').trim()
+  // Common deploy mistake: host without /api → /products 404s on Express
+  if (/onrender\.com\/?$/i.test(raw) || /localhost:\d+\/?$/i.test(raw)) {
+    return raw.replace(/\/$/, '') + '/api'
+  }
+  return raw.replace(/\/$/, '')
+}
+
+const API_URL = resolveApiUrl()
 
 let accessToken = null
 let refreshPromise = null
