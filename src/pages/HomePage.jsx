@@ -11,18 +11,21 @@ import FragranceJourney from '../components/FragranceJourney'
 import FinalCTA from '../components/FinalCTA'
 import { useFrameSequence } from '../hooks/useFrameSequence'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { useLenis } from '../components/SmoothScroll'
 
 gsap.registerPlugin(ScrollTrigger)
 
 export default function HomePage() {
   const isMobile = useIsMobile()
+  const lenis = useLenis()
   const { getFrame, progress, priorityReady, fullyLoaded } = useFrameSequence({
     enabled: true,
-    // Mobile: fewer priority frames + longer yields so scrub stays near 60fps while loading
-    priorityCount: isMobile ? 32 : 72,
-    batchSize: isMobile ? 6 : 20,
+    // Mobile: every 2nd frame, but more priority frames so scrub past the start isn't empty
+    priorityCount: isMobile ? 64 : 72,
+    batchSize: isMobile ? 6 : 8,
     preferSharp: !isMobile,
-    yieldMs: isMobile ? 24 : 0,
+    frameStep: isMobile ? 2 : 1,
+    yieldMs: isMobile ? 8 : 0,
   })
 
   const appReady = priorityReady
@@ -30,10 +33,17 @@ export default function HomePage() {
 
   useEffect(() => {
     document.body.style.overflow = loaderVisible ? 'hidden' : ''
+    document.documentElement.style.overflow = loaderVisible ? 'hidden' : ''
+    if (lenis) {
+      if (loaderVisible) lenis.stop()
+      else lenis.start()
+    }
     return () => {
       document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+      lenis?.start()
     }
-  }, [loaderVisible])
+  }, [loaderVisible, lenis])
 
   useEffect(() => {
     if (!appReady) return undefined

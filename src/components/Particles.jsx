@@ -31,7 +31,11 @@ export default function Particles({ density = 48, className = '' }) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return undefined
-    const ctx = canvas.getContext('2d', { alpha: true })
+    const ctx = canvas.getContext('2d', {
+      alpha: true,
+      desynchronized: true,
+      willReadFrequently: false,
+    })
     let particles = []
     let w = 0
     let h = 0

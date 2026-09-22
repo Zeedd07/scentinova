@@ -2,6 +2,7 @@
  * Site footer — black maison bar.
  */
 import { Link } from 'react-router-dom'
+import BrandLogo from './BrandLogo'
 
 const EXPLORE = [
   { to: '/shop', label: 'Shop' },
@@ -17,17 +18,10 @@ export default function Footer() {
         {/* Brand + nav */}
         <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:justify-between lg:text-left">
           <div className="max-w-sm">
-            <Link
-              to="/"
-              className="inline-flex justify-center transition hover:opacity-85 lg:justify-start"
-            >
-              <img
-                src="/brand/logo.png"
-                alt="Scentinova"
-                className="h-11 w-auto object-contain sm:h-12"
-                draggable={false}
-              />
-            </Link>
+            <BrandLogo
+              size="footer"
+              className="justify-center lg:justify-start"
+            />
             <p className="mt-4 text-[13px] leading-relaxed text-white/50 sm:text-sm">
               Heavenly Crafted Perfume — four signatures composed for presence.
             </p>
