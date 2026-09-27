@@ -26,6 +26,7 @@ export default function MediaPickerModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [picked, setPicked] = useState(null)
+  const [noMatch, setNoMatch] = useState('')
 
   useEffect(() => {
     if (!open) return
@@ -34,6 +35,7 @@ export default function MediaPickerModal({
     setCategory('')
     setPage(1)
     setPicked(null)
+    setNoMatch('')
   }, [open, initialSearch])
 
   useEffect(() => {
@@ -47,19 +49,30 @@ export default function MediaPickerModal({
   useEffect(() => {
     if (!open) return undefined
     const controller = new AbortController()
+    let fellBack = false
     setLoading(true)
     setError('')
     listMedia({ page, limit: PAGE_SIZE, search: query, type, category, signal: controller.signal })
-      .then((r) => setResult(r))
+      .then((r) => {
+        // The prefilled note name matched nothing: show the whole library instead of a dead end.
+        if (!r.assets.length && query && query === initialSearch && page === 1 && !category) {
+          fellBack = true
+          setNoMatch(query)
+          setSearch('')
+          setQuery('')
+          return
+        }
+        setResult(r)
+      })
       .catch((err) => {
         if (controller.signal.aborted) return
         setError(err instanceof ApiClientError ? err.message : 'Could not load the media library.')
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false)
+        if (!controller.signal.aborted && !fellBack) setLoading(false)
       })
     return () => controller.abort()
-  }, [open, page, query, type, category])
+  }, [open, page, query, type, category, initialSearch])
 
   const pages = result.meta?.pages || 1
   const showCategories = type === 'NOTE'
@@ -93,9 +106,19 @@ export default function MediaPickerModal({
           className="admin-input"
           placeholder="jasmine, amber, oud…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setNoMatch('')
+          }}
         />
       </label>
+
+      {noMatch && (
+        <p className="mt-3 border border-stone bg-cream/60 px-3 py-2 text-[13px] text-charcoal" role="status">
+          No library images match “{noMatch}”, so all note images are shown. Pick one, or upload a new image for
+          this note.
+        </p>
+      )}
 
       {showCategories && (
         <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Category">
