@@ -1,5 +1,5 @@
 /**
- * CSS 3D tilt bottle — follows cursor (max ±15°).
+ * CSS 3D tilt bottle - follows cursor (max ±15°).
  * Uses a still from the sequence as the product render.
  */
 import { useRef } from 'react'

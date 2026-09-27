@@ -1,12 +1,14 @@
 /**
  * Lenis smooth scroll + GSAP ScrollTrigger bridge (storefront only).
  * Uses GSAP ticker for Lenis.raf so ScrollTrigger scrub stays in sync.
+ * Disabled on mobile / coarse pointers: native scroll only (less lag with pin scrub).
  */
 import { useEffect } from 'react'
 import { ReactLenis, useLenis } from 'lenis/react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import 'lenis/dist/lenis.css'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -39,7 +41,7 @@ function LenisGsapBridge() {
 const LENIS_OPTIONS = {
   autoRaf: false,
   smoothWheel: true,
-  // Native touch scrolling — avoids fighting iOS + pin scrub
+  // Native touch scrolling - avoids fighting iOS + pin scrub
   syncTouch: false,
   touchMultiplier: 1.4,
   wheelMultiplier: 0.95,
@@ -48,6 +50,12 @@ const LENIS_OPTIONS = {
 }
 
 export default function SmoothScroll({ children }) {
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return children
+  }
+
   return (
     <ReactLenis root options={LENIS_OPTIONS}>
       <LenisGsapBridge />

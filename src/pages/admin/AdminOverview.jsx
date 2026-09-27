@@ -1,5 +1,5 @@
 /**
- * Admin overview — live MongoDB KPIs.
+ * Admin overview - live MongoDB KPIs.
  */
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -77,7 +77,7 @@ export default function AdminOverview() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {kpis.map((k) => (
           <div key={k.label} className="admin-surface px-4 py-3">
-            <p className="text-[13px] text-[#766f66]">{k.label}</p>
+            <p className="text-[13px] text-muted">{k.label}</p>
             <p
               className={`mt-1 text-2xl font-semibold tabular-nums ${
                 k.warn ? 'text-[#6e1118]' : 'text-[#1b1917]'

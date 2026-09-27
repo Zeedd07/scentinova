@@ -1,5 +1,5 @@
 /**
- * Story — bottle craft, wear arc, notes + 3D-tilt flacon.
+ * Story - bottle craft, wear arc, notes + 3D-tilt flacon.
  */
 import { motion } from 'framer-motion'
 import TiltBottle from './TiltBottle'
@@ -21,7 +21,7 @@ const SPECS = [
 ]
 
 const WEAR = [
-  { hour: 'Morning', line: 'Bergamot opens — bright peel, cool air.' },
+  { hour: 'Morning', line: 'Bergamot opens - bright peel, cool air.' },
   { hour: 'Afternoon', line: 'Amber warms the pulse; soft spice blooms.' },
   { hour: 'Night', line: 'Oud and vanilla linger on scarf and skin.' },
 ]
@@ -66,7 +66,7 @@ export default function Story() {
             className="mt-6 max-w-md text-sm leading-relaxed text-bronze sm:text-base"
           >
             Cut from heavy dark glass, the rectangular flacon is meant to sit
-            like architecture on a vanity — not a trinket. The gold cap turns
+            like architecture on a vanity - not a trinket. The gold cap turns
             with a soft click; the neck is ground glass, airtight. Inside:
             bergamot bright as dawn, amber warm as dusk, oud deep as memory.
           </motion.p>
@@ -173,7 +173,7 @@ export default function Story() {
         className="relative mx-auto mt-24 max-w-2xl border-t border-gold/25 pt-10 text-center"
       >
         <p className="font-display text-xl italic leading-relaxed text-cream/90 sm:text-2xl">
-          “Each bottle is filled in small atelier batches — numbered, sealed,
+          “Each bottle is filled in small atelier batches - numbered, sealed,
           and meant to outlast the season it was poured.”
         </p>
         <footer className="mt-4 text-[11px] tracking-[0.28em] text-bronze uppercase">

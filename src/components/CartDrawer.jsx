@@ -85,13 +85,13 @@ export default function CartDrawer() {
                             <Link
                               to={`/product/${item.slug}`}
                               onClick={() => setDrawerOpen(false)}
-                              className="font-display text-lg text-charcoal hover:text-gold"
+                              className="font-display text-lg text-charcoal hover:text-scent-red"
                             >
                               {item.name}
                             </Link>
                             <p className="text-[11px] text-muted">{item.size}</p>
                           </div>
-                          <p className="text-sm text-gold">
+                          <p className="text-sm text-bronze">
                             {formatPrice(item.price * item.qty)}
                           </p>
                         </div>

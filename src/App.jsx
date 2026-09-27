@@ -1,5 +1,5 @@
 /**
- * Scentinova — luxury perfume boutique.
+ * Scentinova - luxury perfume boutique.
  * Storefront + protected /admin (MongoDB via API).
  */
 import { useEffect } from 'react'
@@ -35,6 +35,7 @@ import AdminProductForm from './pages/admin/AdminProductForm'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminOrders from './pages/admin/AdminOrders'
 import AdminOrderDetail from './pages/admin/AdminOrderDetail'
+import AdminMediaLibrary from './pages/admin/AdminMediaLibrary'
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
@@ -45,7 +46,8 @@ function ScrollToTop() {
       const timer = window.setTimeout(() => {
         const el = document.getElementById(id)
         if (!el) return
-        const top = el.getBoundingClientRect().top + window.scrollY - 64
+        const navH = document.querySelector('.site-nav')?.getBoundingClientRect().height || 64
+        const top = el.getBoundingClientRect().top + window.scrollY - navH
         if (lenis) lenis.scrollTo(top, { duration: 1 })
         else window.scrollTo({ top, behavior: 'smooth' })
       }, 120)
@@ -113,6 +115,7 @@ function AppShell() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="products/new" element={<AdminProductForm />} />
             <Route path="products/:id" element={<AdminProductForm />} />
+            <Route path="media" element={<AdminMediaLibrary />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="orders/:id" element={<AdminOrderDetail />} />

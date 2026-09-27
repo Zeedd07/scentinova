@@ -1,6 +1,6 @@
 /**
- * Scroll / video story beats — synced to the ~10s frame sequence (240 @ 24fps).
- * `from`/`to` are progress 0–1 (desktop scrub or video currentTime/duration).
+ * Scroll / video story beats - synced to the ~10s frame sequence (240 @ 24fps).
+ * `from`/`to` are progress 0-1 (desktop scrub or video currentTime/duration).
  */
 export const STORY_CHAPTERS = [
   {
@@ -9,7 +9,7 @@ export const STORY_CHAPTERS = [
     to: 0.12,
     eyebrow: 'The Bottle',
     title: 'The flacon',
-    body: 'Rectangular dark glass. A gold cap sealed like a vow — weight in the hand, silence in the room.',
+    body: 'Rectangular dark glass. A gold cap sealed like a vow - weight in the hand, silence in the room.',
     note: null,
   },
   {
@@ -27,7 +27,7 @@ export const STORY_CHAPTERS = [
     to: 0.55,
     eyebrow: 'The Scent',
     title: 'The release',
-    body: 'Mist blooms. Gold dust hangs in the air — bergamot lifts like dawn through a shutter.',
+    body: 'Mist blooms. Gold dust hangs in the air - bergamot lifts like dawn through a shutter.',
     note: 'Bergamot',
   },
   {
@@ -36,7 +36,7 @@ export const STORY_CHAPTERS = [
     to: 0.78,
     eyebrow: 'The Scent',
     title: 'Liquid memory',
-    body: 'Amber ribbons coil through shadow. Oud settles low — smoked wood, velvet, lasting.',
+    body: 'Amber ribbons coil through shadow. Oud settles low - smoked wood, velvet, lasting.',
     note: 'Amber · Oud',
   },
   {
@@ -45,12 +45,12 @@ export const STORY_CHAPTERS = [
     to: 1.01,
     eyebrow: 'Aurum',
     title: 'It settles',
-    body: 'The bottle returns. Not perfume — a private hour in gold, worn long after the spray fades.',
+    body: 'The bottle returns. Not perfume - a private hour in gold, worn long after the spray fades.',
     note: 'Eau de Parfum',
   },
 ]
 
-/** Resolve active chapter from 0–1 progress. */
+/** Resolve active chapter from 0-1 progress. */
 export function chapterAt(progress) {
   const p = Math.max(0, Math.min(1, progress))
   return (

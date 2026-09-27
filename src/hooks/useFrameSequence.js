@@ -1,106 +1,53 @@
 /**
- * Batch-preload frame sequence with decoded bitmap cache.
- * Desktop prefers sharp cleaned JPEGs; mobile prefers lighter WebP.
- * Priority frames fully decode before unlock; remainder loads on idle.
+ * Preload a scroll-scrub frame sequence.
+ * Frames are kept as decoded <img> elements rather than ImageBitmaps: 600 bitmaps
+ * would pin ~1 GB of pixels, while the browser may evict and re-decode images.
+ * Priority frames load before unlock; the rest load on idle, coarse pass first.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export const TOTAL_FRAMES = 240
-export const PRIORITY_FRAMES = 64
-
-export function frameSrcWebp(index) {
-  const n = String(index).padStart(3, '0')
-  return `/frames-webp/frame-${n}.webp`
+export const FRAME_SOURCES = {
+  landscape: { path: '/frames-landscape', total: 600, pad: 4, ext: 'webp' },
+  portrait: { path: '/frames-portrait', total: 600, pad: 4, ext: 'webp' },
 }
 
-export function frameSrcJpg(index) {
-  const n = String(index).padStart(3, '0')
-  return `/frames-clean/frame-${n}.jpg`
+export function frameUrl(source, index) {
+  return `${source.path}/frame-${String(index).padStart(source.pad, '0')}.${source.ext}`
 }
 
-export function frameSrc(index) {
-  return frameSrcWebp(index)
-}
-
-/** @typedef {'webp' | 'clean' | 'original'} FrameFormat */
-
-function urlForFormat(format, index) {
-  if (format === 'webp') return frameSrcWebp(index)
-  if (format === 'clean') return frameSrcJpg(index)
-  return `/frames/frame-${String(index).padStart(3, '0')}.jpg`
-}
-
-function formatOrder(preferSharp) {
-  return preferSharp
-    ? /** @type {FrameFormat[]} */ (['clean', 'original', 'webp'])
-    : /** @type {FrameFormat[]} */ (['webp', 'clean', 'original'])
-}
+const COARSE_STEP = 8
 
 function scheduleIdle(cb, timeout = 120) {
   if (typeof requestIdleCallback === 'function') {
-    const id = requestIdleCallback(
-      (deadline) => {
-        cb(deadline)
-      },
-      { timeout },
-    )
+    const id = requestIdleCallback(cb, { timeout })
     return () => cancelIdleCallback(id)
   }
   const id = setTimeout(() => cb({ timeRemaining: () => 16, didTimeout: true }), timeout)
   return () => clearTimeout(id)
 }
 
-/**
- * Decode off the hot path. Prefer createImageBitmap; fall back to Image + decode().
- * @returns {Promise<{ drawable: CanvasImageSource, format: FrameFormat }>}
- */
-async function loadDecodedFrame(index, preferSharp, lockedFormat) {
-  const formats = lockedFormat
-    ? [lockedFormat]
-    : formatOrder(preferSharp)
-
-  let lastError = null
-  for (const format of formats) {
-    const src = urlForFormat(format, index)
-    try {
-      if (typeof createImageBitmap === 'function' && typeof fetch === 'function') {
-        const res = await fetch(src, { credentials: 'same-origin' })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const blob = await res.blob()
-        const bitmap = await createImageBitmap(blob)
-        return { drawable: bitmap, format }
-      }
-
-      const img = await new Promise((resolve, reject) => {
-        const el = new Image()
-        el.decoding = 'async'
-        if ('fetchPriority' in el) {
-          el.fetchPriority = index <= 24 ? 'high' : 'auto'
-        }
-        el.onload = () => resolve(el)
-        el.onerror = () => reject(new Error(`img error ${src}`))
-        el.src = src
-      })
+function loadImage(src, highPriority) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.decoding = 'async'
+    if ('fetchPriority' in img) img.fetchPriority = highPriority ? 'high' : 'low'
+    img.onload = async () => {
       try {
         if (typeof img.decode === 'function') await img.decode()
       } catch {
         /* still drawable */
       }
-      return { drawable: img, format }
-    } catch (err) {
-      lastError = err
+      resolve(img)
     }
-  }
-  throw lastError || new Error(`Failed to load frame ${index}`)
+    img.onerror = () => reject(new Error(`Failed to load ${src}`))
+    img.src = src
+  })
 }
 
 export function isFrameDrawable(drawable) {
-  if (!drawable) return false
-  if (typeof ImageBitmap !== 'undefined' && drawable instanceof ImageBitmap) {
-    return drawable.width > 0 && drawable.height > 0
-  }
   return Boolean(
-    drawable.complete &&
+    drawable &&
+      drawable.complete &&
       drawable.naturalWidth > 0 &&
       drawable.naturalHeight > 0,
   )
@@ -108,83 +55,67 @@ export function isFrameDrawable(drawable) {
 
 export function frameSize(drawable) {
   if (!drawable) return { w: 0, h: 0 }
-  if (typeof ImageBitmap !== 'undefined' && drawable instanceof ImageBitmap) {
-    return { w: drawable.width, h: drawable.height }
-  }
   return { w: drawable.naturalWidth || 0, h: drawable.naturalHeight || 0 }
+}
+
+/** Frame 1..priorityCount in order, then every COARSE_STEP-th frame, then the gaps. */
+function loadOrder(total, priorityCount) {
+  const priority = []
+  for (let i = 1; i <= Math.min(priorityCount, total); i += 1) priority.push(i)
+
+  const seen = new Set(priority)
+  const rest = []
+  const push = (i) => {
+    if (!seen.has(i)) {
+      seen.add(i)
+      rest.push(i)
+    }
+  }
+  for (let i = 1; i <= total; i += COARSE_STEP) push(i)
+  push(total)
+  for (let i = 1; i <= total; i += 1) push(i)
+  return { priority, rest }
 }
 
 /**
  * @param {object} opts
- * @param {number} [opts.total=240]
- * @param {number} [opts.priorityCount]
- * @param {number} [opts.batchSize] — background idle batch size
+ * @param {{ path: string, total: number, pad: number, ext: string }} opts.source
+ * @param {number} [opts.priorityCount=60]
+ * @param {number} [opts.batchSize=12] - background idle batch size
  * @param {boolean} [opts.enabled=true]
- * @param {boolean} [opts.preferSharp=true]
- * @param {number} [opts.frameStep=1] — mobile can use 2 (every other frame)
- * @param {number} [opts.yieldMs=0] — unused when idle scheduling is active; kept for API compat
  */
 export function useFrameSequence({
-  total = TOTAL_FRAMES,
-  priorityCount = PRIORITY_FRAMES,
-  batchSize = 8,
+  source,
+  priorityCount = 60,
+  batchSize = 12,
   enabled = true,
-  preferSharp = true,
-  frameStep = 1,
-  yieldMs = 0,
-} = {}) {
-  const framesRef = useRef(/** @type {(CanvasImageSource|null)[]} */ ([]))
-  const lockedFormatRef = useRef(/** @type {FrameFormat|null} */ (null))
-  const readyCountRef = useRef(0)
-  const [readyCount, setReadyCount] = useState(0)
+}) {
+  const total = source.total
+  const framesRef = useRef(/** @type {(HTMLImageElement|null)[]} */ ([]))
   const [priorityReady, setPriorityReady] = useState(false)
   const [fullyLoaded, setFullyLoaded] = useState(false)
-  const [error, setError] = useState(null)
-  const progressFlushRef = useRef(0)
 
-  const bumpReady = useCallback(() => {
-    readyCountRef.current += 1
-    if (progressFlushRef.current) return
-    progressFlushRef.current = requestAnimationFrame(() => {
-      progressFlushRef.current = 0
-      setReadyCount(readyCountRef.current)
-    })
+  const getExactFrame = useCallback((index1Based) => {
+    const img = framesRef.current[Math.round(index1Based) - 1]
+    return isFrameDrawable(img) ? img : null
   }, [])
-
-  const snapIndex = useCallback(
-    (index1Based) => {
-      const clamped = Math.max(1, Math.min(total, Math.round(index1Based)))
-      if (frameStep <= 1) return clamped
-      const snapped =
-        Math.round((clamped - 1) / frameStep) * frameStep + 1
-      return Math.max(1, Math.min(total, snapped))
-    },
-    [total, frameStep],
-  )
 
   const getFrame = useCallback(
     (index1Based) => {
-      const primary = snapIndex(index1Based)
-      const direct = framesRef.current[primary - 1]
-      if (direct && isFrameDrawable(direct)) return direct
+      const frames = framesRef.current
+      const primary = Math.max(1, Math.min(total, Math.round(index1Based)))
+      const direct = frames[primary - 1]
+      if (isFrameDrawable(direct)) return direct
 
-      // Wide neighbor scan — critical on mobile while background frames still load
-      const maxScan = total
-      for (let d = frameStep; d <= maxScan; d += frameStep) {
-        const lo = primary - d
-        if (lo >= 1) {
-          const a = framesRef.current[lo - 1]
-          if (a && isFrameDrawable(a)) return a
-        }
-        const hi = primary + d
-        if (hi <= total) {
-          const b = framesRef.current[hi - 1]
-          if (b && isFrameDrawable(b)) return b
-        }
+      for (let d = 1; d < total; d += 1) {
+        const lo = frames[primary - d - 1]
+        if (primary - d >= 1 && isFrameDrawable(lo)) return lo
+        const hi = frames[primary + d - 1]
+        if (primary + d <= total && isFrameDrawable(hi)) return hi
       }
       return null
     },
-    [snapIndex, frameStep, total],
+    [total],
   )
 
   useEffect(() => {
@@ -193,150 +124,53 @@ export function useFrameSequence({
     let cancelled = false
     let cancelIdle = /** @type {null | (() => void)} */ (null)
     framesRef.current = new Array(total).fill(null)
-    lockedFormatRef.current = null
-    readyCountRef.current = 0
-    setReadyCount(0)
     setPriorityReady(false)
     setFullyLoaded(false)
-    setError(null)
 
-    const indicesToLoad = []
-    for (let i = 1; i <= total; i += frameStep) {
-      indicesToLoad.push(i)
-    }
-    if (indicesToLoad[indicesToLoad.length - 1] !== total) {
-      indicesToLoad.push(total)
-    }
+    const { priority, rest } = loadOrder(total, priorityCount)
 
-    function releaseDrawable(drawable) {
-      if (
-        drawable &&
-        typeof ImageBitmap !== 'undefined' &&
-        drawable instanceof ImageBitmap &&
-        typeof drawable.close === 'function'
-      ) {
-        try {
-          drawable.close()
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-
-    async function loadOne(index) {
-      const { drawable, format } = await loadDecodedFrame(
-        index,
-        preferSharp,
-        lockedFormatRef.current,
-      )
-      if (cancelled) {
-        releaseDrawable(drawable)
-        return
-      }
-      if (!lockedFormatRef.current) lockedFormatRef.current = format
-      const prev = framesRef.current[index - 1]
-      if (prev && prev !== drawable) releaseDrawable(prev)
-      framesRef.current[index - 1] = drawable
-      bumpReady()
-    }
-
-    async function loadRange(indices) {
-      await Promise.all(
+    const loadRange = (indices, highPriority) =>
+      Promise.all(
         indices.map((idx) =>
-          loadOne(idx).catch((err) => {
-            if (!cancelled) setError(err)
-          }),
+          loadImage(frameUrl(source, idx), highPriority)
+            .then((img) => {
+              if (!cancelled) framesRef.current[idx - 1] = img
+            })
+            .catch(() => {
+              /* neighbour frames cover a missing one */
+            }),
         ),
       )
-    }
 
-    function loadBackground(startAt) {
-      let cursor = startAt
-
-      const pump = () => {
-        if (cancelled) return
-        if (cursor >= indicesToLoad.length) {
-          setReadyCount(readyCountRef.current)
-          setFullyLoaded(true)
-          return
-        }
-
-        cancelIdle = scheduleIdle(async (deadline) => {
-          if (cancelled) return
-          const batch = []
-          while (
-            cursor < indicesToLoad.length &&
-            batch.length < batchSize &&
-            (deadline.didTimeout || deadline.timeRemaining() > 4)
-          ) {
-            batch.push(indicesToLoad[cursor])
-            cursor += 1
-          }
-          if (batch.length === 0 && cursor < indicesToLoad.length) {
-            batch.push(indicesToLoad[cursor])
-            cursor += 1
-          }
-          if (batch.length) await loadRange(batch)
-          if (yieldMs > 0) {
-            await new Promise((r) => setTimeout(r, yieldMs))
-          }
-          pump()
-        }, 200)
-      }
-
-      pump()
-    }
-
-    ;(async () => {
-      const priorityCap = Math.min(priorityCount, total)
-      const priorityIndices = indicesToLoad.filter((i) => i <= priorityCap)
-      // Always include frame 1
-      if (!priorityIndices.includes(1)) priorityIndices.unshift(1)
-
-      await loadRange(priorityIndices)
+    let cursor = 0
+    const pump = () => {
       if (cancelled) return
-      setReadyCount(readyCountRef.current)
-      setPriorityReady(true)
-
-      const restStart = indicesToLoad.findIndex(
-        (i) => i > priorityCap,
-      )
-      if (restStart === -1) {
+      if (cursor >= rest.length) {
         setFullyLoaded(true)
         return
       }
-      loadBackground(restStart)
+      cancelIdle = scheduleIdle(async () => {
+        if (cancelled) return
+        const batch = rest.slice(cursor, cursor + batchSize)
+        cursor += batch.length
+        await loadRange(batch, false)
+        pump()
+      }, 200)
+    }
+
+    ;(async () => {
+      await loadRange(priority, true)
+      if (cancelled) return
+      setPriorityReady(true)
+      pump()
     })()
 
     return () => {
       cancelled = true
-      cancelAnimationFrame(progressFlushRef.current)
       if (cancelIdle) cancelIdle()
-      for (const d of framesRef.current) releaseDrawable(d)
       framesRef.current = []
     }
-  }, [
-    enabled,
-    total,
-    priorityCount,
-    batchSize,
-    preferSharp,
-    frameStep,
-    yieldMs,
-    bumpReady,
-  ])
+  }, [enabled, source, total, priorityCount, batchSize])
 
-  const progress = readyCount / Math.max(1, Math.ceil(total / frameStep))
-
-  return {
-    framesRef,
-    getFrame,
-    readyCount,
-    priorityReady,
-    fullyLoaded,
-    progress: Math.min(1, progress),
-    error,
-    total,
-    frameStep,
-  }
+  return { getFrame, getExactFrame, priorityReady, fullyLoaded, total }
 }

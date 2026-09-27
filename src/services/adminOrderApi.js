@@ -24,6 +24,15 @@ export async function adminUpdateOrderStatus(id, body) {
   return data.data.order
 }
 
+export async function adminPostOrderUpdate(id, body) {
+  const data = await apiRequest(`/admin/orders/${id}/updates`, {
+    method: 'POST',
+    body,
+    auth: true,
+  })
+  return data.data.order
+}
+
 export async function adminUpdateShipping(id, body) {
   const data = await apiRequest(`/admin/orders/${id}/shipping`, {
     method: 'PATCH',
@@ -35,6 +44,15 @@ export async function adminUpdateShipping(id, body) {
 
 export async function adminRefundOrder(id, body = {}) {
   const data = await apiRequest(`/admin/orders/${id}/refund`, {
+    method: 'POST',
+    body,
+    auth: true,
+  })
+  return data.data.order
+}
+
+export async function adminMarkCodPaid(id, body = {}) {
+  const data = await apiRequest(`/admin/orders/${id}/mark-cod-paid`, {
     method: 'POST',
     body,
     auth: true,

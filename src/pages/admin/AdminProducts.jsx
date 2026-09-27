@@ -1,5 +1,5 @@
 /**
- * Admin product list — MongoDB catalog.
+ * Admin product list - MongoDB catalog.
  */
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -196,7 +196,7 @@ export default function AdminProducts() {
         confirmLabel="Archive"
         tone="danger"
         onConfirm={confirmDelete}
-        onClose={() => setPendingDelete(null)}
+        onCancel={() => setPendingDelete(null)}
       />
 
       <AdminModal

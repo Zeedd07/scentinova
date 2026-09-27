@@ -39,7 +39,17 @@ export async function fetchOrderConfirmation(orderNumber, token) {
   return data.data.order
 }
 
-export async function trackOrder(token) {
+/** Order number + checkout token or emailed tracking code (sent in the body, not the URL). */
+export async function trackOrder({ orderNumber, token }) {
+  const data = await apiRequest('/orders/track', {
+    method: 'POST',
+    body: { orderNumber, token },
+  })
+  return data.data.order
+}
+
+/** Older confirmation links carried only the checkout token. */
+export async function trackOrderByLegacyToken(token) {
   const data = await apiRequest(`/orders/track/${encodeURIComponent(token)}`)
   return data.data.order
 }

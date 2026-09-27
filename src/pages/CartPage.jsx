@@ -1,5 +1,5 @@
 /**
- * Cart bag — checkout happens on /checkout via Razorpay.
+ * Cart bag - fees and the final total are calculated by the server on /checkout.
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -8,9 +8,6 @@ import { formatPrice } from '../data/products'
 
 export default function CartPage() {
   const { items, subtotal, count, setQty, removeItem, clearCart } = useCart()
-
-  const shipping = subtotal >= 2500 || subtotal === 0 ? 0 : 99
-  const total = subtotal + shipping
 
   return (
     <div className="bg-ivory pt-16">
@@ -29,12 +26,12 @@ export default function CartPage() {
             transition={{ delay: 0.08 }}
             className="mt-3 font-display text-4xl leading-tight text-charcoal sm:text-5xl md:text-6xl"
           >
-            Cart & <span className="italic text-gold">Bag</span>
+            Cart & <span className="italic text-bronze">Bag</span>
           </motion.h1>
           <p className="mt-4 text-sm text-muted">
             {count === 0
               ? 'No fragrances selected yet.'
-              : `${count} ${count === 1 ? 'piece' : 'pieces'} · Prepaid checkout`}
+              : `${count} ${count === 1 ? 'piece' : 'pieces'}`}
           </p>
         </div>
       </section>
@@ -83,7 +80,7 @@ export default function CartPage() {
                         </p>
                         <Link
                           to={`/product/${item.slug}`}
-                          className="mt-1 block font-display text-2xl text-charcoal transition hover:text-gold sm:text-3xl"
+                          className="mt-1 block font-display text-2xl text-charcoal transition hover:text-scent-red sm:text-3xl"
                         >
                           {item.name}
                         </Link>
@@ -91,7 +88,7 @@ export default function CartPage() {
                           {formatPrice(item.price)} each
                         </p>
                       </div>
-                      <p className="shrink-0 font-display text-xl text-gold sm:text-2xl">
+                      <p className="shrink-0 font-display text-xl text-bronze sm:text-2xl">
                         {formatPrice(item.price * item.qty)}
                       </p>
                     </div>
@@ -118,7 +115,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => removeItem(item.id)}
-                        className="text-[11px] tracking-[0.28em] text-muted uppercase transition hover:text-gold"
+                        className="text-[11px] tracking-[0.28em] text-muted uppercase transition hover:text-scent-red"
                       >
                         Remove
                       </button>
@@ -133,7 +130,7 @@ export default function CartPage() {
             <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
               <Link
                 to="/shop"
-                className="text-[11px] tracking-[0.32em] text-muted uppercase transition hover:text-gold"
+                className="text-[11px] tracking-[0.32em] text-muted uppercase transition hover:text-scent-red"
               >
                 ← Continue shopping
               </Link>
@@ -154,7 +151,7 @@ export default function CartPage() {
               Order summary
             </p>
             <h2 className="mt-2 font-display text-3xl text-charcoal">
-              Ready to <span className="italic text-gold">seal</span>
+              Ready to <span className="italic text-bronze">seal</span>
             </h2>
             <dl className="mt-8 space-y-4 text-sm">
               <div className="flex justify-between">
@@ -163,19 +160,11 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted">Shipping</dt>
-                <dd className="text-charcoal">
-                  {shipping === 0 ? 'Complimentary' : formatPrice(shipping)}
-                </dd>
-              </div>
-              <div className="flex justify-between border-t border-stone pt-4">
-                <dt className="font-display text-xl text-charcoal">Total</dt>
-                <dd className="font-display text-2xl text-gold">
-                  {formatPrice(total)}
-                </dd>
+                <dd className="text-charcoal">Calculated at checkout</dd>
               </div>
             </dl>
             <p className="mt-4 text-[11px] leading-relaxed text-muted">
-              Final total is confirmed on the checkout page. Prepaid via Razorpay.
+              Shipping, fees and your final total are confirmed on the checkout page.
             </p>
             <Link
               to="/checkout"

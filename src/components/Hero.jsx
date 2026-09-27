@@ -1,17 +1,13 @@
 /**
- * Editorial hero — pinned canvas frame-scrub on scroll (desktop + mobile).
- * Single RAF: dt-independent lerp + draw + UI chrome. Lenis + ScrollTrigger.
+ * Editorial hero: pinned canvas frame-scrub on scroll (single RAF + ScrollTrigger).
+ * The frame set (landscape / portrait) is chosen by the parent.
  */
 import { useEffect, useRef, useState, startTransition } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import {
-  TOTAL_FRAMES,
-  isFrameDrawable,
-  frameSize,
-} from '../hooks/useFrameSequence'
+import { isFrameDrawable, frameSize } from '../hooks/useFrameSequence'
 import { chapterAt } from '../data/storyChapters'
 import Particles from './Particles'
 import { useLenis } from './SmoothScroll'
@@ -21,7 +17,13 @@ gsap.registerPlugin(ScrollTrigger)
 
 const BG = '#0d0c0b'
 
-export default function Hero({ getFrame, priorityReady, isMobile }) {
+export default function Hero({
+  getFrame,
+  getExactFrame,
+  priorityReady,
+  totalFrames,
+  isMobile,
+}) {
   const pinRef = useRef(null)
   const stickyRef = useRef(null)
   const canvasRef = useRef(null)
@@ -61,12 +63,12 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
   const [showEndCta, setShowEndCta] = useState(false)
 
   useEffect(() => {
-    if (priorityReady) {
+    if (priorityReady || isMobile) {
       const t = setTimeout(() => setReady(true), 220)
       return () => clearTimeout(t)
     }
     return undefined
-  }, [priorityReady])
+  }, [priorityReady, isMobile])
 
   // ── Canvas + single RAF loop ──────────────────────────────────────────
   useEffect(() => {
@@ -76,14 +78,19 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
 
     const ctx = canvas.getContext('2d', {
       alpha: false,
-      desynchronized: true,
       colorSpace: 'srgb',
       willReadFrequently: false,
     })
     if (!ctx) return undefined
 
-    ctx.imageSmoothingEnabled = !isMobile
-    if (!isMobile) ctx.imageSmoothingQuality = 'high'
+    const smoothingQuality = isMobile ? 'medium' : 'high'
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = smoothingQuality
+
+    // The frame set may have changed (orientation flip); never paint a stale set
+    frameState.current.lastDrawable = null
+    frameState.current.lastDrawn = -1
+    frameState.current.lastDrawnExact = false
 
     let resizeTimer = 0
 
@@ -109,11 +116,6 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
         dx = (cw - dw) / 2
         dy = 0
       }
-      // Slight mobile lift — keep full cover so we never flash letterbox black
-      if (isMobile) {
-        dy -= ch * 0.04
-        dh += ch * 0.04
-      }
 
       const rect = { dw, dh, dx, dy }
       coverRef.current.cache.set(key, rect)
@@ -122,7 +124,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
 
     const resize = () => {
       const rawDpr = window.devicePixelRatio || 1
-      const dpr = isMobile ? 1 : Math.min(rawDpr, 2)
+      const dpr = Math.min(rawDpr, isMobile ? 1.5 : 2)
       const { clientWidth: w, clientHeight: h } = canvas
       if (w < 2 || h < 2) return
 
@@ -138,8 +140,8 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       canvas.width = Math.max(1, Math.floor(w * dpr))
       canvas.height = Math.max(1, Math.floor(h * dpr))
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.imageSmoothingEnabled = !isMobile
-      if (!isMobile) ctx.imageSmoothingQuality = 'high'
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = smoothingQuality
       coverRef.current.cw = w
       coverRef.current.ch = h
       coverRef.current.cssW = w
@@ -158,53 +160,37 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
 
     function resolveImage(index) {
       const rounded = Math.round(index)
-      const direct = getFrame(rounded)
+      const direct = getExactFrame(rounded)
       if (isFrameDrawable(direct)) {
         frameState.current.lastGood = rounded
-        frameState.current.lastDrawable = direct
         return { img: direct, drawnIndex: rounded }
       }
 
-      // Prefer previously drawn bitmap (never flash black during load gaps)
+      // Nearest loaded neighbour while the background pass fills gaps
+      const nearest = getFrame(rounded)
+      if (isFrameDrawable(nearest)) {
+        return { img: nearest, drawnIndex: -1 }
+      }
+
       if (isFrameDrawable(frameState.current.lastDrawable)) {
         return {
           img: frameState.current.lastDrawable,
           drawnIndex: frameState.current.lastGood,
         }
       }
-
-      const lastGood = getFrame(frameState.current.lastGood)
-      if (isFrameDrawable(lastGood)) {
-        frameState.current.lastDrawable = lastGood
-        return {
-          img: lastGood,
-          drawnIndex: frameState.current.lastGood,
-        }
-      }
-
-      for (let d = 1; d <= TOTAL_FRAMES; d += 1) {
-        const a = getFrame(rounded - d)
-        if (isFrameDrawable(a)) {
-          frameState.current.lastDrawable = a
-          return { img: a, drawnIndex: rounded - d }
-        }
-        const b = getFrame(rounded + d)
-        if (isFrameDrawable(b)) {
-          frameState.current.lastDrawable = b
-          return { img: b, drawnIndex: rounded + d }
-        }
-      }
       return null
     }
+
+    const labelPad = String(totalFrames).length
 
     function flushUiChrome(progress) {
       progressRef.current = progress
       if (progressBarRef.current) {
         progressBarRef.current.style.height = `${progress * 100}%`
       }
-      const frameNum = Math.round(1 + progress * (TOTAL_FRAMES - 1))
+      const frameNum = Math.round(1 + progress * (totalFrames - 1))
       if (frameLabelRef.current) {
-        frameLabelRef.current.textContent = String(frameNum).padStart(2, '0')
+        frameLabelRef.current.textContent = String(frameNum).padStart(labelPad, '0')
       }
 
       const next = chapterAt(progress)
@@ -224,7 +210,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       const { w: iw, h: ih } = frameSize(img)
       if (iw < 1 || ih < 1) return false
       const { dw, dh, dx, dy } = computeCover(iw, ih, cw, ch)
-      // Always fill first on mobile — prevents black bars / cleared-canvas flashes
+      // Always fill first on mobile - prevents black bars / cleared-canvas flashes
       ctx.fillStyle = BG
       ctx.fillRect(0, 0, cw, ch)
       ctx.drawImage(img, dx, dy, dw, dh)
@@ -246,7 +232,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
 
       const resolved = resolveImage(rounded)
       if (!resolved) {
-        // Hold last frame — never leave a wiped/black canvas mid-scrub
+        // Hold last frame - never leave a wiped/black canvas mid-scrub
         if (isFrameDrawable(frameState.current.lastDrawable)) {
           paintDrawable(frameState.current.lastDrawable, cw, ch)
         }
@@ -282,6 +268,11 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       if (Math.abs(delta) < 0.0005) {
         if (current !== target) {
           frameState.current.current = target
+          drawFrame(target)
+        } else if (
+          !frameState.current.lastDrawnExact &&
+          getExactFrame(Math.round(target))
+        ) {
           drawFrame(target)
         }
       } else {
@@ -323,7 +314,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       window.removeEventListener('resize', onResize)
       io.disconnect()
     }
-  }, [priorityReady, getFrame, isMobile])
+  }, [priorityReady, getFrame, getExactFrame, totalFrames, isMobile])
 
   // ── ScrollTrigger pin + scrub ─────────────────────────────────────────
   useEffect(() => {
@@ -331,11 +322,12 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
     const pin = pinRef.current
     if (!pin) return undefined
 
-    // iOS Safari rubber-band / URL-bar mitigation
-    try {
-      ScrollTrigger.normalizeScroll(true)
-    } catch {
-      /* older GSAP */
+    if (!isMobile) {
+      try {
+        ScrollTrigger.normalizeScroll(true)
+      } catch {
+        /* older GSAP */
+      }
     }
 
     const st = ScrollTrigger.create({
@@ -348,10 +340,12 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       invalidateOnRefresh: true,
       fastScrollEnd: true,
       onUpdate: (self) => {
-        frameState.current.target = 1 + self.progress * (TOTAL_FRAMES - 1)
+        frameState.current.target = 1 + self.progress * (totalFrames - 1)
         frameState.current.pendingProgress = self.progress
       },
     })
+    frameState.current.target = 1 + st.progress * (totalFrames - 1)
+    frameState.current.pendingProgress = st.progress
 
     let refreshTimer = 0
     const scheduleRefresh = () => {
@@ -377,7 +371,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       window.removeEventListener('resize', scheduleRefresh)
       st.kill()
     }
-  }, [priorityReady, isMobile])
+  }, [priorityReady, totalFrames, isMobile])
 
   const scrollToCollection = (e) => {
     e.preventDefault()
@@ -400,14 +394,16 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
       ref={pinRef}
       className="relative bg-black"
       style={{
-        height: isMobile ? '320vh' : '400vh',
+        height: '400vh',
         touchAction: 'pan-y',
       }}
-      aria-label="SCENTINOVA — cinematic frame sequence"
+      aria-label="SCENTINOVA - cinematic frame sequence"
     >
       <div
         ref={stickyRef}
-        className="hero-sticky sticky top-0 flex h-dvh w-full flex-col overflow-hidden bg-black"
+        className={`hero-sticky sticky top-0 flex w-full flex-col overflow-hidden bg-black ${
+          isMobile ? 'h-svh' : 'h-dvh'
+        }`}
         style={{
           contain: 'layout paint size',
           transform: 'translateZ(0)',
@@ -449,24 +445,26 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
             </div>
           )}
 
-          <div className="pointer-events-none absolute left-5 top-1/2 z-[6] hidden h-[42vh] -translate-y-1/2 flex-col items-center sm:left-8 md:flex lg:left-12">
-            <span
-              ref={frameLabelRef}
-              className="font-display text-sm tabular-nums text-gold-light"
-            >
-              01
-            </span>
-            <div className="relative my-3 w-px flex-1 bg-gold/20">
-              <div
-                ref={progressBarRef}
-                className="absolute inset-x-0 top-0 w-px bg-gradient-to-b from-gold to-gold-light"
-                style={{ height: '0%' }}
-              />
+          {!isMobile && (
+            <div className="pointer-events-none absolute left-5 top-1/2 z-[6] hidden h-[42vh] -translate-y-1/2 flex-col items-center sm:left-8 md:flex lg:left-12">
+              <span
+                ref={frameLabelRef}
+                className="font-display text-sm tabular-nums text-gold-light"
+              >
+                {'1'.padStart(String(totalFrames).length, '0')}
+              </span>
+              <div className="relative my-3 w-px flex-1 bg-gold/20">
+                <div
+                  ref={progressBarRef}
+                  className="absolute inset-x-0 top-0 w-px bg-gradient-to-b from-gold to-gold-light"
+                  style={{ height: '0%' }}
+                />
+              </div>
+              <span className="font-display text-sm tabular-nums text-warm-white/50">
+                {totalFrames}
+              </span>
             </div>
-            <span className="font-display text-sm tabular-nums text-bronze">
-              {String(TOTAL_FRAMES).padStart(2, '0')}
-            </span>
-          </div>
+          )}
 
           <div className="pointer-events-none absolute inset-0 z-[5] flex items-end px-5 pb-[5.5rem] sm:items-center sm:px-10 sm:pb-0 md:pl-24 lg:pl-36">
             <AnimatePresence>
@@ -499,7 +497,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.45 }}
                       >
-                        {chapter.eyebrow} — {chapter.title}
+                        {chapter.eyebrow} - {chapter.title}
                       </motion.p>
                     )}
                   </AnimatePresence>
@@ -507,7 +505,7 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
                   <div className="mt-7 flex flex-wrap items-center gap-4 sm:mt-10 sm:gap-5">
                     <Link
                       to="/shop"
-                      className="btn-luxury inline-flex items-center gap-2 border border-champagne/50 px-6 py-3 text-[11px] text-warm-white hover:bg-champagne hover:text-charcoal sm:gap-3 sm:px-8 sm:py-3.5"
+                      className="btn-luxury inline-flex items-center gap-2 border border-champagne/50 px-6 py-3 text-[11px] text-warm-white sm:gap-3 sm:px-8 sm:py-3.5"
                     >
                       Discover the collection
                       <span aria-hidden>→</span>
@@ -518,17 +516,35 @@ export default function Hero({ getFrame, priorityReady, isMobile }) {
             </AnimatePresence>
           </div>
 
-          {!showEndCta && (
+          {isMobile && !showEndCta && (
+            <motion.button
+              type="button"
+              onClick={scrollToCollection}
+              className="absolute bottom-3 left-3 z-[6] flex items-center gap-3 px-2 py-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: ready ? 0.85 : 0 }}
+              transition={{ delay: 1.1, duration: 0.8 }}
+            >
+              <span className="text-[10px] tracking-[0.32em] text-warm-white/50 uppercase">
+                Enter the collection
+              </span>
+              <span aria-hidden className="text-[11px] text-gold">
+                ↓
+              </span>
+            </motion.button>
+          )}
+
+          {!isMobile && !showEndCta && (
             <motion.div
               className="pointer-events-none absolute bottom-5 left-5 z-[5] flex items-center gap-3 sm:bottom-10 sm:left-auto sm:right-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: ready ? 0.7 : 0 }}
               transition={{ delay: 1.1, duration: 0.8 }}
             >
-              <span className="text-[10px] tracking-[0.32em] text-bronze uppercase sm:text-[11px] sm:tracking-[0.35em]">
+              <span className="text-[10px] tracking-[0.32em] text-warm-white/50 uppercase sm:text-[11px] sm:tracking-[0.35em]">
                 Scroll to explore
               </span>
-              <span className="h-px w-8 bg-gradient-to-r from-gold to-transparent sm:w-10" />
+              <span className="h-px w-8 bg-gradient-to-r from-scent-red-light to-transparent sm:w-10" />
             </motion.div>
           )}
 

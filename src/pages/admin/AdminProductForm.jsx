@@ -1,7 +1,7 @@
 /**
- * Create / edit perfume — MongoDB + Cloudinary image uploads.
+ * Create / edit perfume - MongoDB + Cloudinary image uploads.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CATEGORIES } from '../../data/products'
 import AdminModal from '../../components/admin/AdminModal'
@@ -13,6 +13,9 @@ import {
 import { uploadAdminImage } from '../../services/uploadApi'
 import { useCatalog } from '../../context/CatalogContext'
 import { ApiClientError } from '../../services/apiClient'
+import NoteImageEditor from '../../components/admin/NoteImageEditor'
+import ProductFeesEditor from '../../components/admin/ProductFeesEditor'
+import { EMPTY_FEES_FORM, feesToForm, parseFeesForm } from '../../lib/productFees'
 
 const emptyForm = {
   name: '',
@@ -35,6 +38,8 @@ const emptyForm = {
   notesTop: '',
   notesHeart: '',
   notesBase: '',
+  noteImages: [],
+  fees: EMPTY_FEES_FORM,
 }
 
 function productToForm(p) {
@@ -75,6 +80,14 @@ function productToForm(p) {
     notesBase: Array.isArray(p.notes?.base)
       ? p.notes.base.join(', ')
       : String(p.notes?.base || ''),
+    noteImages: (p.noteImages || []).map((n) => ({
+      tier: n.tier,
+      noteKey: n.noteKey,
+      assetId: n.assetId ? String(n.assetId) : null,
+      alt: n.alt || null,
+      hideImage: Boolean(n.hideImage),
+    })),
+    fees: feesToForm(p.fees),
   }
 }
 
@@ -105,6 +118,16 @@ export default function AdminProductForm() {
   const [loadError, setLoadError] = useState('')
   const [uploadProgress, setUploadProgress] = useState(null)
   const [uploadError, setUploadError] = useState('')
+  const [feeErrors, setFeeErrors] = useState({})
+
+  const parsedNotes = useMemo(
+    () => ({
+      top: parseNotes(form.notesTop),
+      heart: parseNotes(form.notesHeart),
+      base: parseNotes(form.notesBase),
+    }),
+    [form.notesTop, form.notesHeart, form.notesBase],
+  )
 
   useEffect(() => {
     if (isNew) {
@@ -262,6 +285,13 @@ export default function AdminProductForm() {
       return
     }
 
+    const { fees, errors: nextFeeErrors } = parseFeesForm(form.fees)
+    setFeeErrors(nextFeeErrors)
+    if (!fees) {
+      setStatus({ type: 'error', text: 'Fix the fee amounts before saving.' })
+      return
+    }
+
     setPendingPayload({
       name: form.name,
       slug: form.slug || undefined,
@@ -283,11 +313,9 @@ export default function AdminProductForm() {
         : [],
       description: form.description,
       story: form.story,
-      notes: {
-        top: parseNotes(form.notesTop),
-        heart: parseNotes(form.notesHeart),
-        base: parseNotes(form.notesBase),
-      },
+      notes: parsedNotes,
+      noteImages: form.noteImages,
+      fees,
     })
     setConfirmSave(true)
   }
@@ -512,6 +540,17 @@ export default function AdminProductForm() {
           </label>
         </section>
 
+        <section className="border-t border-stone pt-6">
+          <ProductFeesEditor
+            value={form.fees}
+            errors={feeErrors}
+            onChange={(next) => {
+              set('fees', next)
+              setFeeErrors({})
+            }}
+          />
+        </section>
+
         <section className="space-y-4">
           <div>
             <div className="flex flex-wrap items-end justify-between gap-2">
@@ -547,7 +586,7 @@ export default function AdminProductForm() {
             {uploadProgress != null && (
               <div className="mt-2 h-1.5 w-full max-w-xs rounded-sm bg-[#ebe4d6]">
                 <div
-                  className="h-full rounded-sm bg-[#b4975a] transition-all"
+                  className="h-full rounded-sm bg-gold transition-all"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -626,7 +665,7 @@ export default function AdminProductForm() {
             </div>
           ) : (
             <p className="border border-dashed border-[#e0d6c4] px-4 py-8 text-center text-[14px] admin-muted">
-              No images yet — add at least one for the shop.
+              No images yet - add at least one for the shop.
             </p>
           )}
 
@@ -686,6 +725,16 @@ export default function AdminProductForm() {
               onChange={(e) => set('notesBase', e.target.value)}
             />
           </label>
+        </section>
+
+        <section className="border-t border-stone pt-6">
+          <NoteImageEditor
+            key={existing?.updatedAt || existing?.id || 'new'}
+            notes={parsedNotes}
+            noteImages={form.noteImages}
+            initialMedia={existing?.media}
+            onChange={(next) => set('noteImages', next)}
+          />
         </section>
 
         <div className="flex flex-wrap items-center gap-3">

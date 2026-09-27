@@ -1,5 +1,5 @@
 /**
- * Four Signatures — sharp black→cream cut from hero, then copy + product row.
+ * Four Signatures - sharp black→cream cut from hero, then copy + product row.
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -48,7 +48,7 @@ export default function SignatureCollection() {
 
   return (
     <>
-      {/* Cream-gold stage — warm ivory with golden light */}
+      {/* Cream-gold stage - warm ivory with golden light */}
       <section
         id="collection"
         className="signatures relative scroll-mt-16 overflow-x-clip sm:scroll-mt-20 lg:scroll-mt-24"
@@ -61,8 +61,8 @@ export default function SignatureCollection() {
           className="pointer-events-none absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 85% 55% at 50% -8%, rgba(212,175,55,0.12), transparent 58%),
-              radial-gradient(ellipse 55% 45% at 12% 70%, rgba(180,151,90,0.06), transparent 55%),
+              radial-gradient(ellipse 85% 55% at 50% -8%, rgba(212,175,90,0.12), transparent 58%),
+              radial-gradient(ellipse 55% 45% at 12% 70%, rgba(201,162,74,0.06), transparent 55%),
               radial-gradient(ellipse 50% 40% at 88% 55%, rgba(201,162,74,0.08), transparent 50%)
             `,
           }}
@@ -78,12 +78,12 @@ export default function SignatureCollection() {
               transition={{ duration: 0.85, ease: easeOutExpo }}
               className="max-w-xl"
             >
-              <p className="mb-4 text-[11px] font-medium tracking-[0.42em] text-[#a07838] uppercase">
+              <p className="mb-4 text-[11px] font-medium tracking-[0.42em] text-bronze uppercase">
                 The Four Signatures
               </p>
               <h2
                 id="featured-perfumes-title"
-                className="font-display text-4xl leading-[1.1] text-[#171512] uppercase sm:text-5xl lg:text-[3.35rem]"
+                className="font-display text-4xl leading-[1.1] text-charcoal uppercase sm:text-5xl lg:text-[3.35rem]"
               >
                 Precious, potent, personal
               </h2>
@@ -94,14 +94,14 @@ export default function SignatureCollection() {
               whileInView={fadeUp.animate}
               viewport={viewportOnce}
               transition={{ duration: 0.85, delay: 0.08, ease: easeOutExpo }}
-              className="max-w-sm border-l-2 border-[#c9a84a]/70 pl-5 lg:border-l-0 lg:pl-0 lg:text-right"
+              className="max-w-sm border-l-2 border-gold/70 pl-5 lg:border-l-0 lg:pl-0 lg:text-right"
             >
-              <p className="font-display text-lg leading-relaxed text-[#3d3428] sm:text-xl">
+              <p className="font-display text-lg leading-relaxed text-espresso sm:text-xl">
                 Four distinct signatures, composed for presence.
               </p>
               <Link
                 to="/shop"
-                className="mt-5 inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.32em] text-[#9a7b3c] uppercase transition hover:text-[#c4a04a]"
+                className="mt-5 inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.32em] text-bronze uppercase transition hover:text-scent-red"
               >
                 Explore the collection <span aria-hidden>↗</span>
               </Link>
@@ -110,9 +110,9 @@ export default function SignatureCollection() {
         </div>
 
         {/* Separator into products */}
-        <div className="relative z-10 mx-auto h-px max-w-6xl bg-gradient-to-r from-transparent via-[#c9a84a]/65 to-transparent" />
+        <div className="relative z-10 mx-auto h-px max-w-6xl bg-gradient-to-r from-transparent via-gold/65 to-transparent" />
 
-        {/* ── 3. Product grid — 2×2 on mobile, 4 across on desktop ── */}
+        {/* ── 3. Product grid - 2×2 on mobile, 4 across on desktop ── */}
         <div className="relative z-10 mx-auto max-w-[1400px] pt-4 pb-8 sm:pb-12 lg:pb-16">
           <div
             className="grid grid-cols-2 lg:grid-cols-4"
@@ -143,15 +143,15 @@ export default function SignatureCollection() {
                     delay: Math.min(i, 3) * 0.06,
                     ease: easeOutExpo,
                   }}
-                  className={`group relative flex flex-col items-center px-3 py-10 text-center sm:px-5 sm:py-14 lg:border-r lg:border-[#d4c4a0]/80 lg:py-20 lg:last:border-r-0 ${
-                    isOddCol ? 'border-r border-[#d4c4a0]/80 lg:border-r' : ''
+                  className={`group relative flex flex-col items-center px-3 py-10 text-center sm:px-5 sm:py-14 lg:border-r lg:border-gold/35 lg:py-20 lg:last:border-r-0 ${
+                    isOddCol ? 'border-r border-gold/35 lg:border-r' : ''
                   } ${
                     isTopRow
-                      ? 'border-b border-[#d4c4a0]/80 lg:border-b-0'
+                      ? 'border-b border-gold/35 lg:border-b-0'
                       : ''
                   }`}
                 >
-                  <p className="mb-5 text-[9px] font-medium tracking-[0.28em] text-[#8a6e3a] uppercase sm:mb-8 sm:text-[10px] sm:tracking-[0.4em]">
+                  <p className="mb-5 text-[9px] font-medium tracking-[0.28em] text-bronze uppercase sm:mb-8 sm:text-[10px] sm:tracking-[0.4em]">
                     {item.family}
                   </p>
 
@@ -174,21 +174,21 @@ export default function SignatureCollection() {
                     />
                   </Link>
 
-                  <p className="text-[9px] font-medium tracking-[0.28em] text-[#9a7b3c] uppercase sm:text-[10px] sm:tracking-[0.3em]">
+                  <p className="text-[9px] font-medium tracking-[0.28em] text-bronze uppercase sm:text-[10px] sm:tracking-[0.3em]">
                     {item.product.concentration}
                   </p>
                   <Link
                     to={`/product/${item.slug}`}
-                    className="mt-1.5 font-display text-base leading-tight tracking-[0.04em] text-[#2a2218] uppercase transition group-hover:text-[#c4a04a] sm:mt-2 sm:text-2xl sm:tracking-[0.06em] lg:text-[1.65rem]"
+                    className="mt-1.5 font-display text-base leading-tight tracking-[0.04em] text-charcoal uppercase transition group-hover:text-scent-red sm:mt-2 sm:text-2xl sm:tracking-[0.06em] lg:text-[1.65rem]"
                   >
                     {item.product.name}
                   </Link>
-                  <p className="mt-2 max-w-[10rem] text-[9px] leading-relaxed tracking-[0.08em] text-[#6b5a3c] uppercase sm:mt-3 sm:max-w-[16rem] sm:text-[11px] sm:tracking-[0.12em]">
+                  <p className="mt-2 max-w-[10rem] text-[9px] leading-relaxed tracking-[0.08em] text-muted uppercase sm:mt-3 sm:max-w-[16rem] sm:text-[11px] sm:tracking-[0.12em]">
                     {notes}
                   </p>
                   <Link
                     to={`/product/${item.slug}`}
-                    className="mt-5 inline-flex items-center gap-2 border-b border-[#c9a84a]/55 pb-0.5 text-[9px] font-medium tracking-[0.24em] text-[#9a7b3c] uppercase transition group-hover:border-[#c4a04a] group-hover:text-[#c4a04a] sm:mt-8 sm:text-[11px] sm:tracking-[0.28em]"
+                    className="mt-5 inline-flex items-center gap-2 border-b border-gold/55 pb-0.5 text-[9px] font-medium tracking-[0.24em] text-bronze uppercase transition group-hover:border-scent-red group-hover:text-scent-red sm:mt-8 sm:text-[11px] sm:tracking-[0.28em]"
                   >
                     Discover <span aria-hidden>→</span>
                   </Link>

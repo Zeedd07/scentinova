@@ -1,5 +1,5 @@
 /**
- * Product analytics — live backend metrics (no fake seed data).
+ * Product analytics - live backend metrics (no fake seed data).
  */
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -20,7 +20,7 @@ function Bar({ value, max, label, display }) {
       </div>
       <div className="h-2 rounded-sm bg-[#ebe4d6]">
         <div
-          className="h-full rounded-sm bg-[#b4975a]"
+          className="h-full rounded-sm bg-gold"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -96,7 +96,7 @@ export default function AdminAnalytics() {
           ],
         ].map(([l, v]) => (
           <div key={l} className="admin-surface px-4 py-3">
-            <p className="text-[13px] text-[#766f66]">{l}</p>
+            <p className="text-[13px] text-muted">{l}</p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-[#1b1917]">
               {v}
             </p>

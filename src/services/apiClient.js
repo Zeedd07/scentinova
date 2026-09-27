@@ -136,7 +136,7 @@ export async function apiRequest(
 }
 
 /**
- * Multipart upload with optional XMLHttpRequest progress callback (0–100).
+ * Multipart upload with optional XMLHttpRequest progress callback (0-100).
  */
 export function apiUpload(path, formData, { auth = true, onProgress } = {}) {
   return new Promise((resolve, reject) => {

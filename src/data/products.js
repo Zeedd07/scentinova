@@ -129,9 +129,12 @@ export function formatPrice(n) {
   if (n == null || n === '' || Number.isNaN(Number(n))) {
     return '-'
   }
+  const value = Number(n)
+  const digits = Number.isInteger(value) ? 0 : 2
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(Number(n))
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value)
 }

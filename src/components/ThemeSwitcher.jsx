@@ -1,5 +1,5 @@
 /**
- * Compact theme switcher — swatches in the navbar.
+ * Compact theme switcher - swatches in the navbar.
  */
 import { useEffect, useRef, useState } from 'react'
 import { useTheme } from '../context/ThemeContext'

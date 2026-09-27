@@ -1,5 +1,5 @@
 /**
- * Gallery — stills from the frame sequence with light parallax on scroll.
+ * Gallery - stills from the frame sequence with light parallax on scroll.
  */
 import { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'

@@ -1,5 +1,5 @@
 /**
- * Customer praise — three testimonial columns.
+ * Customer praise - three testimonial columns.
  */
 import { motion } from 'framer-motion'
 

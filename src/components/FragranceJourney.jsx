@@ -1,5 +1,5 @@
 /**
- * Fragrance Journey — infinite marquee of ingredient orbs.
+ * Fragrance Journey - infinite marquee of ingredient orbs.
  * Sharp cream→black cut from Four Signatures above.
  */
 import { useState } from 'react'
@@ -10,7 +10,7 @@ const INGREDIENTS = [
   {
     name: 'Bergamot',
     layer: 'Top',
-    copy: 'Sunlit citrus — the first bright breath.',
+    copy: 'Sunlit citrus - the first bright breath.',
     img: '/ingredients/bergamot.jpg',
   },
   {
@@ -28,7 +28,7 @@ const INGREDIENTS = [
   {
     name: 'Oud',
     layer: 'Base',
-    copy: 'Smoked wood — velvet depth that lingers.',
+    copy: 'Smoked wood - velvet depth that lingers.',
     img: '/ingredients/oud.jpg',
   },
   {
@@ -198,7 +198,7 @@ export default function FragranceJourney() {
             transition={{ delay: 0.08, duration: 0.8, ease: easeOutExpo }}
             className="mt-5 max-w-md text-sm leading-relaxed text-sand sm:text-[15px]"
           >
-            Six notes in crystal light — drifting in a continuous ribbon. Hover
+            Six notes in crystal light - drifting in a continuous ribbon. Hover
             to pause and open each chapter.
           </motion.p>
         </div>

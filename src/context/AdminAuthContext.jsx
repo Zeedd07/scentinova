@@ -1,5 +1,5 @@
 /**
- * Admin auth — access token in memory, refresh via HttpOnly cookie.
+ * Admin auth - access token in memory, refresh via HttpOnly cookie.
  */
 import {
   createContext,

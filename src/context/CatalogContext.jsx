@@ -1,5 +1,5 @@
 /**
- * Catalog — MongoDB via Scentinova API (storefront source of truth).
+ * Catalog - MongoDB via Scentinova API (storefront source of truth).
  * Cart remains localStorage; orders/analytics go to the backend.
  */
 import {
@@ -128,7 +128,7 @@ export function CatalogProvider({ children }) {
     trackView,
     trackAddToCart,
     placeOrder,
-    // Admin compatibility stubs — real admin uses AdminData / API services
+    // Admin compatibility stubs - real admin uses AdminData / API services
     analytics: {},
     orders: [],
     stats: {

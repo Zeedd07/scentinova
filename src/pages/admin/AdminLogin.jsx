@@ -1,5 +1,5 @@
 /**
- * Admin login — maison cream / charcoal / gold.
+ * Admin login - maison cream / charcoal / gold.
  */
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
@@ -39,13 +39,13 @@ export default function AdminLogin() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f7f3eb] px-6">
       <div className="w-full max-w-md">
-        <p className="text-center text-[11px] tracking-[0.4em] text-[#7a6438] uppercase">
+        <p className="text-center text-[11px] tracking-[0.4em] text-bronze uppercase">
           Scentinova
         </p>
-        <h1 className="mt-3 text-center font-display text-4xl text-[#171512]">
-          Admin <span className="italic text-[#9a7b3c]">sign in</span>
+        <h1 className="mt-3 text-center font-display text-4xl text-charcoal">
+          Admin <span className="italic text-bronze">sign in</span>
         </h1>
-        <p className="mt-3 text-center text-sm text-[#766f66]">
+        <p className="mt-3 text-center text-sm text-muted">
           Secure access to the maison catalog.
         </p>
 
@@ -59,7 +59,7 @@ export default function AdminLogin() {
             </p>
           )}
           <label className="block">
-            <span className="text-[12px] tracking-[0.18em] text-[#766f66] uppercase">
+            <span className="text-[12px] tracking-[0.18em] text-muted uppercase">
               Email
             </span>
             <input
@@ -68,11 +68,11 @@ export default function AdminLogin() {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 w-full border border-[#d8d0c2] bg-white px-3 py-2.5 text-[#171512] outline-none focus:border-[#b4975a]"
+              className="mt-2 w-full border border-stone bg-white px-3 py-2.5 text-charcoal outline-none focus:border-gold"
             />
           </label>
           <label className="block">
-            <span className="text-[12px] tracking-[0.18em] text-[#766f66] uppercase">
+            <span className="text-[12px] tracking-[0.18em] text-muted uppercase">
               Password
             </span>
             <input
@@ -81,7 +81,7 @@ export default function AdminLogin() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full border border-[#d8d0c2] bg-white px-3 py-2.5 text-[#171512] outline-none focus:border-[#b4975a]"
+              className="mt-2 w-full border border-stone bg-white px-3 py-2.5 text-charcoal outline-none focus:border-gold"
             />
           </label>
           <button
@@ -94,7 +94,7 @@ export default function AdminLogin() {
         </form>
 
         <p className="mt-6 text-center">
-          <Link to="/" className="text-sm text-[#9a7b3c] hover:underline">
+          <Link to="/" className="text-sm text-bronze hover:underline">
             ← Back to store
           </Link>
         </p>

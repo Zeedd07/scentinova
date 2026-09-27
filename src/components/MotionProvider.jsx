@@ -1,5 +1,5 @@
 /**
- * Motion provider — global transition + reduced-motion policy.
+ * Motion provider - global transition + reduced-motion policy.
  */
 import { MotionConfig } from 'framer-motion'
 import { defaultTransition } from '../lib/motion'

@@ -1,4 +1,4 @@
-# Scentinova — Heavenly Crafted Perfume
+# Scentinova - Heavenly Crafted Perfume
 
 Luxury fragrance boutique frontend. Four house signatures · scroll-driven hero · mock shop + admin.
 
@@ -31,7 +31,7 @@ Transparent bottle assets: `public/images/products/{slug}/hero.png`
 
 | Path | Page |
 |------|------|
-| `/` | Home — cinematic hero, Four Signatures, journey, CTA |
+| `/` | Home - cinematic hero, Four Signatures, journey, CTA |
 | `/shop` | Catalog |
 | `/product/:slug` | Product detail |
 | `/cart` | Cart + mock checkout |

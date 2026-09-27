@@ -1,5 +1,5 @@
 /**
- * Product card — editorial bottle presentation for shop grid.
+ * Product card - editorial bottle presentation for shop grid.
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -57,7 +57,7 @@ export default function ProductCard({ product, index = 0 }) {
             }}
           />
           {product.badge && (
-            <span className="absolute left-0 top-0 z-[3] border border-gold/50 bg-ivory/90 px-1.5 py-0.5 text-[8px] tracking-[0.18em] text-charcoal uppercase sm:px-2.5 sm:py-1 sm:text-[10px] sm:tracking-[0.25em]">
+            <span className="absolute left-0 top-0 z-[3] bg-scent-red px-1.5 py-0.5 text-[8px] tracking-[0.18em] text-warm-white uppercase sm:px-2.5 sm:py-1 sm:text-[10px] sm:tracking-[0.25em]">
               {product.badge}
             </span>
           )}
@@ -67,9 +67,10 @@ export default function ProductCard({ product, index = 0 }) {
       <p className="mt-5 text-[9px] tracking-[0.24em] text-muted uppercase sm:mt-8 sm:text-[10px] sm:tracking-[0.32em]">
         {product.concentration}
       </p>
+      <span aria-hidden className="mt-2 h-px w-6 bg-scent-red/60 sm:mt-3" />
       <Link
         to={`/product/${product.slug}`}
-        className="mt-1.5 font-display text-base leading-tight tracking-[0.04em] text-charcoal uppercase transition duration-300 hover:text-gold sm:mt-2 sm:text-2xl"
+        className="mt-1.5 font-display text-base leading-tight tracking-[0.04em] text-charcoal uppercase transition duration-300 hover:text-scent-red sm:mt-2 sm:text-2xl"
       >
         {product.name}
       </Link>
@@ -77,13 +78,13 @@ export default function ProductCard({ product, index = 0 }) {
         {notes}
       </p>
       <div className="mt-4 flex flex-col items-center gap-2 sm:mt-5 sm:gap-3">
-        <span className="font-display text-base text-gold sm:text-lg">
+        <span className="font-display text-base text-bronze sm:text-lg">
           {formatPrice(product.price)}
         </span>
         <button
           type="button"
           onClick={() => addItem(product)}
-          className="btn-luxury border border-charcoal/25 px-3 py-1.5 text-[10px] text-charcoal hover:border-gold sm:px-4 sm:py-2 sm:text-[11px]"
+          className="btn-luxury border border-charcoal/25 px-3 py-1.5 text-[10px] text-charcoal sm:px-4 sm:py-2 sm:text-[11px]"
         >
           Add
         </button>

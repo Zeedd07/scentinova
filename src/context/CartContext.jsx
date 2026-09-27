@@ -1,5 +1,5 @@
 /**
- * Cart state — localStorage-backed mock checkout.
+ * Cart state - localStorage-backed mock checkout.
  */
 import {
   createContext,

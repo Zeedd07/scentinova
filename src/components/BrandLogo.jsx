@@ -1,5 +1,5 @@
 /**
- * SCENTINOVA brand lockup — always navigates to home and scrolls to top.
+ * SCENTINOVA brand lockup - always navigates to home and scrolls to top.
  */
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useLenis } from './SmoothScroll'
@@ -36,7 +36,7 @@ export default function BrandLogo({
       return
     }
 
-    // Already on home — clear hash and return to hero top
+    // Already on home - clear hash and return to hero top
     if (window.location.hash) {
       window.history.replaceState(null, '', '/')
     }
@@ -50,7 +50,7 @@ export default function BrandLogo({
       className={`brand-logo group inline-flex items-center outline-none ring-0 transition duration-500 ${
         compact ? 'gap-0' : 'gap-0'
       } ${className}`}
-      aria-label="SCENTINOVA — go to home"
+      aria-label="SCENTINOVA - go to home"
     >
       <img
         src="/brand/logo.png"

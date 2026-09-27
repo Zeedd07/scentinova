@@ -1,5 +1,5 @@
 /**
- * Admin chrome — cream, minimal, readable.
+ * Admin chrome - cream, minimal, readable.
  */
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useAdminAuth } from '../../context/AdminAuthContext'
@@ -7,6 +7,7 @@ import { useAdminAuth } from '../../context/AdminAuthContext'
 const LINKS = [
   { to: '/admin', end: true, label: 'Overview' },
   { to: '/admin/products', label: 'Products' },
+  { to: '/admin/media', label: 'Media' },
   { to: '/admin/analytics', label: 'Analytics' },
   { to: '/admin/orders', label: 'Orders' },
 ]
@@ -22,7 +23,7 @@ export default function AdminLayout() {
             <p className="admin-eyebrow">Scentinova</p>
             <h1 className="admin-title text-2xl">Admin</h1>
             {user?.email && (
-              <p className="mt-0.5 text-[13px] text-[#766f66]">{user.email}</p>
+              <p className="mt-0.5 text-[13px] text-muted">{user.email}</p>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-3">

@@ -1,5 +1,5 @@
 /**
- * Floating gold dust / sparkle particles — visual match for mid-sequence mist.
+ * Floating gold dust / sparkle particles - visual match for mid-sequence mist.
  * Lightweight canvas overlay; pauses when off-screen via IntersectionObserver.
  */
 import { useEffect, useRef } from 'react'

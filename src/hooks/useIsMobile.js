@@ -1,6 +1,6 @@
 /**
  * Detect coarse pointer / narrow viewport → mobile layout tweaks
- * (lighter particles, leaner frame preload). Hero scroll-scrub runs on all devices.
+ * (no particles or frame counter, lighter hero canvas).
  */
 import { useEffect, useState } from 'react'
 

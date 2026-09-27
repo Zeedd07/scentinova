@@ -1,5 +1,5 @@
 /**
- * Site footer — black maison bar.
+ * Site footer - black maison bar.
  */
 import { Link } from 'react-router-dom'
 import BrandLogo from './BrandLogo'
@@ -23,7 +23,7 @@ export default function Footer() {
               className="justify-center lg:justify-start"
             />
             <p className="mt-4 text-[13px] leading-relaxed text-white/50 sm:text-sm">
-              Heavenly Crafted Perfume — four signatures composed for presence.
+              Heavenly Crafted Perfume - four signatures composed for presence.
             </p>
           </div>
 
@@ -40,7 +40,7 @@ export default function Footer() {
                   <Link
                     key={item.label}
                     to={item.to}
-                    className="transition hover:text-champagne"
+                    className="underline-offset-[6px] decoration-scent-red-light transition hover:text-champagne hover:underline"
                   >
                     {item.label}
                   </Link>
@@ -48,7 +48,7 @@ export default function Footer() {
                   <a
                     key={item.label}
                     href={item.href}
-                    className="transition hover:text-champagne"
+                    className="underline-offset-[6px] decoration-scent-red-light transition hover:text-champagne hover:underline"
                   >
                     {item.label}
                   </a>

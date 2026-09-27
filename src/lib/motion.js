@@ -1,5 +1,5 @@
 /**
- * Shared Motion config — site-wide easings, variants, and transitions.
+ * Shared Motion config - site-wide easings, variants, and transitions.
  * Docs: https://motion.dev/docs/react-motion-config
  */
 export const easeOutExpo = [0.22, 1, 0.36, 1]

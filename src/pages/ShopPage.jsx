@@ -1,5 +1,5 @@
 /**
- * Shop — four house signatures.
+ * Shop - four house signatures.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -9,7 +9,7 @@ import { easeOutExpo, fadeUp } from '../lib/motion'
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
-  { value: 'name', label: 'Name · A–Z' },
+  { value: 'name', label: 'Name · A-Z' },
 ]
 
 function SortMenu({ value, onChange }) {
@@ -41,7 +41,7 @@ function SortMenu({ value, onChange }) {
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex min-w-[11.5rem] items-center justify-between gap-4 border border-stone bg-warm-white px-4 py-2.5 text-left text-[11px] tracking-[0.2em] text-charcoal uppercase transition hover:border-gold"
+        className="inline-flex min-w-[11.5rem] items-center justify-between gap-4 border border-stone bg-warm-white px-4 py-2.5 text-left text-[11px] tracking-[0.2em] text-charcoal uppercase transition hover:border-scent-red"
       >
         <span>{current.label.split(' · ')[0]}</span>
         <span
@@ -74,7 +74,7 @@ function SortMenu({ value, onChange }) {
                     }}
                     className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[11px] tracking-[0.18em] uppercase transition ${
                       active
-                        ? 'bg-cream text-gold'
+                        ? 'bg-cream text-scent-red'
                         : 'text-muted hover:bg-cream hover:text-charcoal'
                     }`}
                   >
@@ -120,10 +120,10 @@ export default function ShopPage() {
             transition={{ delay: 0.06, duration: 0.85, ease: easeOutExpo }}
             className="mt-3 font-display text-4xl text-charcoal sm:text-5xl md:text-6xl"
           >
-            The <span className="italic text-gold">Collection</span>
+            The <span className="italic text-bronze">Collection</span>
           </motion.h1>
           <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted">
-            Four signatures. Crystal, gold, and presence — each a private hour,
+            Four signatures. Crystal, gold, and presence - each a private hour,
             composed in the house.
           </p>
         </div>
@@ -134,23 +134,17 @@ export default function ShopPage() {
           <SortMenu value={sort} onChange={setSort} />
         </div>
 
-        {loading ? (
-          <p className="py-20 text-center text-[11px] tracking-[0.4em] text-muted uppercase">
-            SCENTINOVA · composing the collection
-          </p>
-        ) : error ? (
+        {error ? (
           <p className="py-20 text-center text-muted">{error}</p>
-        ) : (
+        ) : list.length > 0 ? (
           <div className="mx-auto mt-10 grid max-w-6xl grid-cols-2 gap-x-3 gap-y-12 sm:mt-16 sm:gap-x-8 sm:gap-y-20 lg:grid-cols-4">
             {list.map((p, i) => (
               <ProductCard key={p.id} product={p} index={i} />
             ))}
           </div>
-        )}
-
-        {!loading && !error && list.length === 0 && (
+        ) : !loading ? (
           <p className="py-20 text-center text-muted">No fragrances available.</p>
-        )}
+        ) : null}
       </section>
     </div>
   )

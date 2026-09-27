@@ -1,5 +1,5 @@
 /**
- * Buy / CTA — Aurum signature with real cart add + shop link.
+ * Buy / CTA - Aurum signature with real cart add + shop link.
  */
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'

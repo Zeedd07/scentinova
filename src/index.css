@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ─── Scentinova redesign tokens (ivory + charcoal + gold) ─── */
+/* ─── Scentinova tokens: black → ivory → gold → packaging crimson ─── */
 @theme {
   --color-ivory: #f5f2eb;
   --color-cream: #eee9de;
@@ -12,19 +12,30 @@
   --color-espresso: #24201c;
   --color-black: #0d0c0b;
 
-  --color-muted: #766f66;
-  --color-gold: #b4975a;
-  --color-champagne: #d2b879;
+  /* 5.2:1 on ivory */
+  --color-muted: #6b645b;
 
+  /* Gold foil: decorative lines/fills, or text on black only (2.1:1 on ivory) */
+  --color-gold: #c9a24a;
+  --color-gold-light: #d4af5a;
+  --color-champagne: #d4af5a;
+  /* Gold-toned text on ivory/cream (5.4:1) */
+  --color-bronze: #7a5f2c;
+
+  /* Packaging crimson: brand accent, never a dominant background.
+     As text only on light grounds (6.9:1 on ivory); on black use as fill. */
+  --color-scent-red: #962d2e;
+  --color-scent-red-dark: #6e1e22;
+  --color-scent-red-light: #b03a38;
+
+  /* Semantic states: keep separate from the brand crimson */
+  --color-success: #3f6b3a;
   --color-burgundy: #6e1118;
-  --color-deep-red: #420a0e;
 
   /* Legacy aliases used across existing components */
   --color-ink: #0d0c0b;
   --color-ink-soft: #171512;
   --color-panel: #24201c;
-  --color-bronze: #766f66;
-  --color-gold-light: #d2b879;
 
   /* Iowan Old Style on Apple; Libre Baskerville web fallback elsewhere */
   --font-display: "Iowan Old Style", Baskerville, "Libre Baskerville",
@@ -48,13 +59,13 @@ html {
 
 @media (min-width: 640px) {
   html {
-    --nav-h: 4rem;
+    --nav-h: 3.75rem;
   }
 }
 
 @media (min-width: 1024px) {
   html {
-    --nav-h: 4.5rem;
+    --nav-h: 4rem;
   }
 }
 
@@ -66,6 +77,7 @@ html {
   right: 0;
   transform: none !important;
   will-change: auto;
+  padding-right: var(--scroll-lock-gap, 0px);
 }
 
 body {
@@ -91,7 +103,14 @@ video {
   max-width: 100%;
 }
 
-/* GPU-friendly sticky hero — reduces iOS / scroll jitter */
+/* Prevent iOS focus zoom (inputs below 16px trigger page zoom) */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
+/* GPU-friendly sticky hero - reduces iOS / scroll jitter */
 .hero-sticky {
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -106,8 +125,8 @@ video {
 }
 
 ::selection {
-  background: rgba(180, 151, 90, 0.28);
-  color: #171512;
+  background: rgba(150, 45, 46, 0.18);
+  color: var(--color-charcoal);
 }
 
 .font-display {
@@ -117,22 +136,22 @@ video {
 }
 
 .gold-text {
-  color: #b4975a;
+  color: var(--color-gold);
 }
 
 .gold-border {
-  border: 1px solid #b4975a;
+  border: 1px solid var(--color-gold);
 }
 
 /* Brand monogram */
 .brand-monogram {
-  background: #0d0c0b;
-  border: 1px solid rgba(180, 151, 90, 0.45);
+  background: var(--color-black);
+  border: 1px solid rgba(201, 162, 74, 0.45);
   transition: border-color 0.45s ease, transform 0.45s ease;
 }
 
 .brand-logo:hover .brand-monogram {
-  border-color: rgba(210, 184, 121, 0.75);
+  border-color: rgba(212, 175, 90, 0.75);
   transform: scale(1.03);
 }
 
@@ -144,17 +163,17 @@ video {
 
 /* Subtle warm texture for light grounds */
 .bg-luxury {
-  background-color: #f5f2eb;
+  background-color: var(--color-ivory);
   background-image:
-    radial-gradient(ellipse 70% 45% at 50% -5%, rgba(180, 151, 90, 0.08), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 90% 100%, rgba(110, 17, 24, 0.04), transparent 50%);
+    radial-gradient(ellipse 70% 45% at 50% -5%, rgba(201, 162, 74, 0.08), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 100%, rgba(150, 45, 46, 0.04), transparent 50%);
 }
 
 .bg-luxury-dark {
-  background-color: #0d0c0b;
+  background-color: var(--color-black);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(180, 151, 90, 0.07), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(110, 17, 24, 0.12), transparent 50%);
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(201, 162, 74, 0.07), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(150, 45, 46, 0.12), transparent 50%);
 }
 
 .btn-luxury {
@@ -169,9 +188,46 @@ video {
 }
 
 .btn-luxury:hover {
-  color: #0d0c0b;
-  background: #b4975a;
-  border-color: #b4975a;
+  color: var(--color-warm-white);
+  background: var(--color-scent-red);
+  border-color: var(--color-scent-red);
+}
+
+/* Solid primary action (pay / place order / track); one per screen.
+   Layered so per-button utilities (spacing, disabled cursor) can override it. */
+@layer components {
+  .btn-primary {
+    position: relative;
+    border: 1px solid var(--color-scent-red);
+    background: var(--color-scent-red);
+    color: var(--color-warm-white);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+
+  .btn-primary:hover,
+  .btn-primary:active {
+    background: var(--color-scent-red-dark);
+    border-color: var(--color-scent-red-dark);
+  }
+
+  .btn-primary:focus-visible {
+    outline: 2px solid var(--color-scent-red);
+    outline-offset: 2px;
+  }
+
+  .btn-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .btn-primary:disabled:hover {
+    background: var(--color-scent-red);
+    border-color: var(--color-scent-red);
+  }
 }
 
 .btn-shimmer {
@@ -181,8 +237,8 @@ video {
 }
 
 .btn-shimmer:hover {
-  color: #0d0c0b;
-  background: #b4975a;
+  color: var(--color-black);
+  background: var(--color-gold);
 }
 
 .glass-card {
@@ -263,6 +319,33 @@ video {
   );
 }
 
+@media (max-width: 768px) {
+  .hero-vignette {
+    background: linear-gradient(
+      180deg,
+      transparent 35%,
+      rgba(13, 12, 11, 0.35) 78%,
+      rgba(13, 12, 11, 0.7) 100%
+    );
+  }
+
+  .bg-luxury,
+  .bg-luxury-dark,
+  .sunset-sky {
+    background-image: none;
+  }
+
+  .signatures {
+    /* Drop multi-layer gold blooms on small screens */
+    background: #fbf7ef !important;
+  }
+
+  .signatures [style*='radial-gradient'],
+  .signatures [style*='blur'] {
+    display: none !important;
+  }
+}
+
 .loader-bar {
   background: linear-gradient(90deg, #766f66, #b4975a, #d2b879, #b4975a);
   background-size: 200% 100%;
@@ -332,7 +415,7 @@ video {
   height: 1px;
 }
 
-/* Four Signatures — product grid (2×2 mobile / 4 desktop) */
+/* Four Signatures - product grid (2×2 mobile / 4 desktop) */
 
 .sunset-sky {
   background:
@@ -371,7 +454,7 @@ video {
   background: linear-gradient(0deg, #f5f2eb 0%, rgba(238, 233, 222, 0.85) 30%, transparent 100%);
 }
 
-/* ─── Admin — cream, minimal, readable ─── */
+/* ─── Admin - cream, minimal, readable ─── */
 .admin-shell {
   min-height: 100vh;
   color: #1b1917;
@@ -385,7 +468,7 @@ video {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: #766f66;
+  color: var(--color-muted);
 }
 
 .admin-surface {
@@ -399,7 +482,7 @@ video {
   border: 1px solid #d8d0c2;
   background: #fff;
   padding: 0.55rem 0.75rem;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.4;
   color: #1b1917;
   outline: none;
@@ -410,7 +493,7 @@ video {
 }
 
 .admin-input:focus {
-  border-color: #b4975a;
+  border-color: var(--color-gold);
 }
 
 .admin-label {
@@ -422,7 +505,7 @@ video {
 
 .admin-link {
   font-size: 14px;
-  color: #7a6438;
+  color: var(--color-bronze);
   text-decoration: underline;
   text-underline-offset: 3px;
   transition: color 0.15s ease;
@@ -448,7 +531,7 @@ video {
 }
 
 .admin-btn:hover {
-  border-color: #b4975a;
+  border-color: var(--color-gold);
   background: #faf6ee;
 }
 
@@ -467,7 +550,7 @@ video {
 .admin-btn-quiet {
   border-color: #d8d0c2;
   background: transparent;
-  color: #766f66;
+  color: var(--color-muted);
 }
 
 .admin-btn-quiet:hover {
@@ -477,9 +560,9 @@ video {
 }
 
 .admin-btn-danger {
-  border-color: #6e1118;
+  border-color: var(--color-burgundy);
   background: #fff;
-  color: #6e1118;
+  color: var(--color-burgundy);
 }
 
 .admin-btn-danger:hover {
@@ -495,7 +578,7 @@ video {
 }
 
 .admin-muted {
-  color: #766f66;
+  color: var(--color-muted);
 }
 
 .admin-table th {

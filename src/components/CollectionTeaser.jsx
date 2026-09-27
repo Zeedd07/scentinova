@@ -1,5 +1,5 @@
 /**
- * Home teaser — featured fragrances linking to shop.
+ * Home teaser - featured fragrances linking to shop.
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'

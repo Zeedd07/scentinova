@@ -1,5 +1,5 @@
 /**
- * Ingredients / notes — horizontal scroll glassmorphism cards with gold icons.
+ * Ingredients / notes - horizontal scroll glassmorphism cards with gold icons.
  */
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
@@ -8,7 +8,7 @@ const NOTES = [
   {
     title: 'Bergamot',
     layer: 'Top',
-    copy: 'Sunlit peel and bright green zest — the first breath.',
+    copy: 'Sunlit peel and bright green zest - the first breath.',
     icon: (
       <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="14" stroke="url(#g1)" strokeWidth="1.2" />
@@ -25,7 +25,7 @@ const NOTES = [
   {
     title: 'Amber',
     layer: 'Heart',
-    copy: 'Warm resin and soft spice — the gold at the center.',
+    copy: 'Warm resin and soft spice - the gold at the center.',
     icon: (
       <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none" aria-hidden>
         <path
@@ -45,7 +45,7 @@ const NOTES = [
   {
     title: 'Oud',
     layer: 'Base',
-    copy: 'Smoked wood and velvet depth — what lingers on skin.',
+    copy: 'Smoked wood and velvet depth - what lingers on skin.',
     icon: (
       <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none" aria-hidden>
         <rect x="14" y="10" width="20" height="28" rx="2" stroke="url(#g3)" strokeWidth="1.2" />
