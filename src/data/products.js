@@ -1,5 +1,5 @@
 /**
- * SCENTINOVA - four house signatures.
+ * SCENTINOVA - house signatures.
  * Imagery: transparent PNGs under /products/
  */
 

@@ -46,7 +46,33 @@ export function orderStatusBadgeClass(status) {
   }`
 }
 
-/** The step most admins take next; cancelling is never the default. */
-export function primaryNextStatus(order) {
-  return (order?.allowedNextStatuses || []).find((s) => s !== 'CANCELLED') || null
+const SHIPPED_STAGE = ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED']
+
+/** Moving to `target` passes through "Shipped" and no courier/tracking number is on file yet. */
+export function needsTracking(order, target) {
+  if (!SHIPPED_STAGE.includes(target) || SHIPPED_STAGE.includes(order?.status)) return false
+  return !(order?.fulfillment?.carrier && order?.fulfillment?.trackingNumber)
+}
+
+export function isCodOrder(order) {
+  return order?.paymentMethod === 'COD' || order?.payment?.provider === 'cod'
+}
+
+/** Plain-language payment state for admins. */
+export function paymentStatusText(order) {
+  const cod = isCodOrder(order)
+  const s = String(order?.payment?.status || order?.paymentStatus || '').toUpperCase()
+  if (s === 'PAID' || s === 'CAPTURED') return cod ? 'Cash received' : 'Paid online'
+  if (s === 'REFUNDED') return 'Refunded'
+  if (s === 'PARTIALLY_REFUNDED') return 'Partly refunded'
+  if (s === 'FAILED') return 'Payment failed'
+  return cod ? 'To collect on delivery' : 'Not paid yet'
+}
+
+const DATE_TIME = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+
+export function formatDateTime(value) {
+  if (!value) return '—'
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? '—' : DATE_TIME.format(d)
 }

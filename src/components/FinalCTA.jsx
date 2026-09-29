@@ -45,7 +45,7 @@ export default function FinalCTA() {
             <span className="italic text-bronze">signature</span>
           </h2>
           <p className="mt-5 text-sm leading-relaxed text-espresso sm:text-base">
-            Four fragrances. Four feelings. A moment that stays.
+            Every fragrance, a feeling. A moment that stays.
           </p>
           <Link
             to="/shop"

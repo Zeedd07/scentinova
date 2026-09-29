@@ -24,15 +24,6 @@ export async function adminUpdateOrderStatus(id, body) {
   return data.data.order
 }
 
-export async function adminPostOrderUpdate(id, body) {
-  const data = await apiRequest(`/admin/orders/${id}/updates`, {
-    method: 'POST',
-    body,
-    auth: true,
-  })
-  return data.data.order
-}
-
 export async function adminUpdateShipping(id, body) {
   const data = await apiRequest(`/admin/orders/${id}/shipping`, {
     method: 'PATCH',

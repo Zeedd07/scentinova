@@ -4,14 +4,14 @@
  * The menu is a white drawer that slides in from the left beneath the bar.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCart } from '../context/CartContext'
 import { useScrollLock } from '../hooks/useScrollLock'
 import { easeOutExpo } from '../lib/motion'
 import { SOCIAL_LINKS } from '../config/site'
 import BrandLogo from './BrandLogo'
-import { useLenis } from './SmoothScroll'
+import { InstagramIcon } from './SocialIcons'
 
 const MENU_ID = 'site-menu'
 const BELOW_NAV = 'calc(var(--nav-h) + env(safe-area-inset-top, 0px))'
@@ -19,8 +19,6 @@ const BELOW_NAV = 'calc(var(--nav-h) + env(safe-area-inset-top, 0px))'
 const MAIN_LINKS = [
   { to: '/', label: 'Home', match: (p, h) => p === '/' && !h },
   { to: '/shop', label: 'Shop All', match: (p) => p === '/shop' || p.startsWith('/product/') },
-  { hash: '#collection', label: 'Collection' },
-  { hash: '#notes', label: 'Notes' },
   { to: '/about', label: 'Our Story', match: (p) => p === '/about' },
 ]
 
@@ -34,15 +32,6 @@ const listVariants = {
 const itemVariants = {
   hidden: { opacity: 0, x: -14 },
   show: { opacity: 1, x: 0, transition: { duration: 0.34, ease: easeOutExpo } },
-}
-
-function scrollToId(id, lenis) {
-  const el = document.getElementById(id)
-  if (!el) return
-  const navH = document.querySelector('.site-nav')?.getBoundingClientRect().height || 56
-  const top = el.getBoundingClientRect().top + window.scrollY - navH - 8
-  if (lenis) lenis.scrollTo(top, { duration: 1 })
-  else window.scrollTo({ top, behavior: 'smooth' })
 }
 
 function MenuToggle({ open, onClick, buttonRef }) {
@@ -98,16 +87,6 @@ function ParcelIcon() {
   )
 }
 
-function InstagramIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" />
-    </svg>
-  )
-}
-
 const SOCIAL_ICONS = { instagram: InstagramIcon }
 
 const drawerLink =
@@ -117,11 +96,8 @@ export default function Navbar() {
   const { count, setDrawerOpen } = useCart()
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname, hash } = useLocation()
-  const navigate = useNavigate()
-  const lenis = useLenis()
   const toggleRef = useRef(null)
   const panelRef = useRef(null)
-  const onHome = pathname === '/'
 
   useScrollLock(menuOpen)
 
@@ -164,24 +140,12 @@ export default function Navbar() {
     }
   }, [menuOpen, closeMenu])
 
-  const goToAnchor = (e, href) => {
-    e.preventDefault()
-    setMenuOpen(false)
-    if (onHome && hash === href) {
-      // Same hash won't re-trigger ScrollToTop; wait for the scroll lock to lift
-      requestAnimationFrame(() => requestAnimationFrame(() => scrollToId(href.slice(1), lenis)))
-      return
-    }
-    navigate({ pathname: '/', hash: href })
-  }
-
   const openBag = () => {
     setMenuOpen(false)
     setDrawerOpen(true)
   }
 
-  const isActive = (link) =>
-    link.hash ? onHome && hash === link.hash : Boolean(link.match?.(pathname, hash))
+  const isActive = (link) => link.match(pathname, hash)
 
   const shopActive = pathname === '/shop'
 
@@ -293,25 +257,14 @@ export default function Navbar() {
                       )
                       return (
                         <motion.li key={link.label} variants={itemVariants} className="border-b border-stone/60">
-                          {link.hash ? (
-                            <a
-                              href={`/${link.hash}`}
-                              onClick={(e) => goToAnchor(e, link.hash)}
-                              aria-current={active ? 'location' : undefined}
-                              className={cls}
-                            >
-                              {body}
-                            </a>
-                          ) : (
-                            <Link
-                              to={link.to}
-                              onClick={() => closeMenu()}
-                              aria-current={active ? 'page' : undefined}
-                              className={cls}
-                            >
-                              {body}
-                            </Link>
-                          )}
+                          <Link
+                            to={link.to}
+                            onClick={() => closeMenu()}
+                            aria-current={active ? 'page' : undefined}
+                            className={cls}
+                          >
+                            {body}
+                          </Link>
                         </motion.li>
                       )
                     })}

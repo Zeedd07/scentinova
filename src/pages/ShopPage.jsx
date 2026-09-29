@@ -1,11 +1,14 @@
 /**
- * Shop - four house signatures.
+ * Shop - the house signatures.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCatalog } from '../context/CatalogContext'
 import ProductCard from '../components/ProductCard'
 import { easeOutExpo, fadeUp } from '../lib/motion'
+
+/** Fewer live products spread across the full row instead of leaving empty columns. */
+const LG_COLS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3' }
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
@@ -123,7 +126,7 @@ export default function ShopPage() {
             The <span className="italic text-bronze">Collection</span>
           </motion.h1>
           <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted">
-            Four signatures. Crystal, gold, and presence - each a private hour,
+            Crystal, gold, and presence - each signature a private hour,
             composed in the house.
           </p>
         </div>
@@ -137,9 +140,22 @@ export default function ShopPage() {
         {error ? (
           <p className="py-20 text-center text-muted">{error}</p>
         ) : list.length > 0 ? (
-          <div className="mx-auto mt-10 grid max-w-6xl grid-cols-2 gap-x-3 gap-y-12 sm:mt-16 sm:gap-x-8 sm:gap-y-20 lg:grid-cols-4">
+          <div
+            className={`mx-auto mt-10 grid max-w-6xl gap-x-3 gap-y-12 sm:mt-16 sm:gap-x-8 sm:gap-y-20 ${
+              list.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+            } ${LG_COLS[list.length] ?? 'lg:grid-cols-4'}`}
+          >
             {list.map((p, i) => (
-              <ProductCard key={p.id} product={p} index={i} />
+              <div
+                key={p.id}
+                className={
+                  list.length > 1 && list.length % 2 === 1 && i === list.length - 1
+                    ? 'col-span-2 lg:col-span-1'
+                    : undefined
+                }
+              >
+                <ProductCard product={p} index={i} />
+              </div>
             ))}
           </div>
         ) : !loading ? (

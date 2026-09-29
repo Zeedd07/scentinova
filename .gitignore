@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Generated from @countrystatecity/countries-browser by scripts/copy-india-geo.mjs
+public/geo/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

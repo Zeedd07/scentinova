@@ -1,50 +1,41 @@
 /**
- * Four Signatures - sharp black→cream cut from hero, then copy + product row.
+ * Signatures - sharp black→cream cut from hero, then copy + product row.
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useCatalog } from '../context/CatalogContext'
 import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
+import { signatureStageCss } from '../lib/storefrontBackdrops'
 
+/** Preferred order and family labels for the house signatures. */
 const SHOWCASE = [
-  {
-    slug: 'lunar-leather',
-    number: '01',
-    family: 'Oriental Amber',
-  },
-  {
-    slug: 'oud-on-the-petals',
-    number: '02',
-    family: 'Floral Woody',
-  },
-  {
-    slug: 'masai-mara',
-    number: '03',
-    family: 'Woody Leather',
-  },
-  {
-    slug: 'seaweed',
-    number: '04',
-    family: 'Marine Musk',
-  },
+  { slug: 'lunar-leather', family: 'Oriental Amber' },
+  { slug: 'oud-on-the-petals', family: 'Floral Woody' },
+  { slug: 'masai-mara', family: 'Woody Leather' },
+  { slug: 'seaweed', family: 'Marine Musk' },
 ]
 
+const MAX_ITEMS = 4
+const LG_COLS = ['', 'lg:grid-cols-1', 'lg:grid-cols-2', 'lg:grid-cols-3', 'lg:grid-cols-4']
+
+function showcaseRank(slug) {
+  const i = SHOWCASE.findIndex((s) => s.slug === slug)
+  return i === -1 ? SHOWCASE.length : i
+}
+
 export default function SignatureCollection() {
-  const { getBySlug, featuredProducts } = useCatalog()
+  const { activeProducts, featuredProducts } = useCatalog()
 
-  let items = SHOWCASE.map((s) => ({
-    ...s,
-    product: getBySlug(s.slug),
-  })).filter((s) => s.product && s.product.active !== false)
-
-  if (!items.length) {
-    items = featuredProducts.slice(0, 4).map((p, i) => ({
+  // "Featured on homepage" decides what shows; with nothing featured, fall back so the section isn't empty.
+  const source = featuredProducts.length ? featuredProducts : activeProducts
+  const items = [...source]
+    .sort((a, b) => showcaseRank(a.slug) - showcaseRank(b.slug) || a.name.localeCompare(b.name))
+    .slice(0, MAX_ITEMS)
+    .map((p) => ({
       slug: p.slug,
-      number: String(i + 1).padStart(2, '0'),
-      family: p.category,
+      family: SHOWCASE.find((s) => s.slug === p.slug)?.family || p.category,
       product: p,
     }))
-  }
 
   return (
     <>
@@ -52,20 +43,11 @@ export default function SignatureCollection() {
       <section
         id="collection"
         className="signatures relative scroll-mt-16 overflow-x-clip sm:scroll-mt-20 lg:scroll-mt-24"
-        style={{
-          background:
-            'linear-gradient(180deg, #fbf7ef 0%, #f7f0e4 42%, #f4ebdc 78%, #faf6ee 100%)',
-        }}
+        style={{ background: signatureStageCss.base }}
       >
         <div
           className="pointer-events-none absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(ellipse 85% 55% at 50% -8%, rgba(212,175,90,0.12), transparent 58%),
-              radial-gradient(ellipse 55% 45% at 12% 70%, rgba(201,162,74,0.06), transparent 55%),
-              radial-gradient(ellipse 50% 40% at 88% 55%, rgba(201,162,74,0.08), transparent 50%)
-            `,
-          }}
+          style={{ background: signatureStageCss.glows }}
           aria-hidden
         />
 
@@ -79,7 +61,7 @@ export default function SignatureCollection() {
               className="max-w-xl"
             >
               <p className="mb-4 text-[11px] font-medium tracking-[0.42em] text-bronze uppercase">
-                The Four Signatures
+                The Signatures
               </p>
               <h2
                 id="featured-perfumes-title"
@@ -97,7 +79,7 @@ export default function SignatureCollection() {
               className="max-w-sm border-l-2 border-gold/70 pl-5 lg:border-l-0 lg:pl-0 lg:text-right"
             >
               <p className="font-display text-lg leading-relaxed text-espresso sm:text-xl">
-                Four distinct signatures, composed for presence.
+                Distinct signatures, composed for presence.
               </p>
               <Link
                 to="/shop"
@@ -115,9 +97,9 @@ export default function SignatureCollection() {
         {/* ── 3. Product grid - 2×2 on mobile, 4 across on desktop ── */}
         <div className="relative z-10 mx-auto max-w-[1400px] pt-4 pb-8 sm:pb-12 lg:pb-16">
           <div
-            className="grid grid-cols-2 lg:grid-cols-4"
+            className={`grid ${items.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${LG_COLS[items.length] || ''}`}
             role="list"
-            aria-label="Four signature fragrances"
+            aria-label="Signature fragrances"
           >
             {items.map((item, i) => {
               const notes =
@@ -128,8 +110,9 @@ export default function SignatureCollection() {
                   ...(item.product.notes?.base || []),
                 ].join(' · ')
 
-              const isOddCol = i % 2 === 0
-              const isTopRow = i < 2
+              const isOddCol = i % 2 === 0 && i + 1 < items.length
+              const isTopRow = i < 2 && items.length > 2
+              const spansRow = items.length > 1 && items.length % 2 === 1 && i === items.length - 1
 
               return (
                 <motion.article
@@ -149,7 +132,7 @@ export default function SignatureCollection() {
                     isTopRow
                       ? 'border-b border-gold/35 lg:border-b-0'
                       : ''
-                  }`}
+                  } ${spansRow ? 'col-span-2 lg:col-span-1' : ''}`}
                 >
                   <p className="mb-5 text-[9px] font-medium tracking-[0.28em] text-bronze uppercase sm:mb-8 sm:text-[10px] sm:tracking-[0.4em]">
                     {item.family}

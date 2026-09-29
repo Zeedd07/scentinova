@@ -44,8 +44,21 @@ export async function adminUpdateProduct(id, payload) {
   return data.data.product
 }
 
+/** Archives (soft-deletes) — the product is hidden from the shop but kept. */
 export async function adminDeleteProduct(id) {
   const data = await apiRequest(`/admin/products/${id}`, {
+    method: 'DELETE',
+    auth: true,
+  })
+  return data.data
+}
+
+export async function adminRestoreProduct(id) {
+  return adminUpdateProduct(id, { active: true })
+}
+
+export async function adminDeleteProductPermanently(id) {
+  const data = await apiRequest(`/admin/products/${id}/permanent`, {
     method: 'DELETE',
     auth: true,
   })

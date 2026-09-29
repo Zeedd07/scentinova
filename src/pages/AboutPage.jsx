@@ -3,16 +3,12 @@
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useCatalog } from '../context/CatalogContext'
 import { easeOutExpo, fadeUp } from '../lib/motion'
 
-const SIGNATURES = [
-  'Lunar Leather',
-  'Oud on the Petals',
-  'Masai-Mara',
-  'Seaweed',
-]
-
 export default function AboutPage() {
+  const { activeProducts } = useCatalog()
+
   return (
     <div className="bg-ivory pt-[calc(var(--nav-h)+0.5rem)]">
       <section className="relative overflow-hidden px-6 py-16 sm:px-10 sm:py-24 lg:px-16 lg:py-28">
@@ -64,7 +60,7 @@ export default function AboutPage() {
             className="mt-10 max-w-xl space-y-5 text-sm leading-relaxed text-espresso sm:mt-12 sm:text-base"
           >
             <p>
-              Four signatures composed for presence. Each flacon is crystal and
+              Signatures composed for presence. Each flacon is crystal and
               gold; each formula is built to linger past the first hour.
             </p>
             <p>
@@ -82,16 +78,22 @@ export default function AboutPage() {
             “A fragrance is not what you wear. It is what remains.”
           </motion.p>
 
-          <motion.ul
-            initial={fadeUp.initial}
-            animate={fadeUp.animate}
-            transition={{ delay: 0.24, duration: 0.85, ease: easeOutExpo }}
-            className="mt-14 flex flex-wrap gap-x-6 gap-y-3 border-t border-gold/35 pt-10 text-[11px] tracking-[0.28em] text-bronze uppercase sm:gap-x-10"
-          >
-            {SIGNATURES.map((name) => (
-              <li key={name}>{name}</li>
-            ))}
-          </motion.ul>
+          {activeProducts.length > 0 && (
+            <motion.ul
+              initial={fadeUp.initial}
+              animate={fadeUp.animate}
+              transition={{ delay: 0.24, duration: 0.85, ease: easeOutExpo }}
+              className="mt-14 flex flex-wrap gap-x-6 gap-y-3 border-t border-gold/35 pt-10 text-[11px] tracking-[0.28em] text-bronze uppercase sm:gap-x-10"
+            >
+              {activeProducts.map((p) => (
+                <li key={p.id}>
+                  <Link to={`/product/${p.slug}`} className="transition hover:text-scent-red">
+                    {p.name}
+                  </Link>
+                </li>
+              ))}
+            </motion.ul>
+          )}
 
           <motion.div
             initial={fadeUp.initial}

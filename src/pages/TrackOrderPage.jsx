@@ -1,6 +1,5 @@
 /**
- * Guest order tracking — order number + tracking code (from the confirmation
- * email), or order number alone when this device placed the order.
+ * Guest order tracking by order number. Legacy links (?token=) still open directly.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -8,12 +7,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { formatPrice } from '../data/products'
 import { trackOrder, trackOrderByLegacyToken } from '../services/checkoutApi'
 import { ApiClientError } from '../services/apiClient'
-import { getSavedTrackingToken, saveTrackingToken } from '../services/trackingStorage'
 import { easeOutExpo } from '../lib/motion'
 
 const MSG = {
   emptyOrder: 'Please enter your order number.',
-  emptyCode: 'Please enter the tracking code from your order confirmation email.',
   notFound:
     "We couldn't find an order with that number. Please check your order ID and try again.",
   network: 'Something went wrong while tracking your order. Please try again.',
@@ -117,7 +114,7 @@ function Updates({ updates }) {
           <li key={`${u.status}-${u.at}-${i}`} className="relative">
             <span
               aria-hidden
-              className={`absolute top-1.5 -left-[23.5px] h-2 w-2 rounded-full ${i === 0 ? 'bg-scent-red' : 'bg-stone'}`}
+              className={`absolute top-1.5 -left-[23.5px] h-2 w-2 rounded-full ${i === updates.length - 1 ? 'bg-scent-red' : 'bg-stone'}`}
             />
             <p className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
               <span className="text-[12px] tracking-[0.14em] text-charcoal uppercase">{u.label}</span>
@@ -319,7 +316,6 @@ function LoadingCard() {
 export default function TrackOrderPage() {
   const [params, setParams] = useSearchParams()
   const [orderInput, setOrderInput] = useState(params.get('order') || '')
-  const [codeInput, setCodeInput] = useState('')
   const [formError, setFormError] = useState(null)
   const [state, setState] = useState({ kind: 'idle' })
   const lastRequest = useRef(null)
@@ -333,14 +329,13 @@ export default function TrackOrderPage() {
       setState({ kind: 'loading' })
       try {
         const order = orderNumber
-          ? await trackOrder({ orderNumber, token })
+          ? await trackOrder({ orderNumber })
           : await trackOrderByLegacyToken(token)
         if (seq !== requestSeq.current) return
-        saveTrackingToken(order.orderNumber, token)
+        lastRequest.current = { orderNumber: order.orderNumber }
         setOrderInput(order.orderNumber)
-        setCodeInput('')
         setState({ kind: 'success', order })
-        // Keep refreshes working without leaving the secret in the address bar
+        // Refreshes use the order number; legacy tokens don't stay in the address bar
         setParams({ order: order.orderNumber }, { replace: true })
       } catch (err) {
         if (seq !== requestSeq.current) return
@@ -369,9 +364,7 @@ export default function TrackOrderPage() {
       if (!req || document.hidden) return
       const seq = requestSeq.current
       try {
-        const order = req.orderNumber
-          ? await trackOrder({ orderNumber: req.orderNumber, token: req.token })
-          : await trackOrderByLegacyToken(req.token)
+        const order = await trackOrder({ orderNumber: req.orderNumber })
         if (seq === requestSeq.current) setState({ kind: 'success', order })
       } catch {
         /* keep showing the last good result */
@@ -388,19 +381,15 @@ export default function TrackOrderPage() {
     }
   }, [liveOrder])
 
-  // Autoload from email links (?order=&token=), legacy links (?token=), or a remembered order
+  // Autoload from links: ?order= (emails, confirmation page) or legacy ?token=
   const autoloaded = useRef(false)
   useEffect(() => {
     if (autoloaded.current) return
     autoloaded.current = true
     const order = (params.get('order') || '').trim()
     const token = (params.get('token') || '').trim()
-    if (order && token) load({ orderNumber: order, token })
+    if (order) load({ orderNumber: order })
     else if (token) load({ orderNumber: '', token })
-    else if (order) {
-      const saved = getSavedTrackingToken(order)
-      if (saved) load({ orderNumber: order, token: saved })
-    }
   }, [params, load])
 
   const onSubmit = (e) => {
@@ -410,19 +399,13 @@ export default function TrackOrderPage() {
       setFormError({ field: 'order', message: MSG.emptyOrder })
       return
     }
-    const token = codeInput.trim() || getSavedTrackingToken(orderNumber)
-    if (!token) {
-      setFormError({ field: 'code', message: MSG.emptyCode })
-      return
-    }
-    load({ orderNumber, token })
+    load({ orderNumber })
   }
 
   const reset = () => {
     requestSeq.current += 1
     setState({ kind: 'idle' })
     setOrderInput('')
-    setCodeInput('')
     setFormError(null)
     setParams({}, { replace: true })
   }
@@ -441,8 +424,8 @@ export default function TrackOrderPage() {
           <p className="text-[11px] tracking-[0.42em] text-muted uppercase">Order tracking</p>
           <h1 className="mt-3 font-display text-4xl text-charcoal sm:text-5xl">Track Your Order</h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted">
-            Enter your order number and the tracking code from your confirmation email to view
-            the latest status.
+            Enter your order number to view the latest status. You&apos;ll find it in your order
+            confirmation email.
           </p>
         </motion.div>
 
@@ -471,30 +454,6 @@ export default function TrackOrderPage() {
               aria-describedby={formError?.field === 'order' ? 'track-form-error' : undefined}
               className={inputCls}
             />
-
-            <label htmlFor="track-order-code" className="mt-6 block text-[10px] tracking-[0.34em] text-muted uppercase">
-              Tracking code
-            </label>
-            <input
-              id="track-order-code"
-              value={codeInput}
-              onChange={(e) => {
-                setCodeInput(e.target.value)
-                if (formError?.field === 'code') setFormError(null)
-              }}
-              placeholder="e.g. 7K3M-Q9XD-2TRA"
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              maxLength={128}
-              aria-invalid={formError?.field === 'code'}
-              aria-describedby={`track-code-help${formError?.field === 'code' ? ' track-form-error' : ''}`}
-              className={inputCls}
-            />
-            <p id="track-code-help" className="mt-2 text-[12px] leading-relaxed text-muted">
-              Found in your order confirmation email. Placed the order on this device? You can
-              leave this blank.
-            </p>
 
             {formError && (
               <p id="track-form-error" role="alert" className="mt-5 text-sm text-burgundy">

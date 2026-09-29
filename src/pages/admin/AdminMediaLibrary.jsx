@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import AdminDialog from '../../components/admin/AdminDialog'
 import AdminModal from '../../components/admin/AdminModal'
+import BackdropDownloads from '../../components/admin/BackdropDownloads'
 import MediaUploadModal from '../../components/admin/MediaUploadModal'
 import { deleteMedia, getMedia, listMedia, updateMedia } from '../../services/mediaApi'
 import { ApiClientError } from '../../services/apiClient'
@@ -352,6 +353,8 @@ export default function AdminMediaLibrary() {
           </label>
         </div>
       </div>
+
+      {type === 'PRODUCT_BACKGROUND' && <BackdropDownloads />}
 
       {error && (
         <p className="border border-burgundy/30 bg-burgundy/5 px-3 py-2 text-sm text-burgundy">{error}</p>

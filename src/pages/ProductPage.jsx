@@ -10,6 +10,7 @@ import { useCatalog } from '../context/CatalogContext'
 import { fetchProductBySlug } from '../services/productApi'
 import ProductCard from '../components/ProductCard'
 import { easeOutExpo } from '../lib/motion'
+import { signatureStageBackground } from '../lib/storefrontBackdrops'
 
 function asNoteList(value) {
   if (Array.isArray(value)) return value.filter(Boolean)
@@ -124,7 +125,8 @@ export default function ProductPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.45, ease: easeOutExpo }}
-            className="flex aspect-[3/4] items-center justify-center overflow-hidden border border-stone/80 bg-cream"
+            className="flex aspect-[3/4] items-center justify-center overflow-hidden border border-stone/80"
+            style={{ background: signatureStageBackground }}
           >
             <img
               src={activeSrc}
@@ -140,11 +142,12 @@ export default function ProductPage() {
                   type="button"
                   onClick={() => setActiveImg(i)}
                   aria-label={`View image ${i + 1}`}
-                  className={`flex h-20 w-16 items-center justify-center overflow-hidden border bg-cream transition sm:h-24 sm:w-20 ${
+                  className={`flex h-20 w-16 items-center justify-center overflow-hidden border transition sm:h-24 sm:w-20 ${
                     i === activeImg
                       ? 'border-charcoal'
                       : 'border-transparent opacity-70 hover:opacity-100'
                   }`}
+                  style={{ background: signatureStageBackground }}
                 >
                   <img
                     src={src}

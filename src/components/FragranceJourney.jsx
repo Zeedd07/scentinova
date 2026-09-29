@@ -1,6 +1,6 @@
 /**
  * Fragrance Journey - infinite marquee of ingredient orbs.
- * Sharp cream→black cut from Four Signatures above.
+ * Sharp cream→black cut from Signatures above.
  */
 import { useState } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'

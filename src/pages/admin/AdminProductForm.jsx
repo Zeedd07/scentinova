@@ -119,6 +119,7 @@ export default function AdminProductForm() {
   const [uploadProgress, setUploadProgress] = useState(null)
   const [uploadError, setUploadError] = useState('')
   const [feeErrors, setFeeErrors] = useState({})
+  const [pendingRemove, setPendingRemove] = useState(null)
 
   const parsedNotes = useMemo(
     () => ({
@@ -522,14 +523,20 @@ export default function AdminProductForm() {
         </section>
 
         <section className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2 text-[15px] text-[#1b1917]">
-            <input
-              type="checkbox"
-              checked={form.featured}
-              onChange={(e) => set('featured', e.target.checked)}
-            />
-            Featured on homepage
-          </label>
+          <div>
+            <label className="flex items-center gap-2 text-[15px] text-[#1b1917]">
+              <input
+                type="checkbox"
+                checked={form.featured}
+                aria-describedby="featured-hint"
+                onChange={(e) => set('featured', e.target.checked)}
+              />
+              Featured on homepage
+            </label>
+            <p id="featured-hint" className="mt-1 pl-6 text-[12px] admin-muted">
+              Shown in the homepage signatures section (up to 4 live products).
+            </p>
+          </div>
           <label className="flex items-center gap-2 text-[15px] text-[#1b1917]">
             <input
               type="checkbox"
@@ -647,7 +654,7 @@ export default function AdminProductForm() {
                     <button
                       type="button"
                       className="text-[12px] text-[#6e1118]"
-                      onClick={() => removeGalleryAt(index)}
+                      onClick={() => setPendingRemove({ url, index })}
                     >
                       Remove
                     </button>
@@ -766,6 +773,25 @@ export default function AdminProductForm() {
           setConfirmSave(false)
           setPendingPayload(null)
         }}
+      />
+
+      <AdminModal
+        open={Boolean(pendingRemove)}
+        tone="danger"
+        title="Remove this image?"
+        message={
+          pendingRemove?.index === 0 && form.gallery.length > 1
+            ? 'This is the cover image, so the next image becomes the cover. The change is applied when you save the perfume.'
+            : 'It will be taken off this perfume when you save.'
+        }
+        confirmLabel="Remove image"
+        cancelLabel="Keep image"
+        onConfirm={() => {
+          const at = form.gallery.indexOf(pendingRemove.url)
+          if (at !== -1) removeGalleryAt(at)
+          setPendingRemove(null)
+        }}
+        onCancel={() => setPendingRemove(null)}
       />
 
       <AdminModal

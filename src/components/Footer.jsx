@@ -3,12 +3,26 @@
  */
 import { Link } from 'react-router-dom'
 import BrandLogo from './BrandLogo'
+import { InstagramIcon, WhatsAppIcon } from './SocialIcons'
+import { SOCIAL_LINKS, WHATSAPP } from '../config/site'
+
+const INSTAGRAM = SOCIAL_LINKS.find((s) => s.id === 'instagram')
+
+const CONTACT = [
+  { href: WHATSAPP.href, label: WHATSAPP.label, hint: 'WhatsApp', Icon: WhatsAppIcon },
+  ...(INSTAGRAM
+    ? [{ href: INSTAGRAM.href, label: INSTAGRAM.handle, hint: 'Instagram', Icon: InstagramIcon }]
+    : []),
+]
+
+const footerLink =
+  'underline-offset-[6px] decoration-scent-red-light transition hover:text-champagne hover:underline'
 
 const EXPLORE = [
   { to: '/shop', label: 'Shop' },
   { to: '/about', label: 'Our Story' },
   { to: '/cart', label: 'Cart' },
-  { href: '#collection', label: 'Four Signatures' },
+  { href: '#collection', label: 'Signatures' },
 ]
 
 export default function Footer() {
@@ -23,38 +37,52 @@ export default function Footer() {
               className="justify-center lg:justify-start"
             />
             <p className="mt-4 text-[13px] leading-relaxed text-white/50 sm:text-sm">
-              Heavenly Crafted Perfume - four signatures composed for presence.
+              Heavenly Crafted Perfume - signatures composed for presence.
             </p>
           </div>
 
-          <div className="mt-10 w-full lg:mt-0 lg:w-auto lg:max-w-md">
-            <p className="text-[10px] tracking-[0.36em] text-champagne uppercase">
-              Explore
-            </p>
-            <nav
-              className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[12px] tracking-[0.08em] text-white/55 sm:gap-x-8 lg:justify-end"
-              aria-label="Footer"
-            >
-              {EXPLORE.map((item) =>
-                item.to ? (
-                  <Link
-                    key={item.label}
-                    to={item.to}
-                    className="underline-offset-[6px] decoration-scent-red-light transition hover:text-champagne hover:underline"
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="underline-offset-[6px] decoration-scent-red-light transition hover:text-champagne hover:underline"
-                  >
-                    {item.label}
-                  </a>
-                ),
-              )}
-            </nav>
+          <div className="mt-10 flex w-full flex-col items-center gap-10 lg:mt-0 lg:w-auto lg:flex-row lg:items-start lg:gap-16">
+            <div className="lg:max-w-md">
+              <p className="text-[10px] tracking-[0.36em] text-champagne uppercase">Explore</p>
+              <nav
+                className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[12px] tracking-[0.08em] text-white/55 sm:gap-x-8 lg:justify-start"
+                aria-label="Footer"
+              >
+                {EXPLORE.map((item) =>
+                  item.to ? (
+                    <Link key={item.label} to={item.to} className={footerLink}>
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <a key={item.label} href={item.href} className={footerLink}>
+                      {item.label}
+                    </a>
+                  ),
+                )}
+              </nav>
+            </div>
+
+            <div>
+              <p className="text-[10px] tracking-[0.36em] text-champagne uppercase">Contact us</p>
+              <ul className="mt-5 flex flex-col items-center gap-3 text-[12px] tracking-[0.08em] text-white/55 lg:items-start">
+                {CONTACT.map(({ href, label, hint, Icon }) => (
+                  <li key={hint}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${hint}: ${label}`}
+                      className={`inline-flex items-center gap-2.5 ${footerLink}`}
+                    >
+                      <span className="text-champagne/80">
+                        <Icon size={16} />
+                      </span>
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
 

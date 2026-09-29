@@ -484,7 +484,7 @@ export default function Hero({
                     <span className="italic text-champagne">presence.</span>
                   </h1>
                   <p className="mt-4 max-w-[17rem] text-[13px] leading-relaxed text-sand/95 sm:mt-6 sm:max-w-sm sm:text-[15px]">
-                    Four signatures. Crystal, gold, and a private hour that stays.
+                    Signatures in crystal and gold - a private hour that stays.
                   </p>
 
                   <AnimatePresence mode="wait">

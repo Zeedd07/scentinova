@@ -15,8 +15,17 @@ import {
 } from '../services/checkoutApi'
 import { trackEvent } from '../services/analyticsApi'
 import { saveTrackingToken } from '../services/trackingStorage'
+import FieldLabel from '../components/forms/FieldLabel'
+import IndiaStateCityFields from '../components/forms/IndiaStateCityFields'
+import { COUNTRY_NAME } from '../lib/indiaLocations'
 
 const IDEMPOTENCY_STORAGE_KEY = 'scentinova-checkout-idempotency'
+const PIN_CODE = /^[1-9][0-9]{5}$/
+const PIN_MESSAGE = 'Enter a valid 6-digit PIN code.'
+const ADDRESS_FIELDS = ['state', 'city', 'postalCode']
+
+const inputBase = 'w-full border bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red'
+const inputClass = `${inputBase} border-stone`
 
 function cartFingerprint(items, paymentMethod) {
   return `${items
@@ -101,9 +110,14 @@ export default function CheckoutPage() {
     landmark: '',
     city: '',
     state: '',
+    stateCode: '',
     postalCode: '',
-    country: 'India',
+    country: COUNTRY_NAME,
   })
+  const [fieldErrors, setFieldErrors] = useState({})
+  const stateRef = useRef(null)
+  const cityRef = useRef(null)
+  const postalRef = useRef(null)
 
   const cartPayload = useMemo(
     () =>
@@ -181,6 +195,67 @@ export default function CheckoutPage() {
 
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }))
 
+  const setFieldError = (key, message) =>
+    setFieldErrors((errs) => {
+      if ((errs[key] || '') === (message || '')) return errs
+      const next = { ...errs }
+      if (message) next[key] = message
+      else delete next[key]
+      return next
+    })
+
+  const onStateChange = (option) => {
+    setForm((f) => {
+      const code = option?.code || ''
+      return {
+        ...f,
+        state: option?.name || '',
+        stateCode: code,
+        // A city only belongs to the state it was picked from.
+        city: code && code === f.stateCode ? f.city : '',
+      }
+    })
+    if (option) setFieldError('state', '')
+  }
+
+  const onCityChange = (name) => {
+    setField('city', name)
+    if (name) setFieldError('city', '')
+  }
+
+  const onPostalChange = (raw) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 6)
+    setField('postalCode', digits)
+    if (PIN_CODE.test(digits)) setFieldError('postalCode', '')
+  }
+
+  /** Client-side address checks; the server re-validates everything. */
+  const validateAddress = () => {
+    const errs = {}
+    if (!form.state || !form.stateCode) errs.state = 'Please select your state.'
+    if (!form.city) errs.city = 'Please select your city.'
+    if (!PIN_CODE.test(form.postalCode)) errs.postalCode = PIN_MESSAGE
+    setFieldErrors(errs)
+    const first = ADDRESS_FIELDS.find((key) => errs[key])
+    if (first) {
+      const ref = { state: stateRef, city: cityRef, postalCode: postalRef }[first]
+      ref.current?.focus({ preventScroll: true })
+      ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }
+    return !first
+  }
+
+  /** Show server-side address errors ("shippingAddress.city" etc.) under their fields. */
+  const applyServerFieldErrors = (fields) => {
+    if (!fields) return
+    const errs = {}
+    for (const [key, message] of Object.entries(fields)) {
+      const field = key.replace(/^shippingAddress\./, '')
+      if (ADDRESS_FIELDS.includes(field)) errs[field] = message
+    }
+    if (Object.keys(errs).length) setFieldErrors((prev) => ({ ...prev, ...errs }))
+  }
+
   const busy = !STATES.includes(state)
     ? false
     : [
@@ -219,6 +294,7 @@ export default function CheckoutPage() {
     e.preventDefault()
     if (!items.length || !quote) return
     if (payLockRef.current || busy) return
+    if (!validateAddress()) return
     payLockRef.current = true
     setError('')
     setState('CREATING_ORDER')
@@ -352,6 +428,7 @@ export default function CheckoutPage() {
           ? err.message
           : 'Could not place your order. Please try again.',
       )
+      if (err instanceof ApiClientError) applyServerFieldErrors(err.fields)
       if (
         err instanceof ApiClientError &&
         err.code === 'PAYMENT_METHOD_DISABLED' &&
@@ -404,37 +481,39 @@ export default function CheckoutPage() {
             <h2 className="font-display text-2xl text-charcoal">Contact</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="sm:col-span-2">
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Full name
-                </span>
+                <FieldLabel required>Full name</FieldLabel>
                 <input
                   required
+                  name="name"
+                  autoComplete="name"
                   value={form.name}
                   onChange={(e) => setField('name', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
+                  className={inputClass}
                 />
               </label>
               <label>
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Email
-                </span>
+                <FieldLabel required>Email</FieldLabel>
                 <input
                   required
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   value={form.email}
                   onChange={(e) => setField('email', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
+                  className={inputClass}
                 />
               </label>
               <label>
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Phone
-                </span>
+                <FieldLabel required>Phone</FieldLabel>
                 <input
                   required
+                  type="tel"
+                  name="phone"
+                  autoComplete="tel"
+                  inputMode="tel"
                   value={form.phone}
                   onChange={(e) => setField('phone', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
+                  className={inputClass}
                 />
               </label>
             </div>
@@ -444,68 +523,79 @@ export default function CheckoutPage() {
             <h2 className="font-display text-2xl text-charcoal">Shipping address</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="sm:col-span-2">
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Address line 1
-                </span>
+                <FieldLabel required>Address line 1</FieldLabel>
                 <input
                   required
+                  name="address-line1"
+                  autoComplete="address-line1"
                   value={form.addressLine1}
                   onChange={(e) => setField('addressLine1', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
+                  className={inputClass}
                 />
               </label>
               <label className="sm:col-span-2">
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Address line 2
-                </span>
+                <FieldLabel>Address line 2</FieldLabel>
                 <input
+                  name="address-line2"
+                  autoComplete="address-line2"
                   value={form.addressLine2}
                   onChange={(e) => setField('addressLine2', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
+                  className={inputClass}
                 />
               </label>
-              <label>
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  City
-                </span>
-                <input
-                  required
-                  value={form.city}
-                  onChange={(e) => setField('city', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
-                />
-              </label>
-              <label>
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  State
-                </span>
-                <input
-                  required
-                  value={form.state}
-                  onChange={(e) => setField('state', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
-                />
-              </label>
-              <label>
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
+              <IndiaStateCityFields
+                state={form.state}
+                stateCode={form.stateCode}
+                city={form.city}
+                errors={fieldErrors}
+                onStateChange={onStateChange}
+                onCityChange={onCityChange}
+                onError={setFieldError}
+                stateRef={stateRef}
+                cityRef={cityRef}
+              />
+              <div>
+                <FieldLabel htmlFor="checkout-postal" required>
                   Postal code
-                </span>
+                </FieldLabel>
                 <input
+                  ref={postalRef}
+                  id="checkout-postal"
                   required
+                  name="postal-code"
+                  autoComplete="postal-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="6-digit PIN"
+                  aria-invalid={fieldErrors.postalCode ? true : undefined}
+                  aria-describedby={fieldErrors.postalCode ? 'checkout-postal-error' : undefined}
                   value={form.postalCode}
-                  onChange={(e) => setField('postalCode', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
+                  onChange={(e) => onPostalChange(e.target.value)}
+                  onBlur={() => {
+                    if (form.postalCode && !PIN_CODE.test(form.postalCode)) {
+                      setFieldError('postalCode', PIN_MESSAGE)
+                    }
+                  }}
+                  className={`${inputBase} placeholder:text-muted/70 ${
+                    fieldErrors.postalCode ? 'border-scent-red' : 'border-stone'
+                  }`}
                 />
-              </label>
+                {fieldErrors.postalCode && (
+                  <p id="checkout-postal-error" className="mt-1.5 text-[12px] text-scent-red">
+                    {fieldErrors.postalCode}
+                  </p>
+                )}
+              </div>
               <label>
-                <span className="mb-1.5 block text-[11px] tracking-[0.28em] text-muted uppercase">
-                  Country
-                </span>
+                <FieldLabel required>Country</FieldLabel>
                 <input
-                  required
+                  readOnly
+                  name="country"
+                  autoComplete="country-name"
+                  aria-required="true"
                   value={form.country}
-                  onChange={(e) => setField('country', e.target.value)}
-                  className="w-full border border-stone bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red"
+                  title="We currently ship within India only."
+                  className="w-full cursor-default border border-stone bg-stone/20 px-4 py-3 text-base text-charcoal outline-none"
                 />
               </label>
             </div>
