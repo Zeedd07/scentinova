@@ -1,5 +1,7 @@
 /**
- * Editorial hero: pinned canvas frame-scrub on scroll (single RAF + ScrollTrigger).
+ * Editorial hero: canvas frame sequence drawn by a single RAF loop.
+ * Desktop: pinned frame-scrub on scroll (ScrollTrigger).
+ * Mobile: one swipe plays one story beat between MOBILE_STOPS; past the last beat the page scrolls on.
  * The frame set (landscape / portrait) is chosen by the parent.
  */
 import { useEffect, useRef, useState, startTransition } from 'react'
@@ -16,6 +18,14 @@ import { easeOutExpo, fadeUp } from '../lib/motion'
 gsap.registerPlugin(ScrollTrigger)
 
 const BG = '#0d0c0b'
+
+/** Frames each mobile swipe moves between, in order. */
+const MOBILE_STOPS = [1, 106, 175, 263, 350, 430, 600]
+/** Finger travel (px) that counts as one swipe. */
+const SWIPE_PX = 24
+const WHEEL_DELTA = 20
+/** Silence (ms) that ends a wheel / trackpad burst, so inertia counts as one step. */
+const WHEEL_IDLE_MS = 200
 
 export default function Hero({
   getFrame,
@@ -290,9 +300,11 @@ export default function Hero({
     }
 
     resize()
-    drawFrame(1)
-    frameState.current.pendingProgress = 0
-    flushUiChrome(0)
+    const startFrame = frameState.current.target
+    frameState.current.current = startFrame
+    drawFrame(startFrame)
+    frameState.current.pendingProgress = null
+    flushUiChrome((startFrame - 1) / (totalFrames - 1))
     lastTsRef.current = 0
     frameState.current.running = true
     rafRef.current = requestAnimationFrame(loop)
@@ -316,18 +328,16 @@ export default function Hero({
     }
   }, [priorityReady, getFrame, getExactFrame, totalFrames, isMobile])
 
-  // ── ScrollTrigger pin + scrub ─────────────────────────────────────────
+  // ── Desktop: ScrollTrigger pin + scrub ────────────────────────────────
   useEffect(() => {
-    if (!priorityReady) return undefined
+    if (!priorityReady || isMobile) return undefined
     const pin = pinRef.current
     if (!pin) return undefined
 
-    if (!isMobile) {
-      try {
-        ScrollTrigger.normalizeScroll(true)
-      } catch {
-        /* older GSAP */
-      }
+    try {
+      ScrollTrigger.normalizeScroll(true)
+    } catch {
+      /* older GSAP */
     }
 
     const st = ScrollTrigger.create({
@@ -335,7 +345,7 @@ export default function Hero({
       start: 'top top',
       end: 'bottom bottom',
       // Numeric scrub feels smoother with Lenis than scrub:true on some devices
-      scrub: isMobile ? 0.08 : 0.18,
+      scrub: 0.18,
       anticipatePin: 1,
       invalidateOnRefresh: true,
       fastScrollEnd: true,
@@ -373,6 +383,151 @@ export default function Hero({
     }
   }, [priorityReady, totalFrames, isMobile])
 
+  // ── Mobile: one swipe = one story beat ────────────────────────────────
+  useEffect(() => {
+    if (!isMobile) return undefined
+    const hero = pinRef.current
+    if (!hero) return undefined
+
+    const stops = MOBILE_STOPS.map((f) => Math.min(f, totalFrames))
+    const last = stops.length - 1
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const playhead = { frame: stops[0] }
+    let stop = 0
+    let tween = null
+
+    frameState.current.target = playhead.frame
+    frameState.current.pendingProgress = 0
+
+    const syncFrame = () => {
+      frameState.current.target = playhead.frame
+      frameState.current.pendingProgress = (playhead.frame - 1) / (totalFrames - 1)
+    }
+
+    const playing = () => Boolean(tween?.isActive())
+    const canStep = (dir) => stop + dir >= 0 && stop + dir <= last
+
+    const step = (dir) => {
+      if (!canStep(dir)) return
+      const wasPlaying = playing()
+      stop += dir
+      tween?.kill()
+      const distance = Math.abs(stops[stop] - playhead.frame)
+      tween = gsap.to(playhead, {
+        frame: stops[stop],
+        duration: reduceMotion ? 0.35 : 0.7 + distance * 0.009,
+        // Mid-flight retargets keep their momentum instead of easing in again
+        ease: wasPlaying ? 'power2.out' : 'power1.inOut',
+        onUpdate: syncFrame,
+      })
+    }
+
+    // The story owns the gesture only while the hero fills the screen; at the ends it lets the page scroll
+    const owns = (dir) =>
+      window.scrollY <= 2 &&
+      document.documentElement.style.overflow !== 'hidden' &&
+      (canStep(dir) || playing())
+
+    const inScope = (target) =>
+      target instanceof Element &&
+      !target.closest('[role="dialog"]') &&
+      (hero.contains(target) || Boolean(target.closest('.site-nav')))
+
+    let touch = null
+
+    const onTouchStart = (e) => {
+      touch =
+        e.touches.length === 1 && inScope(e.target)
+          ? { x: e.touches[0].clientX, y: e.touches[0].clientY, dir: 0, dy: 0, owned: false, fired: false }
+          : null
+    }
+
+    const onTouchMove = (e) => {
+      if (!touch) return
+      const t = e.touches[0]
+      const dx = t.clientX - touch.x
+      touch.dy = touch.y - t.clientY
+
+      if (touch.dir === 0) {
+        if (Math.abs(dx) < 3 && Math.abs(touch.dy) < 3) {
+          // Direction unknown yet: hold the page still if either direction would play
+          if (e.cancelable && (owns(1) || owns(-1))) e.preventDefault()
+          return
+        }
+        if (Math.abs(dx) > Math.abs(touch.dy)) {
+          touch = null
+          return
+        }
+        touch.dir = touch.dy > 0 ? 1 : -1
+        touch.owned = owns(touch.dir)
+      }
+
+      if (!touch.owned) return
+      if (e.cancelable) e.preventDefault()
+      if (!touch.fired && Math.abs(touch.dy) >= SWIPE_PX) {
+        touch.fired = true
+        step(touch.dir)
+      }
+    }
+
+    const onTouchEnd = () => {
+      // Short flicks that end before SWIPE_PX still count
+      if (touch?.owned && !touch.fired && Math.abs(touch.dy) >= SWIPE_PX / 2) step(touch.dir)
+      touch = null
+    }
+
+    let wheelBurst = false
+    let wheelSum = 0
+    let wheelTimer = 0
+
+    const onWheel = (e) => {
+      if (e.ctrlKey || !inScope(e.target)) return
+      const dir = e.deltaY > 0 ? 1 : -1
+      if (!wheelBurst && !owns(dir)) return
+      e.preventDefault()
+      window.clearTimeout(wheelTimer)
+      wheelTimer = window.setTimeout(() => {
+        wheelBurst = false
+        wheelSum = 0
+      }, WHEEL_IDLE_MS)
+      if (wheelBurst) return
+      wheelSum += e.deltaY
+      if (Math.abs(wheelSum) >= WHEEL_DELTA) {
+        wheelBurst = true
+        step(dir)
+      }
+    }
+
+    const KEY_DIR = { ArrowDown: 1, PageDown: 1, ArrowUp: -1, PageUp: -1 }
+    const onKeyDown = (e) => {
+      if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return
+      if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return
+      const dir = e.key === ' ' ? (e.shiftKey ? -1 : 1) : KEY_DIR[e.key]
+      if (!dir || !owns(dir)) return
+      e.preventDefault()
+      step(dir)
+    }
+
+    const opts = { passive: false }
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, opts)
+    window.addEventListener('touchend', onTouchEnd, { passive: true })
+    window.addEventListener('touchcancel', onTouchEnd, { passive: true })
+    window.addEventListener('wheel', onWheel, opts)
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      tween?.kill()
+      window.clearTimeout(wheelTimer)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove, opts)
+      window.removeEventListener('touchend', onTouchEnd)
+      window.removeEventListener('touchcancel', onTouchEnd)
+      window.removeEventListener('wheel', onWheel, opts)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isMobile, totalFrames])
+
   const scrollToCollection = (e) => {
     e.preventDefault()
     const el = document.getElementById('collection')
@@ -394,7 +549,7 @@ export default function Hero({
       ref={pinRef}
       className="relative bg-black"
       style={{
-        height: '400vh',
+        height: isMobile ? undefined : '400vh',
         touchAction: 'pan-y',
       }}
       aria-label="SCENTINOVA - cinematic frame sequence"
@@ -445,26 +600,24 @@ export default function Hero({
             </div>
           )}
 
-          {!isMobile && (
-            <div className="pointer-events-none absolute left-5 top-1/2 z-[6] hidden h-[42vh] -translate-y-1/2 flex-col items-center sm:left-8 md:flex lg:left-12">
-              <span
-                ref={frameLabelRef}
-                className="font-display text-sm tabular-nums text-gold-light"
-              >
-                {'1'.padStart(String(totalFrames).length, '0')}
-              </span>
-              <div className="relative my-3 w-px flex-1 bg-gold/20">
-                <div
-                  ref={progressBarRef}
-                  className="absolute inset-x-0 top-0 w-px bg-gradient-to-b from-gold to-gold-light"
-                  style={{ height: '0%' }}
-                />
-              </div>
-              <span className="font-display text-sm tabular-nums text-warm-white/50">
-                {totalFrames}
-              </span>
+          <div className="pointer-events-none absolute right-4 top-[calc(var(--nav-h)+1.25rem)] z-[6] flex h-[22vh] flex-col items-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.75)] md:right-auto md:left-8 md:top-1/2 md:h-[42vh] md:-translate-y-1/2 md:drop-shadow-none lg:left-12">
+            <span
+              ref={frameLabelRef}
+              className="font-display text-xs tabular-nums text-gold-light md:text-sm"
+            >
+              {'1'.padStart(String(totalFrames).length, '0')}
+            </span>
+            <div className="relative my-2 w-px flex-1 bg-gold/30 md:my-3 md:bg-gold/20">
+              <div
+                ref={progressBarRef}
+                className="absolute inset-x-0 top-0 w-px bg-gradient-to-b from-gold to-gold-light"
+                style={{ height: '0%' }}
+              />
             </div>
-          )}
+            <span className="font-display text-xs tabular-nums text-warm-white/60 md:text-sm md:text-warm-white/50">
+              {totalFrames}
+            </span>
+          </div>
 
           <div className="pointer-events-none absolute inset-0 z-[5] flex items-end px-5 pb-[5.5rem] sm:items-center sm:px-10 sm:pb-0 md:pl-24 lg:pl-36">
             <AnimatePresence>
