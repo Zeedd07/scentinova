@@ -15,6 +15,7 @@ import { CatalogProvider } from './context/CatalogContext'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import MotionProvider from './components/MotionProvider'
 import SmoothScroll, { useLenis } from './components/SmoothScroll'
+import { smoothScrollTo } from './lib/smoothScroll'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
@@ -50,7 +51,7 @@ function ScrollToTop() {
         const navH = document.querySelector('.site-nav')?.getBoundingClientRect().height || 64
         const top = el.getBoundingClientRect().top + window.scrollY - navH
         if (lenis) lenis.scrollTo(top, { duration: 1 })
-        else window.scrollTo({ top, behavior: 'smooth' })
+        else smoothScrollTo(top)
       }, 120)
       return () => window.clearTimeout(timer)
     }

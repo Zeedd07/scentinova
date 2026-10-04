@@ -1,9 +1,9 @@
 /**
  * Editorial hero: canvas frame sequence drawn by a single RAF loop.
- * Each scroll / swipe plays one story beat between the stops below; past the last beat the page scrolls on.
+ * Each scroll / swipe plays one story beat between the stops below; the last beat hands straight off to the collection.
  * The frame set (landscape / portrait) is chosen by the parent.
  */
-import { useEffect, useRef, useState, startTransition } from 'react'
+import { useEffect, useId, useRef, useState, startTransition } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import gsap from 'gsap'
@@ -12,6 +12,7 @@ import { chapterAt } from '../data/storyChapters'
 import Particles from './Particles'
 import { useLenis } from './SmoothScroll'
 import { easeOutExpo, fadeUp } from '../lib/motion'
+import { smoothScrollTo } from '../lib/smoothScroll'
 
 const BG = '#0d0c0b'
 
@@ -19,11 +20,131 @@ const BG = '#0d0c0b'
 const MOBILE_STOPS = [1, 106, 175, 263, 350, 430, 600]
 const DESKTOP_STOPS = [1, 160, 425, 550, 600]
 const MAX_BEAT_SECONDS = 2.8
+/** The closing beat stays short: the page moves on to the collection as soon as it ends. */
+const FINAL_BEAT_SECONDS = 1.6
 /** Finger travel (px) that counts as one swipe. */
 const SWIPE_PX = 24
 const WHEEL_DELTA = 20
 /** Silence (ms) that ends a wheel / trackpad burst, so inertia counts as one step. */
 const WHEEL_IDLE_MS = 200
+
+function goToCollection(lenis) {
+  const el = document.getElementById('collection')
+  if (!el) return
+  const navH = document.querySelector('.site-nav')?.getBoundingClientRect().height || 56
+  const top = el.getBoundingClientRect().top + window.scrollY - navH - 8
+  if (lenis) lenis.scrollTo(top, { offset: 0, duration: 1.2 })
+  else smoothScrollTo(top)
+}
+
+/** Replays the gauge's mist: 'puff' for a story beat, 'burst' for the closing one. */
+function sprayGauge(gauge, kind) {
+  if (!gauge) return
+  delete gauge.dataset.spray
+  // Reflow so the CSS animations restart when the same kind fires twice in a row
+  void gauge.offsetWidth
+  gauge.dataset.spray = kind
+}
+
+const CAP_KNURLS = [14, 16, 18, 20, 22, 24, 26]
+/** Mist droplets: end offset (dx, dy) from the nozzle, radius, delay (s); `burst` ones only show on the closing spray. */
+const MIST = [
+  { dx: -14, dy: -5, r: 1.6, delay: 0 },
+  { dx: -19, dy: -1, r: 2.1, delay: 0.04 },
+  { dx: -16, dy: 3, r: 1.4, delay: 0.08 },
+  { dx: -23, dy: -7, r: 1.2, delay: 0.1 },
+  { dx: -25, dy: 1, r: 1.8, delay: 0.14 },
+  { dx: -30, dy: -4, r: 2.4, delay: 0.18, burst: true },
+  { dx: -34, dy: 3, r: 1.7, delay: 0.24, burst: true },
+  { dx: -28, dy: -10, r: 1.5, delay: 0.3, burst: true },
+  { dx: -38, dy: -2, r: 2.2, delay: 0.38, burst: true },
+  { dx: -21, dy: 6, r: 1.3, delay: 0.44, burst: true },
+]
+
+/**
+ * Upright perfume flacon that starts full and drains as the story plays, misting from its atomiser on each beat.
+ * The liquid follows `--p` (0-1), set straight on the element by the RAF loop.
+ */
+function ScrollGauge({ ref, label, initial }) {
+  const id = useId().replace(/:/g, '')
+  return (
+    <div
+      ref={ref}
+      className="hero-gauge flex flex-col items-center gap-2"
+      style={{ '--p': initial }}
+      data-idle={initial < 0.005 ? 'true' : 'false'}
+    >
+      <svg viewBox="0 0 40 74" className="h-14 w-auto overflow-visible sm:h-[4.5rem]" aria-hidden>
+        <defs>
+          <linearGradient id={`${id}-cap`} x1="0" x2="1">
+            <stop offset="0" stopColor="#7d5e22" />
+            <stop offset="0.35" stopColor="#f3e2b3" />
+            <stop offset="0.6" stopColor="#c9a24a" />
+            <stop offset="1" stopColor="#6e521d" />
+          </linearGradient>
+          <linearGradient id={`${id}-glass`} x1="0" x2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.1" />
+            <stop offset="0.45" stopColor="#fff" stopOpacity="0.02" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0.07" />
+          </linearGradient>
+          <linearGradient id={`${id}-liquid`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#f0d58f" />
+            <stop offset="0.25" stopColor="#d4af5a" />
+            <stop offset="1" stopColor="#9a7428" />
+          </linearGradient>
+          <clipPath id={`${id}-body`}>
+            <rect x="5" y="25" width="30" height="46" rx="5" />
+          </clipPath>
+        </defs>
+
+        <g className="hero-gauge-mists">
+          {MIST.map((m, i) => (
+            <circle
+              key={i}
+              className={m.burst ? 'hero-gauge-mist hero-gauge-mist-burst' : 'hero-gauge-mist'}
+              cx="15"
+              cy="21.5"
+              r={m.r}
+              fill="#f3e2b3"
+              style={{ '--dx': `${m.dx}px`, '--dy': `${m.dy}px`, '--delay': `${m.delay}s` }}
+            />
+          ))}
+        </g>
+
+        <g className="hero-gauge-cap">
+          <rect x="11" y="1" width="18" height="15" rx="2" fill={`url(#${id}-cap)`} />
+          {CAP_KNURLS.map((x) => (
+            <line key={x} x1={x} y1="3" x2={x} y2="14" stroke="#000" strokeOpacity="0.22" strokeWidth="0.6" />
+          ))}
+          <rect x="13" y="16" width="14" height="3" fill="#a8842f" />
+        </g>
+        <rect x="15.5" y="19" width="9" height="5" fill="#fff" fillOpacity="0.06" stroke="#c9a24a" strokeOpacity="0.5" strokeWidth="0.6" />
+        <circle cx="15.5" cy="21.5" r="0.7" fill="#0d0c0b" stroke="#c9a24a" strokeOpacity="0.6" strokeWidth="0.3" />
+
+        <rect x="4" y="24" width="32" height="48" rx="6" fill="#141210" fillOpacity="0.6" />
+        <g clipPath={`url(#${id}-body)`}>
+          <rect
+            className="hero-gauge-liquid"
+            x="5"
+            y="25"
+            width="30"
+            height="46"
+            fill={`url(#${id}-liquid)`}
+          />
+          <rect className="hero-gauge-shine" x="-14" y="20" width="10" height="56" fill="#fff" fillOpacity="0.22" transform="skewX(-18)" />
+        </g>
+        <rect x="4" y="24" width="32" height="48" rx="6" fill={`url(#${id}-glass)`} stroke="#d4af5a" strokeOpacity="0.65" strokeWidth="0.9" />
+        <rect x="7.5" y="27.5" width="25" height="41" rx="3.5" fill="none" stroke="#fff" strokeOpacity="0.09" strokeWidth="0.6" />
+        <rect x="11" y="41" width="18" height="13" rx="1" fill="#0d0c0b" fillOpacity="0.75" stroke="#c9a24a" strokeOpacity="0.7" strokeWidth="0.6" />
+        <line x1="14" y1="47.5" x2="26" y2="47.5" stroke="#c9a24a" strokeOpacity="0.6" strokeWidth="0.5" />
+        <line x1="8" y1="30" x2="8" y2="62" stroke="#fff" strokeOpacity="0.28" strokeWidth="0.9" strokeLinecap="round" />
+      </svg>
+      <span className="text-[8px] tracking-[0.42em] text-warm-white/50 uppercase sm:text-[9px]">
+        {label}
+      </span>
+    </div>
+  )
+}
 
 export default function Hero({
   getFrame,
@@ -61,12 +182,18 @@ export default function Hero({
   const rafRef = useRef(0)
   const chapterIdRef = useRef(null)
   const progressRef = useRef(0)
+  const gaugeRef = useRef(null)
+  const lenisRef = useRef(lenis)
   const lastTsRef = useRef(0)
   const showEndCtaRef = useRef(false)
 
   const [ready, setReady] = useState(false)
   const [chapter, setChapter] = useState(null)
   const [showEndCta, setShowEndCta] = useState(false)
+
+  useEffect(() => {
+    lenisRef.current = lenis
+  }, [lenis])
 
   useEffect(() => {
     if (priorityReady || isMobile) {
@@ -189,6 +316,11 @@ export default function Hero({
 
     function flushUiChrome(progress) {
       progressRef.current = progress
+      const gauge = gaugeRef.current
+      if (gauge) {
+        gauge.style.setProperty('--p', progress.toFixed(4))
+        gauge.dataset.idle = progress < 0.005 ? 'true' : 'false'
+      }
 
       const next = chapterAt(progress)
       if (next.id !== chapterIdRef.current) {
@@ -337,27 +469,37 @@ export default function Hero({
 
     const playing = () => Boolean(tween?.isActive())
     const canStep = (dir) => stop + dir >= 0 && stop + dir <= last
+    const leave = () => goToCollection(lenisRef.current)
 
     const step = (dir) => {
+      // Past the last beat, a forward gesture goes straight to the collection
+      if (dir > 0 && stop === last) {
+        if (!playing()) leave()
+        return
+      }
       if (!canStep(dir)) return
       const wasPlaying = playing()
       stop += dir
       tween?.kill()
+      const final = dir > 0 && stop === last
+      if (dir > 0) sprayGauge(gaugeRef.current, final ? 'burst' : 'puff')
       const distance = Math.abs(stops[stop] - playhead.frame)
+      const duration = Math.min(MAX_BEAT_SECONDS, 0.7 + distance * 0.009)
       tween = gsap.to(playhead, {
         frame: stops[stop],
-        duration: reduceMotion ? 0.35 : Math.min(MAX_BEAT_SECONDS, 0.7 + distance * 0.009),
+        duration: reduceMotion ? 0.35 : final ? Math.min(FINAL_BEAT_SECONDS, duration) : duration,
         // Mid-flight retargets keep their momentum instead of easing in again
         ease: wasPlaying ? 'power2.out' : 'power1.inOut',
         onUpdate: syncFrame,
+        onComplete: final ? () => window.scrollY <= 2 && leave() : undefined,
       })
     }
 
-    // The story owns the gesture only while the hero fills the screen; at the ends it lets the page scroll
+    // The story owns the gesture only while the hero fills the screen; going back past the first beat lets the page scroll
     const owns = (dir) =>
       window.scrollY <= 2 &&
       document.documentElement.style.overflow !== 'hidden' &&
-      (canStep(dir) || playing())
+      (canStep(dir) || playing() || (dir > 0 && Boolean(document.getElementById('collection'))))
 
     const inScope = (target) =>
       target instanceof Element &&
@@ -466,17 +608,7 @@ export default function Hero({
 
   const scrollToCollection = (e) => {
     e.preventDefault()
-    const el = document.getElementById('collection')
-    if (!el) return
-    const nav = document.querySelector('.site-nav')
-    const navH = nav?.getBoundingClientRect().height || 56
-    const top =
-      el.getBoundingClientRect().top + window.scrollY - navH - 8
-    if (lenis) {
-      lenis.scrollTo(top, { offset: 0, duration: 1.2 })
-    } else {
-      window.scrollTo({ top, behavior: 'smooth' })
-    }
+    goToCollection(lenis)
   }
 
   return (
@@ -533,24 +665,24 @@ export default function Hero({
             </div>
           )}
 
-          <div className="pointer-events-none absolute inset-0 z-[5] flex items-end px-5 pb-[5.5rem] sm:items-center sm:px-10 sm:pb-0 md:pl-24 lg:pl-36">
+          <div className="pointer-events-none absolute inset-0 z-[5] flex items-end px-5 pb-[3.25rem] sm:items-center sm:px-10 sm:pb-0 md:pl-24 lg:pl-36">
             <AnimatePresence>
               {ready && (
                 <motion.div
-                  className="max-w-[20rem] pointer-events-auto text-left sm:max-w-md"
+                  className="max-w-[15rem] pointer-events-auto text-left sm:max-w-md"
                   initial={fadeUp.initial}
                   animate={fadeUp.animate}
                   transition={{ duration: 1.05, ease: easeOutExpo }}
                 >
-                  <p className="mb-3 text-[10px] tracking-[0.38em] text-sand uppercase sm:mb-5 sm:text-[11px] sm:tracking-[0.42em]">
+                  <p className="mb-2 text-[8px] whitespace-nowrap tracking-[0.3em] text-sand/80 uppercase sm:mb-5 sm:text-[11px] sm:tracking-[0.42em] sm:text-sand">
                     SCENTINOVA · Heavenly Crafted
                   </p>
-                  <h1 className="font-display text-[2rem] leading-[1.1] text-warm-white sm:text-5xl lg:text-6xl">
+                  <h1 className="font-display text-[1.6rem] leading-[1.1] text-warm-white sm:text-5xl lg:text-6xl">
                     Fragrance as
                     <br />
                     <span className="text-champagne">presence.</span>
                   </h1>
-                  <p className="mt-4 max-w-[17rem] text-[13px] leading-relaxed text-sand/95 sm:mt-6 sm:max-w-sm sm:text-[15px]">
+                  <p className="mt-6 hidden max-w-sm text-[15px] leading-relaxed text-sand/95 sm:block">
                     Signatures in crystal and gold - a private hour that stays.
                   </p>
 
@@ -558,7 +690,7 @@ export default function Hero({
                     {chapter && progressRef.current > 0.08 && !showEndCta && (
                       <motion.p
                         key={chapter.id}
-                        className="mt-4 text-[10px] tracking-[0.2em] text-gold/80 uppercase sm:mt-5 sm:text-[11px]"
+                        className="mt-2.5 text-[8.5px] tracking-[0.22em] text-gold/80 uppercase sm:mt-5 sm:text-[11px] sm:tracking-[0.2em]"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -569,10 +701,10 @@ export default function Hero({
                     )}
                   </AnimatePresence>
 
-                  <div className="mt-7 flex flex-wrap items-center gap-4 sm:mt-10 sm:gap-5">
+                  <div className="mt-4 flex flex-wrap items-center gap-4 sm:mt-10 sm:gap-5">
                     <Link
                       to="/shop"
-                      className="btn-luxury inline-flex items-center gap-2 border border-champagne/50 px-6 py-3 text-[11px] text-warm-white sm:gap-3 sm:px-8 sm:py-3.5"
+                      className="btn-luxury inline-flex items-center gap-2 border border-champagne/50 px-4 py-2 whitespace-nowrap text-warm-white max-sm:text-[9.5px]! max-sm:tracking-[0.2em]! sm:gap-3 sm:px-8 sm:py-3.5"
                     >
                       Discover the collection
                       <span aria-hidden>→</span>
@@ -583,59 +715,28 @@ export default function Hero({
             </AnimatePresence>
           </div>
 
-          {isMobile && !showEndCta && (
-            <motion.button
-              type="button"
-              onClick={scrollToCollection}
-              className="absolute bottom-3 left-3 z-[6] flex items-center gap-3 px-2 py-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: ready ? 0.85 : 0 }}
-              transition={{ delay: 1.1, duration: 0.8 }}
-            >
-              <span className="text-[10px] tracking-[0.32em] text-warm-white/50 uppercase">
-                Enter the collection
-              </span>
-              <span aria-hidden className="text-[11px] text-gold">
-                ↓
-              </span>
-            </motion.button>
-          )}
-
-          {!isMobile && !showEndCta && (
-            <motion.div
-              className="pointer-events-none absolute bottom-5 left-5 z-[5] flex items-center gap-3 sm:bottom-10 sm:left-auto sm:right-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: ready ? 0.7 : 0 }}
-              transition={{ delay: 1.1, duration: 0.8 }}
-            >
-              <span className="text-[10px] tracking-[0.32em] text-warm-white/50 uppercase sm:text-[11px] sm:tracking-[0.35em]">
-                Scroll to explore
-              </span>
-              <span className="h-px w-8 bg-gradient-to-r from-scent-red-light to-transparent sm:w-10" />
-            </motion.div>
-          )}
-
-          <AnimatePresence>
-            {showEndCta && (
-              <motion.div
-                className="pointer-events-none absolute inset-x-0 bottom-16 z-[6] flex justify-center"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.55, ease: easeOutExpo }}
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-[6]"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 8 }}
+            transition={{ delay: 1.1, duration: 0.8, ease: easeOutExpo }}
+          >
+            <div className="absolute right-5 bottom-[3.25rem] sm:right-10 sm:bottom-9">
+              <ScrollGauge ref={gaugeRef} label={isMobile ? 'Swipe' : 'Scroll'} initial={progressRef.current} />
+            </div>
+            {isMobile && (
+              <button
+                type="button"
+                onClick={scrollToCollection}
+                className="pointer-events-auto absolute inset-x-0 bottom-2 mx-auto w-max px-3 py-1.5 text-[8.5px] tracking-[0.32em] text-warm-white/40 uppercase"
               >
-                <button
-                  type="button"
-                  onClick={scrollToCollection}
-                  className="pointer-events-auto text-[11px] tracking-[0.4em] text-gold uppercase"
-                >
-                  Enter the collection ↓
-                </button>
-              </motion.div>
+                Skip to the collection <span aria-hidden className="text-gold">↓</span>
+              </button>
             )}
-          </AnimatePresence>
+          </motion.div>
         </div>
       </div>
     </section>
   )
 }
+

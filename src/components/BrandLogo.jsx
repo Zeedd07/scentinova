@@ -3,6 +3,7 @@
  */
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useLenis } from './SmoothScroll'
+import { smoothScrollTo } from '../lib/smoothScroll'
 
 export default function BrandLogo({
   to = '/',
@@ -24,7 +25,7 @@ export default function BrandLogo({
 
     const scrollTop = () => {
       if (lenis) lenis.scrollTo(0, { immediate: false, duration: 1 })
-      else window.scrollTo({ top: 0, behavior: 'smooth' })
+      else smoothScrollTo(0)
     }
 
     if (pathname !== '/') {
