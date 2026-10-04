@@ -44,7 +44,7 @@ export default function OrderConfirmationPage() {
 
   if (error) {
     return (
-      <div className="bg-ivory px-6 pt-28 pb-20 text-center">
+      <div className="bg-ivory px-6 pt-[calc(7rem+var(--offer-h))] pb-20 text-center">
         <h1 className="font-display text-3xl text-charcoal">Order not found</h1>
         <p className="mt-3 text-sm text-muted">{error}</p>
         <Link
@@ -59,7 +59,7 @@ export default function OrderConfirmationPage() {
 
   if (!order) {
     return (
-      <div className="bg-ivory px-6 pt-28 pb-20 text-center text-muted">
+      <div className="bg-ivory px-6 pt-[calc(7rem+var(--offer-h))] pb-20 text-center text-muted">
         Confirming your order…
       </div>
     )
@@ -105,7 +105,7 @@ export default function OrderConfirmationPage() {
   ]
 
   return (
-    <div className="flex min-h-[80vh] flex-col items-center justify-center bg-ivory px-6 pt-24 pb-20">
+    <div className="flex min-h-[80vh] flex-col items-center justify-center bg-ivory px-6 pt-[calc(6rem+var(--offer-h))] pb-20">
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -120,11 +120,11 @@ export default function OrderConfirmationPage() {
       >
         {isCod || isPaid ? (
           <>
-            Order <span className="italic text-bronze">confirmed</span>
+            Order <span className="text-bronze">confirmed</span>
           </>
         ) : (
           <>
-            Order <span className="italic text-bronze">received</span>
+            Order <span className="text-bronze">received</span>
           </>
         )}
       </motion.h1>

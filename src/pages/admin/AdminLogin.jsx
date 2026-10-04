@@ -43,7 +43,7 @@ export default function AdminLogin() {
           Scentinova
         </p>
         <h1 className="mt-3 text-center font-display text-4xl text-charcoal">
-          Admin <span className="italic text-bronze">sign in</span>
+          Admin <span className="text-bronze">sign in</span>
         </h1>
         <p className="mt-3 text-center text-sm text-muted">
           Secure access to the maison catalog.

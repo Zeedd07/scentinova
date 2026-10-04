@@ -10,12 +10,81 @@ import {
   adminFetchProduct,
   adminUpdateProduct,
 } from '../../services/productApi'
-import { uploadAdminImage } from '../../services/uploadApi'
+import { uploadAdminImage, uploadAdminVideo } from '../../services/uploadApi'
 import { useCatalog } from '../../context/CatalogContext'
 import { ApiClientError } from '../../services/apiClient'
 import NoteImageEditor from '../../components/admin/NoteImageEditor'
 import ProductFeesEditor from '../../components/admin/ProductFeesEditor'
 import { EMPTY_FEES_FORM, feesToForm, parseFeesForm } from '../../lib/productFees'
+import {
+  IMAGE_SCALE_MAX,
+  IMAGE_SCALE_MIN,
+  IMAGE_SCALE_STEP,
+  clampImageScale,
+  imageScaleStyle,
+} from '../../lib/imageScale'
+
+function ImageSizeControl({ index, scale, onChange }) {
+  const pct = Math.round(scale * 100)
+  const stepBtn =
+    'flex h-7 w-7 shrink-0 items-center justify-center border border-[#e0d6c4] bg-[#fffcf7] text-[15px] leading-none text-[#1b1917] transition hover:bg-[#f0e9dc] disabled:opacity-40'
+  return (
+    <div className="mt-2">
+      <div className="flex items-center justify-between text-[12px]">
+        <span className="admin-muted">Size on website</span>
+        <span className="flex items-center gap-2">
+          <span className="tabular-nums text-[#1b1917]">{pct}%</span>
+          {scale !== 1 && (
+            <button type="button" className="admin-link text-[12px]" onClick={() => onChange(1)}>
+              Reset
+            </button>
+          )}
+        </span>
+      </div>
+      <div className="mt-1 flex items-center gap-2">
+        <button
+          type="button"
+          className={stepBtn}
+          onClick={() => onChange(scale - IMAGE_SCALE_STEP)}
+          disabled={scale <= IMAGE_SCALE_MIN}
+          aria-label={`Make image ${index + 1} smaller`}
+        >
+          −
+        </button>
+        <input
+          type="range"
+          min={IMAGE_SCALE_MIN}
+          max={IMAGE_SCALE_MAX}
+          step={IMAGE_SCALE_STEP}
+          value={scale}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label={`Size of image ${index + 1} on the website`}
+          aria-valuetext={`${pct}%`}
+          className="min-w-0 flex-1 accent-[#1b1917]"
+        />
+        <button
+          type="button"
+          className={stepBtn}
+          onClick={() => onChange(scale + IMAGE_SCALE_STEP)}
+          disabled={scale >= IMAGE_SCALE_MAX}
+          aria-label={`Make image ${index + 1} bigger`}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  )
+}
+
+const MAX_VIDEOS = 6
+const MAX_VIDEO_MB = 100
+const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
+
+function formatDuration(seconds) {
+  if (!Number.isFinite(seconds)) return ''
+  const s = Math.round(seconds)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
 
 const emptyForm = {
   name: '',
@@ -33,6 +102,8 @@ const emptyForm = {
   imagePublicId: null,
   gallery: [],
   galleryPublicIds: [],
+  galleryScales: [],
+  videos: [],
   description: '',
   story: '',
   notesTop: '',
@@ -52,6 +123,7 @@ function productToForm(p) {
     if (p.imagePublicId) galleryPublicIds = [p.imagePublicId]
   }
   while (galleryPublicIds.length < gallery.length) galleryPublicIds.push(null)
+  const galleryScales = gallery.map((_, i) => clampImageScale(p.galleryScales?.[i] ?? 1))
 
   return {
     name: p.name ?? '',
@@ -69,6 +141,8 @@ function productToForm(p) {
     imagePublicId: p.imagePublicId ?? galleryPublicIds[0] ?? null,
     gallery,
     galleryPublicIds,
+    galleryScales,
+    videos: (p.videos || []).filter((v) => v?.publicId && v?.url),
     description: p.description ?? '',
     story: p.story ?? '',
     notesTop: Array.isArray(p.notes?.top)
@@ -120,6 +194,9 @@ export default function AdminProductForm() {
   const [uploadError, setUploadError] = useState('')
   const [feeErrors, setFeeErrors] = useState({})
   const [pendingRemove, setPendingRemove] = useState(null)
+  const [videoProgress, setVideoProgress] = useState(null)
+  const [videoError, setVideoError] = useState('')
+  const [pendingVideoRemove, setPendingVideoRemove] = useState(null)
 
   const parsedNotes = useMemo(
     () => ({
@@ -164,12 +241,21 @@ export default function AdminProductForm() {
 
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
 
-  const syncPrimary = (gallery, galleryPublicIds) => ({
+  const syncPrimary = (gallery, galleryPublicIds, galleryScales) => ({
     gallery,
     galleryPublicIds,
+    galleryScales: gallery.map((_, i) => galleryScales?.[i] ?? 1),
     image: gallery[0] || '',
     imagePublicId: galleryPublicIds[0] || null,
   })
+
+  const setScaleAt = (index, value) => {
+    setForm((f) => {
+      const galleryScales = f.gallery.map((_, i) => f.galleryScales[i] ?? 1)
+      galleryScales[index] = Math.round(clampImageScale(value) * 100) / 100
+      return { ...f, galleryScales }
+    })
+  }
 
   const onImagesUpload = async (e) => {
     const files = [...(e.target.files || [])]
@@ -204,7 +290,7 @@ export default function AdminProductForm() {
         ]
         // Keep public ids aligned with gallery length when some lacked ids
         while (galleryPublicIds.length < gallery.length) galleryPublicIds.push(null)
-        return { ...f, ...syncPrimary(gallery, galleryPublicIds) }
+        return { ...f, ...syncPrimary(gallery, galleryPublicIds, f.galleryScales) }
       })
       setStatus({
         type: 'ok',
@@ -224,11 +310,74 @@ export default function AdminProductForm() {
     }
   }
 
+  const onVideosUpload = async (e) => {
+    const picked = [...(e.target.files || [])]
+    e.target.value = ''
+    if (!picked.length) return
+    setVideoError('')
+    const room = MAX_VIDEOS - form.videos.length
+    if (room <= 0) {
+      setVideoError(`Up to ${MAX_VIDEOS} videos per perfume.`)
+      return
+    }
+    const bad = picked.find(
+      (f) => !VIDEO_TYPES.includes(f.type) || f.size > MAX_VIDEO_MB * 1024 * 1024,
+    )
+    if (bad) {
+      setVideoError(
+        VIDEO_TYPES.includes(bad.type)
+          ? `“${bad.name}” is larger than ${MAX_VIDEO_MB} MB.`
+          : `“${bad.name}” is not an MP4, MOV or WebM video.`,
+      )
+      return
+    }
+    const files = picked.slice(0, room)
+    const slug = form.slug || form.name || 'product'
+    setVideoProgress(0)
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const video = await uploadAdminVideo(files[i], {
+          slug,
+          onProgress: (pct) => {
+            setVideoProgress(Math.round(((i + pct / 100) / files.length) * 100))
+          },
+        })
+        setForm((f) => ({ ...f, videos: [...f.videos, video] }))
+      }
+      setStatus({
+        type: 'ok',
+        text:
+          picked.length > files.length
+            ? `${files.length} uploaded - only ${MAX_VIDEOS} videos are allowed.`
+            : files.length === 1
+              ? 'Video uploaded to Cloudinary. Save to publish it.'
+              : `${files.length} videos uploaded to Cloudinary. Save to publish them.`,
+      })
+    } catch (err) {
+      setVideoError(
+        err instanceof ApiClientError ? err.message : 'Video upload failed. Please try again.',
+      )
+    } finally {
+      setVideoProgress(null)
+    }
+  }
+
+  const moveVideo = (index, dir) => {
+    setForm((f) => {
+      const next = index + dir
+      if (next < 0 || next >= f.videos.length) return f
+      const videos = [...f.videos]
+      ;[videos[index], videos[next]] = [videos[next], videos[index]]
+      return { ...f, videos }
+    })
+  }
+
   const removeGalleryAt = (index) => {
     setForm((f) => {
       const gallery = f.gallery.filter((_, i) => i !== index)
       const galleryPublicIds = f.galleryPublicIds.filter((_, i) => i !== index)
-      return { ...f, ...syncPrimary(gallery, galleryPublicIds) }
+      const galleryScales = f.galleryScales.filter((_, i) => i !== index)
+      return { ...f, ...syncPrimary(gallery, galleryPublicIds, galleryScales) }
     })
   }
 
@@ -238,11 +387,14 @@ export default function AdminProductForm() {
       const gallery = [...f.gallery]
       const galleryPublicIds = [...f.galleryPublicIds]
       while (galleryPublicIds.length < gallery.length) galleryPublicIds.push(null)
+      const galleryScales = f.gallery.map((_, i) => f.galleryScales[i] ?? 1)
       const [url] = gallery.splice(index, 1)
       const [pid] = galleryPublicIds.splice(index, 1)
+      const [scale] = galleryScales.splice(index, 1)
       gallery.unshift(url)
       galleryPublicIds.unshift(pid)
-      return { ...f, ...syncPrimary(gallery, galleryPublicIds) }
+      galleryScales.unshift(scale)
+      return { ...f, ...syncPrimary(gallery, galleryPublicIds, galleryScales) }
     })
   }
 
@@ -258,7 +410,9 @@ export default function AdminProductForm() {
         galleryPublicIds[next],
         galleryPublicIds[index],
       ]
-      return { ...f, ...syncPrimary(gallery, galleryPublicIds) }
+      const galleryScales = f.gallery.map((_, i) => f.galleryScales[i] ?? 1)
+      ;[galleryScales[index], galleryScales[next]] = [galleryScales[next], galleryScales[index]]
+      return { ...f, ...syncPrimary(gallery, galleryPublicIds, galleryScales) }
     })
   }
 
@@ -312,6 +466,15 @@ export default function AdminProductForm() {
       galleryPublicIds: galleryPublicIds.filter(Boolean).length
         ? galleryPublicIds.map((id) => id || '')
         : [],
+      galleryScales: gallery.map((_, i) => clampImageScale(form.galleryScales[i] ?? 1)),
+      videos: form.videos.map(({ publicId, url, posterUrl, width, height, duration }) => ({
+        publicId,
+        url,
+        posterUrl: posterUrl ?? null,
+        width: width ?? null,
+        height: height ?? null,
+        duration: duration ?? null,
+      })),
       description: form.description,
       story: form.story,
       notes: parsedNotes,
@@ -393,7 +556,8 @@ export default function AdminProductForm() {
 
   const cats = CATEGORIES.filter((c) => c !== 'All')
   const shopSlug = existing?.slug || form.slug
-  const uploading = uploadProgress != null
+  const videoUploading = videoProgress != null
+  const uploading = uploadProgress != null || videoUploading
   const imageCount = form.gallery.length || (form.image ? 1 : 0)
 
   return (
@@ -565,7 +729,8 @@ export default function AdminProductForm() {
                 <span className={labelClass}>Product images</span>
                 <p className="mt-1 text-[13px] admin-muted">
                   Upload multiple photos per perfume (bottle, packaging, etc.).
-                  First image is the shop cover. All go to Cloudinary.
+                  First image is the shop cover. All go to Cloudinary. Use
+                  &ldquo;Size on website&rdquo; to make a bottle look bigger or smaller.
                 </p>
               </div>
               <span className="text-[13px] tabular-nums admin-muted">
@@ -612,13 +777,19 @@ export default function AdminProductForm() {
                       Cover
                     </span>
                   )}
-                  <div className="flex h-40 items-center justify-center bg-[#f3eee4]">
+                  <div className="flex h-40 items-center justify-center overflow-hidden bg-[#f3eee4]">
                     <img
                       src={url}
                       alt={`Product image ${index + 1}`}
-                      className="max-h-full max-w-full object-contain"
+                      className="max-h-full max-w-full object-contain transition-transform duration-150"
+                      style={imageScaleStyle(form.galleryScales[index] ?? 1)}
                     />
                   </div>
+                  <ImageSizeControl
+                    index={index}
+                    scale={form.galleryScales[index] ?? 1}
+                    onChange={(value) => setScaleAt(index, value)}
+                  />
                   <p className="mt-2 truncate text-[11px] admin-muted">
                     {form.galleryPublicIds[index] ||
                       (url.includes('res.cloudinary.com')
@@ -679,6 +850,118 @@ export default function AdminProductForm() {
           {uploadError && (
             <p className="border border-[#6e1118]/30 bg-[#6e1118]/5 px-3 py-2 text-sm text-[#6e1118]">
               {uploadError}
+            </p>
+          )}
+        </section>
+
+        <section className="space-y-4">
+          <div>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <span className={labelClass}>Product videos</span>
+                <p className="mt-1 text-[13px] admin-muted">
+                  Short clips shown after the photos on the product page. They play
+                  muted and loop. All go to Cloudinary.
+                </p>
+              </div>
+              <span className="text-[13px] tabular-nums admin-muted">
+                {form.videos.length} / {MAX_VIDEOS}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <label
+                className={`admin-btn admin-btn-quiet ${
+                  uploading || form.videos.length >= MAX_VIDEOS
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                }`}
+              >
+                {videoUploading
+                  ? videoProgress >= 100
+                    ? 'Processing…'
+                    : `Uploading ${videoProgress}%`
+                  : 'Add videos'}
+                <input
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm"
+                  className="hidden"
+                  multiple
+                  disabled={uploading || form.videos.length >= MAX_VIDEOS}
+                  onChange={onVideosUpload}
+                />
+              </label>
+              <span className="text-[13px] admin-muted">
+                MP4 / MOV / WebM · max {MAX_VIDEO_MB} MB each
+              </span>
+            </div>
+            {videoUploading && (
+              <div className="mt-2 h-1.5 w-full max-w-xs rounded-sm bg-[#ebe4d6]">
+                <div
+                  className="h-full rounded-sm bg-gold transition-all"
+                  style={{ width: `${videoProgress}%` }}
+                />
+              </div>
+            )}
+          </div>
+
+          {form.videos.length > 0 && (
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {form.videos.map((video, index) => (
+                <li
+                  key={video.publicId}
+                  className="border border-[#e0d6c4] bg-[#fffcf7] p-3"
+                >
+                  <div className="flex h-40 items-center justify-center overflow-hidden bg-[#f3eee4]">
+                    <video
+                      src={video.url}
+                      poster={video.posterUrl || undefined}
+                      controls
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="max-h-full max-w-full"
+                      aria-label={`Product video ${index + 1}`}
+                    />
+                  </div>
+                  <p className="mt-2 truncate text-[11px] admin-muted">
+                    {video.publicId}
+                    {video.duration ? ` · ${formatDuration(video.duration)}` : ''}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="text-[12px] admin-link"
+                      disabled={index === 0}
+                      onClick={() => moveVideo(index, -1)}
+                      aria-label={`Move video ${index + 1} earlier`}
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className="text-[12px] admin-link"
+                      disabled={index === form.videos.length - 1}
+                      onClick={() => moveVideo(index, 1)}
+                      aria-label={`Move video ${index + 1} later`}
+                    >
+                      →
+                    </button>
+                    <button
+                      type="button"
+                      className="text-[12px] text-[#6e1118]"
+                      onClick={() => setPendingVideoRemove(video.publicId)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {videoError && (
+            <p className="border border-[#6e1118]/30 bg-[#6e1118]/5 px-3 py-2 text-sm text-[#6e1118]">
+              {videoError}
             </p>
           )}
         </section>
@@ -792,6 +1075,23 @@ export default function AdminProductForm() {
           setPendingRemove(null)
         }}
         onCancel={() => setPendingRemove(null)}
+      />
+
+      <AdminModal
+        open={Boolean(pendingVideoRemove)}
+        tone="danger"
+        title="Remove this video?"
+        message="It will be taken off this perfume and deleted from Cloudinary when you save."
+        confirmLabel="Remove video"
+        cancelLabel="Keep video"
+        onConfirm={() => {
+          setForm((f) => ({
+            ...f,
+            videos: f.videos.filter((v) => v.publicId !== pendingVideoRemove),
+          }))
+          setPendingVideoRemove(null)
+        }}
+        onCancel={() => setPendingVideoRemove(null)}
       />
 
       <AdminModal

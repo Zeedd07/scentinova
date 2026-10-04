@@ -139,6 +139,8 @@ export default function CheckoutPage() {
   const codBlockedBy = paymentOptions?.cod?.blockedBy || []
   const codFeePaise = paymentOptions?.cod?.codFeePaise ?? 0
   const codConveniencePaise = paymentOptions?.cod?.convenienceFeePaise ?? 0
+  const codShippingPaise = paymentOptions?.cod?.shippingPaise ?? 0
+  const prepaidShipsFree = codShippingPaise > 0 && paymentOptions?.prepaid?.shippingPaise === 0
 
   /** COD rejected for this cart: remember which products block it and fall back to online payment. */
   const handleCodBlocked = useCallback((err) => {
@@ -443,7 +445,7 @@ export default function CheckoutPage() {
 
   if (!count) {
     return (
-      <div className="bg-ivory px-6 pt-28 pb-20 text-center">
+      <div className="bg-ivory px-6 pt-[calc(7rem+var(--offer-h))] pb-20 text-center">
         <h1 className="font-display text-4xl text-charcoal">Your bag is empty</h1>
         <Link
           to="/shop"
@@ -456,7 +458,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="bg-ivory pt-16">
+    <div className="bg-ivory pt-[calc(4rem+var(--offer-h))]">
       <section className="px-6 pt-14 pb-8 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <motion.p
@@ -623,6 +625,9 @@ export default function CheckoutPage() {
                 <span className="mt-1 block text-sm text-charcoal">
                   Pay securely online using Razorpay
                 </span>
+                {prepaidShipsFree && (
+                  <span className="mt-2 block text-sm text-success">Free shipping</span>
+                )}
               </button>
               <button
                 type="button"
@@ -647,6 +652,11 @@ export default function CheckoutPage() {
                 {codEnabled && codFeePaise > 0 && (
                   <span className="mt-2 block text-sm text-bronze">
                     + {formatPrice(codFeePaise / 100)} COD fee
+                  </span>
+                )}
+                {codEnabled && prepaidShipsFree && (
+                  <span className={`block text-sm text-bronze ${codFeePaise > 0 ? 'mt-0.5' : 'mt-2'}`}>
+                    + {formatPrice(codShippingPaise / 100)} shipping
                   </span>
                 )}
                 {!codEnabled && (
@@ -676,7 +686,7 @@ export default function CheckoutPage() {
           </section>
         </div>
 
-        <aside className="h-fit border border-stone bg-warm-white p-6 lg:sticky lg:top-28">
+        <aside className="h-fit border border-stone bg-warm-white p-6 lg:sticky lg:top-[calc(7rem+var(--offer-h))]">
           <p className="text-[11px] tracking-[0.42em] text-muted uppercase">
             Order summary
           </p>

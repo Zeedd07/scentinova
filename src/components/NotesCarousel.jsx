@@ -124,7 +124,7 @@ export default function NotesCarousel() {
               Notes
             </p>
             <h2 className="font-display text-4xl text-cream sm:text-5xl">
-              Layered in <span className="gold-text italic">gold</span>
+              Layered in <span className="gold-text">gold</span>
             </h2>
           </div>
           <div className="hidden gap-2 sm:flex">

@@ -10,7 +10,7 @@ export default function CartPage() {
   const { items, subtotal, count, setQty, removeItem, clearCart } = useCart()
 
   return (
-    <div className="bg-ivory pt-16">
+    <div className="bg-ivory pt-[calc(4rem+var(--offer-h))]">
       <section className="px-6 pt-14 pb-10 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <motion.p
@@ -26,7 +26,7 @@ export default function CartPage() {
             transition={{ delay: 0.08 }}
             className="mt-3 font-display text-4xl leading-tight text-charcoal sm:text-5xl md:text-6xl"
           >
-            Cart & <span className="italic text-bronze">Bag</span>
+            Cart & <span className="text-bronze">Bag</span>
           </motion.h1>
           <p className="mt-4 text-sm text-muted">
             {count === 0
@@ -145,13 +145,13 @@ export default function CartPage() {
           )}
         </div>
 
-        <aside className="h-fit lg:sticky lg:top-28">
+        <aside className="h-fit lg:sticky lg:top-[calc(7rem+var(--offer-h))]">
           <div className="border border-stone bg-warm-white px-6 py-8 sm:px-8">
             <p className="text-[11px] tracking-[0.42em] text-muted uppercase">
               Order summary
             </p>
             <h2 className="mt-2 font-display text-3xl text-charcoal">
-              Ready to <span className="italic text-bronze">seal</span>
+              Ready to <span className="text-bronze">seal</span>
             </h2>
             <dl className="mt-8 space-y-4 text-sm">
               <div className="flex justify-between">

@@ -68,7 +68,7 @@ export default function Gallery() {
           </p>
           <h2 className="font-display text-4xl text-cream sm:text-5xl">
             Moments in the{' '}
-            <span className="gold-text italic">sequence</span>
+            <span className="gold-text">sequence</span>
           </h2>
         </motion.div>
 

@@ -53,7 +53,7 @@ export default function BuyCTA() {
           transition={{ duration: 0.8 }}
           className="font-display text-4xl text-cream sm:text-5xl"
         >
-          Aurum <span className="gold-text italic">50 ml</span>
+          Aurum <span className="gold-text">50 ml</span>
         </motion.h2>
 
         <motion.div

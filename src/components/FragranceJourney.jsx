@@ -160,7 +160,7 @@ export default function FragranceJourney() {
   return (
     <section
       id="notes"
-      className="relative scroll-mt-16 overflow-hidden bg-black py-16 text-warm-white sm:scroll-mt-20 sm:py-24 lg:scroll-mt-24"
+      className="relative scroll-mt-[calc(4rem+var(--offer-h))] overflow-hidden bg-black py-16 text-warm-white sm:scroll-mt-[calc(5rem+var(--offer-h))] sm:py-24 lg:scroll-mt-[calc(6rem+var(--offer-h))]"
     >
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-[100px]"
@@ -189,7 +189,7 @@ export default function FragranceJourney() {
             className="font-display text-4xl leading-tight text-warm-white sm:text-5xl lg:text-6xl"
           >
             A world of{' '}
-            <span className="italic text-champagne">precious ingredients</span>
+            <span className="text-champagne">precious ingredients</span>
           </motion.h2>
           <motion.p
             initial={fadeUp.initial}

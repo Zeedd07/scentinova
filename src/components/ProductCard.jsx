@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { formatPrice } from '../data/products'
 import { useCart } from '../context/CartContext'
 import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
+import { imageScaleStyle, productImageScale } from '../lib/imageScale'
 
 export function shopLane(index) {
   const col = index % 4
@@ -46,6 +47,7 @@ export default function ProductCard({ product, index = 0 }) {
           <img
             src={product.image || `/products/${product.slug}.png`}
             alt={product.name}
+            style={imageScaleStyle(productImageScale(product, 0))}
             className="absolute left-1/2 top-1/2 z-[1] h-[92%] w-auto max-w-[90%] -translate-x-1/2 -translate-y-1/2 object-contain drop-shadow-[0_20px_36px_rgba(27,25,23,0.16)] transition duration-500 ease-out group-hover:scale-[1.02]"
             loading="eager"
             decoding="async"

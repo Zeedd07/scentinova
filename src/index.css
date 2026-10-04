@@ -37,11 +37,11 @@
   --color-ink-soft: #171512;
   --color-panel: #24201c;
 
-  /* Iowan Old Style on Apple; Libre Baskerville web fallback elsewhere */
-  --font-display: "Iowan Old Style", Baskerville, "Libre Baskerville",
-    "Palatino Linotype", Palatino, "Times New Roman", serif;
-  --font-sans: "Iowan Old Style", Baskerville, "Libre Baskerville",
-    "Palatino Linotype", Palatino, "Times New Roman", serif;
+  /* One typeface everywhere: Libre Baskerville (loaded in index.html) */
+  --font-display: "Libre Baskerville", Baskerville, "Times New Roman", serif;
+  --font-sans: var(--font-display);
+  --font-serif: var(--font-display);
+  --font-mono: var(--font-display);
 }
 
 *,
@@ -55,6 +55,58 @@ html {
   overflow-anchor: none;
   -webkit-text-size-adjust: 100%;
   --nav-h: 3.5rem;
+  /* Announcement bar above the nav; 0 when there are no active offers */
+  --offer-h: 0px;
+  --header-h: calc(var(--nav-h) + var(--offer-h));
+}
+
+html.has-offer-bar {
+  --offer-h: 2rem;
+}
+
+/* Announcement bar: warm cream with a soft lit centre and an occasional gold sheen */
+.offer-bar {
+  background:
+    radial-gradient(60% 140% at 50% 0%, rgba(255, 252, 244, 0.95), transparent 70%),
+    linear-gradient(90deg, #e9e2d2 0%, #f3eee3 50%, #e9e2d2 100%);
+}
+
+.offer-bar-shine {
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(212, 175, 90, 0.16) 45%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(212, 175, 90, 0.16) 55%,
+    transparent 80%
+  );
+  transform: translateX(-120%);
+  animation: offer-bar-shine 7s ease-in-out 1.2s infinite;
+}
+
+@keyframes offer-bar-shine {
+  0% {
+    transform: translateX(-120%);
+  }
+  35%,
+  100% {
+    transform: translateX(420%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offer-bar-shine {
+    display: none;
+  }
+}
+
+/* Product gallery: swipe track without a visible scrollbar */
+.product-gallery-track {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.product-gallery-track::-webkit-scrollbar {
+  display: none;
 }
 
 @media (min-width: 640px) {

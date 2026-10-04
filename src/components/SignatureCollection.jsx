@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { useCatalog } from '../context/CatalogContext'
 import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
 import { signatureStageCss } from '../lib/storefrontBackdrops'
+import { imageScaleStyle, productImageScale } from '../lib/imageScale'
 
 /** Preferred order and family labels for the house signatures. */
 const SHOWCASE = [
@@ -42,7 +43,7 @@ export default function SignatureCollection() {
       {/* Cream-gold stage - warm ivory with golden light */}
       <section
         id="collection"
-        className="signatures relative scroll-mt-16 overflow-x-clip sm:scroll-mt-20 lg:scroll-mt-24"
+        className="signatures relative scroll-mt-[calc(4rem+var(--offer-h))] overflow-x-clip sm:scroll-mt-[calc(5rem+var(--offer-h))] lg:scroll-mt-[calc(6rem+var(--offer-h))]"
         style={{ background: signatureStageCss.base }}
       >
         <div
@@ -145,6 +146,7 @@ export default function SignatureCollection() {
                     <img
                       src={item.product.image || `/products/${item.slug}.png`}
                       alt={item.product.name}
+                      style={imageScaleStyle(productImageScale(item.product, 0))}
                       className="max-h-full w-auto max-w-full object-contain drop-shadow-[0_24px_40px_rgba(90,70,30,0.18)] transition duration-500 ease-out group-hover:-translate-y-1.5 group-hover:scale-[1.02]"
                       loading="eager"
                       decoding="async"

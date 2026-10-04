@@ -11,10 +11,11 @@ import { useScrollLock } from '../hooks/useScrollLock'
 import { easeOutExpo } from '../lib/motion'
 import { SOCIAL_LINKS } from '../config/site'
 import BrandLogo from './BrandLogo'
+import OfferBar from './OfferBar'
 import { InstagramIcon } from './SocialIcons'
 
 const MENU_ID = 'site-menu'
-const BELOW_NAV = 'calc(var(--nav-h) + env(safe-area-inset-top, 0px))'
+const BELOW_NAV = 'calc(var(--header-h) + env(safe-area-inset-top, 0px))'
 
 const MAIN_LINKS = [
   { to: '/', label: 'Home', match: (p, h) => p === '/' && !h },
@@ -152,6 +153,7 @@ export default function Navbar() {
   return (
     <>
       <header className="site-nav fixed inset-x-0 top-0 z-[100] bg-black text-warm-white pt-[env(safe-area-inset-top,0px)]">
+        <OfferBar />
         <div className="mx-auto flex h-[var(--nav-h)] max-w-[1600px] items-center px-3 sm:px-6 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-10">
           <div className="flex shrink-0 items-center justify-start">
             <MenuToggle

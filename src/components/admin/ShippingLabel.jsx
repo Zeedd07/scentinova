@@ -306,7 +306,7 @@ export default function ShippingLabel({ order, ref, className }) {
         {SHIPPER.name.toUpperCase()}
       </text>
       <Lines x={20} y={137} lines={fromLines} gap={12.5} size={10.5} />
-      {shipperReady && (
+      {shipperReady && SHIPPER.phone && (
         <text x={20} y={137 + fromLines.length * 12.5} fontSize={10.5}>
           Phone: {SHIPPER.phone}
         </text>

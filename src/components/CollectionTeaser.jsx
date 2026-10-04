@@ -24,7 +24,7 @@ export default function CollectionTeaser() {
             </p>
             <h2 className="font-display text-4xl text-cream sm:text-5xl">
               Fragrances of the{' '}
-              <span className="gold-text italic">maison</span>
+              <span className="gold-text">maison</span>
             </h2>
           </div>
           <Link

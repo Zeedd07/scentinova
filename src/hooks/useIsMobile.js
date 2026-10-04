@@ -1,6 +1,6 @@
 /**
  * Detect coarse pointer / narrow viewport → mobile layout tweaks
- * (no particles or frame counter, lighter hero canvas).
+ * (no particles, lighter hero canvas).
  */
 import { useEffect, useState } from 'react'
 

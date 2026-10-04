@@ -36,6 +36,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminOrders from './pages/admin/AdminOrders'
 import AdminOrderDetail from './pages/admin/AdminOrderDetail'
 import AdminMediaLibrary from './pages/admin/AdminMediaLibrary'
+import AdminOffers from './pages/admin/AdminOffers'
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
@@ -119,6 +120,7 @@ function AppShell() {
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="orders/:id" element={<AdminOrderDetail />} />
+            <Route path="offers" element={<AdminOffers />} />
           </Route>
         </Routes>
       </AdminAuthProvider>

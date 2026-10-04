@@ -10,7 +10,7 @@ export default function AboutPage() {
   const { activeProducts } = useCatalog()
 
   return (
-    <div className="bg-ivory pt-[calc(var(--nav-h)+0.5rem)]">
+    <div className="bg-ivory pt-[calc(var(--header-h)+0.5rem)]">
       <section className="relative overflow-hidden px-6 py-16 sm:px-10 sm:py-24 lg:px-16 lg:py-28">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
@@ -48,7 +48,7 @@ export default function AboutPage() {
             className="mt-4 font-display text-5xl leading-[1.05] text-charcoal sm:text-6xl md:text-7xl"
           >
             <span className="block tracking-[0.06em]">SCENTINOVA</span>
-            <span className="mt-2 block font-display text-3xl italic font-normal text-bronze sm:text-4xl">
+            <span className="mt-2 block font-display text-3xl font-normal text-bronze sm:text-4xl">
               Heavenly Crafted Perfume
             </span>
           </motion.h1>
@@ -73,7 +73,7 @@ export default function AboutPage() {
             initial={fadeUp.initial}
             animate={fadeUp.animate}
             transition={{ delay: 0.18, duration: 0.85, ease: easeOutExpo }}
-            className="mt-12 font-display text-2xl italic leading-snug text-charcoal/90 sm:mt-14 sm:text-3xl"
+            className="mt-12 font-display text-2xl leading-snug text-charcoal/90 sm:mt-14 sm:text-3xl"
           >
             “A fragrance is not what you wear. It is what remains.”
           </motion.p>

@@ -1,26 +1,24 @@
 /**
  * Editorial hero: canvas frame sequence drawn by a single RAF loop.
- * Desktop: pinned frame-scrub on scroll (ScrollTrigger).
- * Mobile: one swipe plays one story beat between MOBILE_STOPS; past the last beat the page scrolls on.
+ * Each scroll / swipe plays one story beat between the stops below; past the last beat the page scrolls on.
  * The frame set (landscape / portrait) is chosen by the parent.
  */
 import { useEffect, useRef, useState, startTransition } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { isFrameDrawable, frameSize } from '../hooks/useFrameSequence'
 import { chapterAt } from '../data/storyChapters'
 import Particles from './Particles'
 import { useLenis } from './SmoothScroll'
 import { easeOutExpo, fadeUp } from '../lib/motion'
 
-gsap.registerPlugin(ScrollTrigger)
-
 const BG = '#0d0c0b'
 
-/** Frames each mobile swipe moves between, in order. */
+/** Frames each scroll / swipe moves between, in order. */
 const MOBILE_STOPS = [1, 106, 175, 263, 350, 430, 600]
+const DESKTOP_STOPS = [1, 160, 425, 550, 600]
+const MAX_BEAT_SECONDS = 2.8
 /** Finger travel (px) that counts as one swipe. */
 const SWIPE_PX = 24
 const WHEEL_DELTA = 20
@@ -37,8 +35,6 @@ export default function Hero({
   const pinRef = useRef(null)
   const stickyRef = useRef(null)
   const canvasRef = useRef(null)
-  const progressBarRef = useRef(null)
-  const frameLabelRef = useRef(null)
   const lenis = useLenis()
 
   const frameState = useRef({
@@ -191,17 +187,8 @@ export default function Hero({
       return null
     }
 
-    const labelPad = String(totalFrames).length
-
     function flushUiChrome(progress) {
       progressRef.current = progress
-      if (progressBarRef.current) {
-        progressBarRef.current.style.height = `${progress * 100}%`
-      }
-      const frameNum = Math.round(1 + progress * (totalFrames - 1))
-      if (frameLabelRef.current) {
-        frameLabelRef.current.textContent = String(frameNum).padStart(labelPad, '0')
-      }
 
       const next = chapterAt(progress)
       if (next.id !== chapterIdRef.current) {
@@ -328,68 +315,12 @@ export default function Hero({
     }
   }, [priorityReady, getFrame, getExactFrame, totalFrames, isMobile])
 
-  // ── Desktop: ScrollTrigger pin + scrub ────────────────────────────────
+  // ── One scroll / swipe = one story beat ───────────────────────────────
   useEffect(() => {
-    if (!priorityReady || isMobile) return undefined
-    const pin = pinRef.current
-    if (!pin) return undefined
-
-    try {
-      ScrollTrigger.normalizeScroll(true)
-    } catch {
-      /* older GSAP */
-    }
-
-    const st = ScrollTrigger.create({
-      trigger: pin,
-      start: 'top top',
-      end: 'bottom bottom',
-      // Numeric scrub feels smoother with Lenis than scrub:true on some devices
-      scrub: 0.18,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      fastScrollEnd: true,
-      onUpdate: (self) => {
-        frameState.current.target = 1 + self.progress * (totalFrames - 1)
-        frameState.current.pendingProgress = self.progress
-      },
-    })
-    frameState.current.target = 1 + st.progress * (totalFrames - 1)
-    frameState.current.pendingProgress = st.progress
-
-    let refreshTimer = 0
-    const scheduleRefresh = () => {
-      window.clearTimeout(refreshTimer)
-      refreshTimer = window.setTimeout(() => {
-        ScrollTrigger.refresh()
-      }, 280)
-    }
-
-    window.addEventListener('orientationchange', scheduleRefresh, {
-      passive: true,
-    })
-    window.addEventListener('resize', scheduleRefresh, { passive: true })
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(scheduleRefresh).catch(() => {})
-    }
-    const bootRefresh = window.setTimeout(() => ScrollTrigger.refresh(), 60)
-
-    return () => {
-      window.clearTimeout(refreshTimer)
-      window.clearTimeout(bootRefresh)
-      window.removeEventListener('orientationchange', scheduleRefresh)
-      window.removeEventListener('resize', scheduleRefresh)
-      st.kill()
-    }
-  }, [priorityReady, totalFrames, isMobile])
-
-  // ── Mobile: one swipe = one story beat ────────────────────────────────
-  useEffect(() => {
-    if (!isMobile) return undefined
     const hero = pinRef.current
     if (!hero) return undefined
 
-    const stops = MOBILE_STOPS.map((f) => Math.min(f, totalFrames))
+    const stops = (isMobile ? MOBILE_STOPS : DESKTOP_STOPS).map((f) => Math.min(f, totalFrames))
     const last = stops.length - 1
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const playhead = { frame: stops[0] }
@@ -415,7 +346,7 @@ export default function Hero({
       const distance = Math.abs(stops[stop] - playhead.frame)
       tween = gsap.to(playhead, {
         frame: stops[stop],
-        duration: reduceMotion ? 0.35 : 0.7 + distance * 0.009,
+        duration: reduceMotion ? 0.35 : Math.min(MAX_BEAT_SECONDS, 0.7 + distance * 0.009),
         // Mid-flight retargets keep their momentum instead of easing in again
         ease: wasPlaying ? 'power2.out' : 'power1.inOut',
         onUpdate: syncFrame,
@@ -485,6 +416,8 @@ export default function Hero({
       const dir = e.deltaY > 0 ? 1 : -1
       if (!wheelBurst && !owns(dir)) return
       e.preventDefault()
+      // Lenis skips events flagged like this, so it doesn't smooth-scroll the page underneath
+      e.lenisStopPropagation = true
       window.clearTimeout(wheelTimer)
       wheelTimer = window.setTimeout(() => {
         wheelBurst = false
@@ -502,29 +435,32 @@ export default function Hero({
     const onKeyDown = (e) => {
       if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return
       if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return
+      if (e.key === ' ' && e.target instanceof Element && e.target.closest('a, button')) return
       const dir = e.key === ' ' ? (e.shiftKey ? -1 : 1) : KEY_DIR[e.key]
       if (!dir || !owns(dir)) return
       e.preventDefault()
       step(dir)
     }
 
-    const opts = { passive: false }
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    // Capture phase: runs before Lenis's own window listeners
+    const opts = { passive: false, capture: true }
+    const passive = { passive: true, capture: true }
+    window.addEventListener('touchstart', onTouchStart, passive)
     window.addEventListener('touchmove', onTouchMove, opts)
-    window.addEventListener('touchend', onTouchEnd, { passive: true })
-    window.addEventListener('touchcancel', onTouchEnd, { passive: true })
+    window.addEventListener('touchend', onTouchEnd, passive)
+    window.addEventListener('touchcancel', onTouchEnd, passive)
     window.addEventListener('wheel', onWheel, opts)
-    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', onKeyDown, true)
 
     return () => {
       tween?.kill()
       window.clearTimeout(wheelTimer)
-      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchstart', onTouchStart, passive)
       window.removeEventListener('touchmove', onTouchMove, opts)
-      window.removeEventListener('touchend', onTouchEnd)
-      window.removeEventListener('touchcancel', onTouchEnd)
+      window.removeEventListener('touchend', onTouchEnd, passive)
+      window.removeEventListener('touchcancel', onTouchEnd, passive)
       window.removeEventListener('wheel', onWheel, opts)
-      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keydown', onKeyDown, true)
     }
   }, [isMobile, totalFrames])
 
@@ -548,10 +484,7 @@ export default function Hero({
       id="hero"
       ref={pinRef}
       className="relative bg-black"
-      style={{
-        height: isMobile ? undefined : '400vh',
-        touchAction: 'pan-y',
-      }}
+      style={{ touchAction: 'pan-y' }}
       aria-label="SCENTINOVA - cinematic frame sequence"
     >
       <div
@@ -569,7 +502,7 @@ export default function Hero({
         <div
           className="shrink-0 bg-black"
           style={{
-            height: 'calc(var(--nav-h) + env(safe-area-inset-top, 0px))',
+            height: 'calc(var(--header-h) + env(safe-area-inset-top, 0px))',
           }}
           aria-hidden
         />
@@ -600,25 +533,6 @@ export default function Hero({
             </div>
           )}
 
-          <div className="pointer-events-none absolute right-4 top-[calc(var(--nav-h)+1.25rem)] z-[6] flex h-[22vh] flex-col items-center drop-shadow-[0_1px_4px_rgba(0,0,0,0.75)] md:right-auto md:left-8 md:top-1/2 md:h-[42vh] md:-translate-y-1/2 md:drop-shadow-none lg:left-12">
-            <span
-              ref={frameLabelRef}
-              className="font-display text-xs tabular-nums text-gold-light md:text-sm"
-            >
-              {'1'.padStart(String(totalFrames).length, '0')}
-            </span>
-            <div className="relative my-2 w-px flex-1 bg-gold/30 md:my-3 md:bg-gold/20">
-              <div
-                ref={progressBarRef}
-                className="absolute inset-x-0 top-0 w-px bg-gradient-to-b from-gold to-gold-light"
-                style={{ height: '0%' }}
-              />
-            </div>
-            <span className="font-display text-xs tabular-nums text-warm-white/60 md:text-sm md:text-warm-white/50">
-              {totalFrames}
-            </span>
-          </div>
-
           <div className="pointer-events-none absolute inset-0 z-[5] flex items-end px-5 pb-[5.5rem] sm:items-center sm:px-10 sm:pb-0 md:pl-24 lg:pl-36">
             <AnimatePresence>
               {ready && (
@@ -634,7 +548,7 @@ export default function Hero({
                   <h1 className="font-display text-[2rem] leading-[1.1] text-warm-white sm:text-5xl lg:text-6xl">
                     Fragrance as
                     <br />
-                    <span className="italic text-champagne">presence.</span>
+                    <span className="text-champagne">presence.</span>
                   </h1>
                   <p className="mt-4 max-w-[17rem] text-[13px] leading-relaxed text-sand/95 sm:mt-6 sm:max-w-sm sm:text-[15px]">
                     Signatures in crystal and gold - a private hour that stays.

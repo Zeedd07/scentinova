@@ -42,7 +42,7 @@ export default function FinalCTA() {
           </p>
           <h2 className="font-display text-4xl leading-tight sm:text-5xl lg:text-6xl">
             Discover your{' '}
-            <span className="italic text-bronze">signature</span>
+            <span className="text-bronze">signature</span>
           </h2>
           <p className="mt-5 text-sm leading-relaxed text-espresso sm:text-base">
             Every fragrance, a feeling. A moment that stays.

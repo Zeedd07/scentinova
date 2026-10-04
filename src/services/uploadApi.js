@@ -21,3 +21,19 @@ export async function uploadAdminImage(file, { slug, role = 'primary', onProgres
   })
   return data.data.image
 }
+
+/**
+ * Upload a product video to Cloudinary via the admin API.
+ * @returns { publicId, url, posterUrl, width, height, duration, bytes }
+ */
+export async function uploadAdminVideo(file, { slug, onProgress } = {}) {
+  const formData = new FormData()
+  if (slug) formData.append('slug', slug)
+  formData.append('video', file)
+
+  const data = await apiUpload('/admin/uploads/video', formData, {
+    auth: true,
+    onProgress,
+  })
+  return data.data.video
+}

@@ -58,7 +58,7 @@ export default function Story() {
             className="font-display text-4xl leading-tight text-cream sm:text-5xl"
           >
             Gold amber held in{' '}
-            <span className="gold-text italic">glass silence</span>
+            <span className="gold-text">glass silence</span>
           </motion.h2>
           <motion.p
             custom={2}
@@ -141,7 +141,7 @@ export default function Story() {
           viewport={{ once: true }}
           className="mb-12 text-center font-display text-3xl text-cream sm:text-4xl"
         >
-          How it <span className="gold-text italic">wears</span>
+          How it <span className="gold-text">wears</span>
         </motion.h3>
 
         <div className="grid gap-8 md:grid-cols-3 md:gap-6">
@@ -172,7 +172,7 @@ export default function Story() {
         transition={{ duration: 1 }}
         className="relative mx-auto mt-24 max-w-2xl border-t border-gold/25 pt-10 text-center"
       >
-        <p className="font-display text-xl italic leading-relaxed text-cream/90 sm:text-2xl">
+        <p className="font-display text-xl leading-relaxed text-cream/90 sm:text-2xl">
           “Each bottle is filled in small atelier batches - numbered, sealed,
           and meant to outlast the season it was poured.”
         </p>

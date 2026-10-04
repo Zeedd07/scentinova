@@ -40,7 +40,7 @@ export default function Testimonials() {
                 {q.initial}
               </span>
               <p className="mt-3 text-sm text-gold">★★★★★</p>
-              <p className="mt-4 max-w-xs font-display text-lg leading-relaxed text-ink/85 italic">
+              <p className="mt-4 max-w-xs font-display text-lg leading-relaxed text-ink/85">
                 “{q.text}”
               </p>
             </motion.blockquote>

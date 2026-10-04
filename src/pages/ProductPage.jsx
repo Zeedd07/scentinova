@@ -9,8 +9,8 @@ import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
 import { fetchProductBySlug } from '../services/productApi'
 import ProductCard from '../components/ProductCard'
+import ProductGallery from '../components/ProductGallery'
 import { easeOutExpo } from '../lib/motion'
-import { signatureStageBackground } from '../lib/storefrontBackdrops'
 
 function asNoteList(value) {
   if (Array.isArray(value)) return value.filter(Boolean)
@@ -61,12 +61,10 @@ export default function ProductPage() {
   const { getBySlug, activeProducts, trackView } = useCatalog()
   const product = getBySlug(slug)
   const { addItem } = useCart()
-  const [activeImg, setActiveImg] = useState(0)
   const [qty, setQty] = useState(1)
   const [noteMedia, setNoteMedia] = useState({ slug: null, data: null })
 
   useEffect(() => {
-    setActiveImg(0)
     setQty(1)
   }, [slug])
 
@@ -93,7 +91,7 @@ export default function ProductPage() {
 
   if (!product || product.active === false) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-ivory px-6 pt-16 text-center">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-ivory px-6 pt-[calc(4rem+var(--offer-h))] text-center">
         <h1 className="font-display text-3xl text-charcoal">Fragrance not found</h1>
         <Link to="/shop" className="mt-6 text-[11px] tracking-[0.28em] text-scent-red uppercase">
           Back to shop →
@@ -103,11 +101,6 @@ export default function ProductPage() {
   }
 
   const media = noteMedia.slug === slug ? noteMedia.data : null
-  const gallery = (
-    product.gallery?.length ? product.gallery : [product.image]
-  ).filter(Boolean)
-  const activeSrc =
-    gallery[Math.min(activeImg, Math.max(gallery.length - 1, 0))] || product.image
   const notesLine =
     product.descriptors?.join(' · ') ||
     [
@@ -117,48 +110,16 @@ export default function ProductPage() {
     ].join(' · ')
 
   return (
-    <div className="bg-ivory pt-16">
+    <div className="bg-ivory pt-[calc(4rem+var(--offer-h))]">
       <div className="mx-auto grid max-w-6xl gap-12 px-6 py-12 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:px-16 lg:py-20">
-        <div>
-          <motion.div
-            key={activeSrc}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.45, ease: easeOutExpo }}
-            className="flex aspect-[3/4] items-center justify-center overflow-hidden border border-stone/80"
-            style={{ background: signatureStageBackground }}
-          >
-            <img
-              src={activeSrc}
-              alt={`${product.name} - image ${activeImg + 1} of ${gallery.length}`}
-              className="h-full w-full object-contain p-6 sm:p-10"
-            />
-          </motion.div>
-          {gallery.length > 1 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {gallery.map((src, i) => (
-                <button
-                  key={`${src}-${i}`}
-                  type="button"
-                  onClick={() => setActiveImg(i)}
-                  aria-label={`View image ${i + 1}`}
-                  className={`flex h-20 w-16 items-center justify-center overflow-hidden border transition sm:h-24 sm:w-20 ${
-                    i === activeImg
-                      ? 'border-charcoal'
-                      : 'border-transparent opacity-70 hover:opacity-100'
-                  }`}
-                  style={{ background: signatureStageBackground }}
-                >
-                  <img
-                    src={src}
-                    alt=""
-                    className="h-full w-full object-contain p-1.5"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.45, ease: easeOutExpo }}
+          className="min-w-0"
+        >
+          <ProductGallery key={product.id} product={product} />
+        </motion.div>
 
         <div>
           <p className="text-[11px] tracking-[0.35em] text-muted uppercase">
@@ -175,7 +136,7 @@ export default function ProductPage() {
           <p className="mt-3 text-[12px] tracking-[0.18em] text-muted uppercase">
             {notesLine}
           </p>
-          <p className="mt-2 font-display text-xl italic text-muted">
+          <p className="mt-2 font-display text-xl text-muted">
             {product.tagline}
           </p>
           <p className="mt-6 font-display text-3xl text-bronze">
@@ -186,7 +147,7 @@ export default function ProductPage() {
           <p className="mt-8 max-w-md text-sm leading-relaxed text-muted">
             {product.description}
           </p>
-          <p className="mt-4 max-w-md font-display text-lg italic text-charcoal/80">
+          <p className="mt-4 max-w-md font-display text-lg text-charcoal/80">
             {product.story}
           </p>
 
@@ -277,7 +238,7 @@ export default function ProductPage() {
         <section className="border-t border-stone px-6 py-20 sm:px-10 lg:px-16">
           <div className="mx-auto max-w-6xl">
             <h2 className="mb-10 font-display text-3xl text-charcoal">
-              You may also <span className="italic text-bronze">like</span>
+              You may also <span className="text-bronze">like</span>
             </h2>
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
               {related.map((p, i) => (

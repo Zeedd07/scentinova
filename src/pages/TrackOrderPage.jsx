@@ -413,7 +413,7 @@ export default function TrackOrderPage() {
   const loading = state.kind === 'loading'
 
   return (
-    <div className="min-h-[80vh] bg-ivory px-5 pt-[calc(var(--nav-h)+env(safe-area-inset-top,0px)+3rem)] pb-24 sm:px-10 lg:px-16">
+    <div className="min-h-[80vh] bg-ivory px-5 pt-[calc(var(--header-h)+env(safe-area-inset-top,0px)+3rem)] pb-24 sm:px-10 lg:px-16">
       <div className="mx-auto max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: 12 }}

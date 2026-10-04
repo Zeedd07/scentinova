@@ -106,7 +106,7 @@ export default function ShopPage() {
   }, [sort, activeProducts])
 
   return (
-    <div className="bg-ivory pt-16">
+    <div className="bg-ivory pt-[calc(4rem+var(--offer-h))]">
       <section className="border-b border-stone px-6 py-16 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <motion.p
@@ -123,7 +123,7 @@ export default function ShopPage() {
             transition={{ delay: 0.06, duration: 0.85, ease: easeOutExpo }}
             className="mt-3 font-display text-4xl text-charcoal sm:text-5xl md:text-6xl"
           >
-            The <span className="italic text-bronze">Collection</span>
+            The <span className="text-bronze">Collection</span>
           </motion.h1>
           <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted">
             Crystal, gold, and presence - each signature a private hour,
