@@ -3,11 +3,16 @@
  * product-level overrides (`noteImages`) on top of global library defaults.
  */
 import { useEffect, useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import Field from './ui/Field'
 import MediaPickerModal from './MediaPickerModal'
 import MediaUploadModal from './MediaUploadModal'
 import PromptPanel from './PromptPanel'
 import { generateNotePrompt, getNoteDefaults } from '../../services/mediaApi'
 import { NOTE_TIERS, defaultAltText, normalizeNoteKey } from '../../lib/media'
+
+const LINK = 'min-h-10 text-[13px] sm:min-h-0'
 
 function Thumb({ asset, alt }) {
   const [broken, setBroken] = useState(false)
@@ -135,54 +140,55 @@ export default function NoteImageEditor({ notes, noteImages, onChange, initialMe
                           <p className="truncate text-[15px] text-charcoal">{name}</p>
                           <p className="truncate text-[12px] admin-muted">{status}</p>
                         </div>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
-                          <button type="button" className="admin-link" onClick={() => setUploader({ tier: row.tier, noteKey, name })}>
+                        <div className="flex w-full flex-wrap gap-x-4 gap-y-0 sm:w-auto sm:gap-x-3">
+                          <Button type="button" variant="link" className={LINK} onClick={() => setUploader({ tier: row.tier, noteKey, name })}>
                             Upload
-                          </button>
-                          <button type="button" className="admin-link" onClick={() => setPicker({ tier: row.tier, noteKey, name })}>
+                          </Button>
+                          <Button type="button" variant="link" className={LINK} onClick={() => setPicker({ tier: row.tier, noteKey, name })}>
                             Library
-                          </button>
+                          </Button>
                           {entry?.assetId && (
-                            <button
+                            <Button
                               type="button"
-                              className="admin-link"
+                              variant="link"
+                              className={LINK}
                               onClick={() => setEntry(row.tier, noteKey, { assetId: null })}
                             >
                               {fallback && fallback.id !== entry.assetId ? 'Use default' : 'Remove'}
-                            </button>
+                            </Button>
                           )}
                           {!entry?.assetId && fallback && (
-                            <button
+                            <Button
                               type="button"
-                              className="admin-link"
+                              variant="link"
+                              className={LINK}
                               onClick={() => setEntry(row.tier, noteKey, { hideImage: !entry?.hideImage })}
                             >
                               {entry?.hideImage ? 'Show default' : 'Hide'}
-                            </button>
+                            </Button>
                           )}
-                          <button
+                          <Button
                             type="button"
-                            className="admin-link"
+                            variant="link"
+                            className={LINK}
                             aria-expanded={expanded}
                             onClick={() => setOpen(expanded ? null : rowId)}
                           >
                             {expanded ? 'Close' : 'Alt & prompt'}
-                          </button>
+                          </Button>
                         </div>
                       </div>
 
                       {expanded && (
                         <div className="mt-3 space-y-3">
-                          <label className="block">
-                            <span className="admin-label">Alt text on this perfume</span>
-                            <input
-                              className="admin-input"
+                          <Field label="Alt text on this perfume">
+                            <Input
                               maxLength={200}
                               placeholder={shown?.altText || defaultAltText('NOTE', name)}
                               value={entry?.alt || ''}
                               onChange={(e) => setEntry(row.tier, noteKey, { alt: e.target.value || null })}
                             />
-                          </label>
+                          </Field>
                           <PromptPanel
                             label={`Prompt for ${name}`}
                             hint="Builds a consistent 1:1 note image prompt from the note family and brand palette."

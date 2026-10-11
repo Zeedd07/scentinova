@@ -2,7 +2,13 @@
  * Admin offers - festival sales, plus messages for the cream announcement bar above the store navbar.
  */
 import { useCallback, useEffect, useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import AdminModal from '../../components/admin/AdminModal'
+import Field from '../../components/admin/ui/Field'
 import AdminSalesSection from '../../components/admin/AdminSalesSection'
 import {
   adminCreateOffer,
@@ -166,29 +172,27 @@ export default function AdminOffers() {
         </p>
       </div>
 
-      <form onSubmit={addOffer} className="admin-surface space-y-3 p-5">
-        <label className="block">
-          <span className="admin-label">New offer</span>
-          <input
+      <form onSubmit={addOffer} className="admin-surface space-y-3 p-4 sm:p-5">
+        <Field label="New offer">
+          <Input
             type="text"
-            className="admin-input mt-1 w-full"
             value={draft}
             maxLength={TEXT_MAX}
             placeholder="e.g. Free shipping on all prepaid orders"
             onChange={(e) => setDraft(e.target.value)}
             disabled={atLimit}
           />
-        </label>
-        <div className="flex items-center justify-between gap-3">
+        </Field>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="flex flex-wrap items-baseline gap-x-3">
             <Counter value={draft} />
             <span className="text-[13px] admin-muted">
               About 40 characters fit on one line on phones.
             </span>
           </span>
-          <button type="submit" className="admin-btn admin-btn-primary disabled:opacity-50" disabled={!canAdd}>
+          <Button type="submit" disabled={!canAdd}>
             Add offer
-          </button>
+          </Button>
         </div>
         {atLimit && (
           <p className="text-[14px] text-[#6e1118]">
@@ -218,34 +222,37 @@ export default function AdminOffers() {
               return (
                 <li
                   key={offer.id}
-                  className={`flex flex-wrap items-center gap-3 px-4 py-3 ${offer.active ? '' : 'bg-[#f3eee4]/60'}`}
+                  className={`flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-3 sm:px-4 ${offer.active ? '' : 'bg-[#f3eee4]/60'}`}
                 >
                   <div className="flex shrink-0 flex-col">
-                    <button
+                    <Button
                       type="button"
-                      className="admin-link px-1 leading-none disabled:opacity-30"
+                      variant="ghost"
+                      size="inline"
+                      className="h-9 w-11 sm:h-7 sm:w-9"
                       onClick={() => move(index, -1)}
                       disabled={busy || index === 0}
                       aria-label={`Move "${offer.text}" up`}
                     >
-                      ▲
-                    </button>
-                    <button
+                      <ChevronUp />
+                    </Button>
+                    <Button
                       type="button"
-                      className="admin-link px-1 leading-none disabled:opacity-30"
+                      variant="ghost"
+                      size="inline"
+                      className="h-9 w-11 sm:h-7 sm:w-9"
                       onClick={() => move(index, 1)}
                       disabled={busy || index === offers.length - 1}
                       aria-label={`Move "${offer.text}" down`}
                     >
-                      ▼
-                    </button>
+                      <ChevronDown />
+                    </Button>
                   </div>
 
                   {isEditing ? (
-                    <div className="min-w-[14rem] flex-1 space-y-1.5">
-                      <input
+                    <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[14rem]">
+                      <Input
                         type="text"
-                        className="admin-input w-full"
                         value={editing.text}
                         maxLength={TEXT_MAX}
                         autoFocus
@@ -263,60 +270,61 @@ export default function AdminOffers() {
                       <Counter value={editing.text} />
                     </div>
                   ) : (
-                    <p className="min-w-[14rem] flex-1 text-[15px] text-[#1b1917]">{offer.text}</p>
+                    <p className="min-w-0 flex-1 text-[15px] break-words text-[#1b1917] sm:min-w-[14rem]">
+                      {offer.text}
+                    </p>
                   )}
 
-                  <span
-                    className={`inline-block border px-2 py-0.5 text-[12px] tracking-wide uppercase ${
-                      offer.active ? 'border-[#3f6b3a]/40 text-[#3f6b3a]' : 'border-[#c9bdaa] text-[#6b5f4f]'
-                    }`}
-                  >
-                    {offer.active ? 'Shown' : 'Hidden'}
-                  </span>
+                  <div className="flex w-full items-center justify-between gap-3 pl-12 sm:w-auto sm:justify-end sm:pl-0">
+                    <Label className="min-h-10 cursor-pointer font-normal">
+                      <Switch
+                        checked={offer.active}
+                        disabled={busy}
+                        onCheckedChange={() => toggleActive(offer)}
+                        aria-label={`Show "${offer.text}" on the store`}
+                      />
+                      {offer.active ? 'Shown' : 'Hidden'}
+                    </Label>
 
-                  <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
-                    {isEditing ? (
-                      <>
-                        <button
-                          type="button"
-                          className="admin-link disabled:opacity-50"
-                          onClick={saveEdit}
-                          disabled={busy || !editing.text.trim()}
-                        >
-                          Save
-                        </button>
-                        <button type="button" className="admin-link" onClick={() => setEditing(null)}>
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="admin-link disabled:opacity-50"
-                          onClick={() => setEditing({ id: offer.id, text: offer.text })}
-                          disabled={busy}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-link disabled:opacity-50"
-                          onClick={() => toggleActive(offer)}
-                          disabled={busy}
-                        >
-                          {offer.active ? 'Hide' : 'Show'}
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-link text-[#6e1118] disabled:opacity-50"
-                          onClick={() => setPendingDelete(offer)}
-                          disabled={busy}
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
+                    <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                      {isEditing ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="min-h-10"
+                            onClick={saveEdit}
+                            disabled={busy || !editing.text.trim()}
+                          >
+                            Save
+                          </Button>
+                          <Button type="button" variant="link" className="min-h-10" onClick={() => setEditing(null)}>
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="min-h-10"
+                            onClick={() => setEditing({ id: offer.id, text: offer.text })}
+                            disabled={busy}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="min-h-10 text-destructive"
+                            onClick={() => setPendingDelete(offer)}
+                            disabled={busy}
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </li>
               )

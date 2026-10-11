@@ -2,6 +2,9 @@
  * Admin product form - the product's own discount, as a percentage off or a fixed price.
  * AdminProductForm converts the form strings to the API shape on save.
  */
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import ChoiceCards from './ui/ChoiceCards'
 import { formatPrice } from '../../data/products'
 import {
   DISCOUNT_PERCENT_MAX,
@@ -33,41 +36,21 @@ export default function ProductDiscountEditor({ value, price, onChange, error })
         </p>
       </div>
 
-      <div
-        role="radiogroup"
+      <ChoiceCards
         aria-labelledby="discount-label"
-        className="inline-flex flex-wrap border border-[#e0d6c4] bg-[#fffcf7]"
-      >
-        {OPTIONS.map((opt) => {
-          const selected = value.type === opt.value
-          return (
-            <label
-              key={opt.value}
-              className={`cursor-pointer px-4 py-2 text-[14px] transition-colors ${
-                selected ? 'bg-[#1b1917] text-[#f7f1e6]' : 'text-[#4a4136] hover:bg-[#f3ebdc]'
-              }`}
-            >
-              <input
-                type="radio"
-                name="discount-type"
-                value={opt.value}
-                checked={selected}
-                onChange={() => set('type')(opt.value)}
-                className="sr-only"
-              />
-              {opt.label}
-            </label>
-          )
-        })}
-      </div>
+        className="max-w-xl"
+        options={OPTIONS}
+        value={value.type}
+        onValueChange={set('type')}
+      />
 
       {value.type !== 'NONE' && (
         <div className="space-y-3 border border-[#e0d6c4] bg-[#fffcf7] p-4">
           <div>
-            <label htmlFor="discount-amount" className="admin-label">
+            <Label htmlFor="discount-amount" className="text-[13px] font-medium text-[#4a4136]">
               {isPercent ? 'Percent off' : 'Price customers pay (INR)'}
-            </label>
-            <div className="relative mt-1.5 max-w-[12rem]">
+            </Label>
+            <div className="relative mt-1.5 sm:max-w-[12rem]">
               <span
                 className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[15px] admin-muted ${
                   isPercent ? 'right-3' : 'left-3'
@@ -76,13 +59,9 @@ export default function ProductDiscountEditor({ value, price, onChange, error })
               >
                 {isPercent ? '%' : '₹'}
               </span>
-              <input
+              <Input
                 id="discount-amount"
-                className="admin-input"
-                style={{
-                  marginTop: 0,
-                  ...(isPercent ? { paddingRight: '1.75rem' } : { paddingLeft: '1.75rem' }),
-                }}
+                className={isPercent ? 'pr-8' : 'pl-7'}
                 type="text"
                 inputMode="numeric"
                 autoComplete="off"

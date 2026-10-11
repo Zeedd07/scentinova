@@ -2,7 +2,14 @@
  * Upload a new library asset (validated client-side, stored via the backend on Cloudinary).
  */
 import { useEffect, useState } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import AdminDialog from './AdminDialog'
+import Field from './ui/Field'
+import FileButton from './ui/FileButton'
 import { uploadMedia } from '../../services/mediaApi'
 import { ApiClientError } from '../../services/apiClient'
 import {
@@ -103,23 +110,18 @@ export default function MediaUploadModal({
       onClose={uploading ? undefined : onClose}
       footer={
         <>
-          <button type="button" className="admin-btn admin-btn-quiet" onClick={onClose} disabled={uploading}>
+          <Button type="button" variant="quiet" onClick={onClose} disabled={uploading}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="admin-btn admin-btn-primary disabled:opacity-50"
-            disabled={!file || uploading}
-            onClick={submit}
-          >
+          </Button>
+          <Button type="button" disabled={!file || uploading} onClick={submit}>
             {uploading ? `Uploading ${progress}%` : 'Upload'}
-          </button>
+          </Button>
         </>
       }
     >
       <div className="space-y-4">
         <div className="flex items-start gap-4">
-          <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden border border-stone bg-cream">
+          <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden border border-stone bg-cream sm:size-28">
             {preview ? (
               <img src={preview} alt="Selected file preview" className="h-full w-full object-cover" />
             ) : (
@@ -127,16 +129,9 @@ export default function MediaUploadModal({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <label className="admin-btn admin-btn-quiet inline-block cursor-pointer">
+            <FileButton accept="image/jpeg,image/png,image/webp" onChange={onFile} disabled={uploading}>
               {file ? 'Choose another' : 'Choose image'}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={onFile}
-                disabled={uploading}
-              />
-            </label>
+            </FileButton>
             <p className="mt-2 text-[12px] admin-muted">JPEG / PNG / WebP · max 5 MB</p>
             {file && <p className="mt-1 truncate text-[12px] text-charcoal">{file.name}</p>}
           </div>
@@ -149,45 +144,49 @@ export default function MediaUploadModal({
         )}
 
         {!fixedType && (
-          <label className="block">
-            <span className="admin-label">Type</span>
-            <select className="admin-input" value={type} onChange={(e) => setType(e.target.value)}>
-              {Object.entries(MEDIA_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Field label="Type" htmlFor="upload-type">
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger id="upload-type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {Object.entries(MEDIA_TYPE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="admin-label">Name</span>
-            <input
-              className="admin-input"
+          <Field label="Name">
+            <Input
               value={name}
               maxLength={120}
               placeholder="Jasmine Sambac"
               onChange={(e) => setName(e.target.value)}
             />
-          </label>
-          <label className="block">
-            <span className="admin-label">Category</span>
-            <select className="admin-input" value={category} onChange={(e) => setCategory(e.target.value)}>
-              {MEDIA_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {titleCase(c)}
-                </option>
-              ))}
-            </select>
-          </label>
+          </Field>
+          <Field label="Category" htmlFor="upload-category">
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger id="upload-category" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {MEDIA_CATEGORIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {titleCase(c)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
         </div>
 
-        <label className="block">
-          <span className="admin-label">Alt text</span>
-          <input
-            className="admin-input"
+        <Field label="Alt text">
+          <Input
             value={altText}
             maxLength={200}
             onChange={(e) => {
@@ -195,23 +194,24 @@ export default function MediaUploadModal({
               setAltText(e.target.value)
             }}
           />
-        </label>
+        </Field>
 
-        <label className="block">
-          <span className="admin-label">Tags</span>
-          <input
-            className="admin-input"
-            value={tags}
-            placeholder="jasmine, floral, white floral"
-            onChange={(e) => setTags(e.target.value)}
-          />
-        </label>
+        <Field label="Tags">
+          <Input value={tags} placeholder="jasmine, floral, white floral" onChange={(e) => setTags(e.target.value)} />
+        </Field>
 
         {type === 'NOTE' && (
-          <label className="flex items-center gap-2 text-[14px] text-charcoal">
-            <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />
-            Make this the global default image for “{name.trim() || 'this note'}”
-          </label>
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="upload-make-default"
+              checked={makeDefault}
+              onCheckedChange={(next) => setMakeDefault(next === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="upload-make-default" className="text-[14px] font-normal text-foreground">
+              Make this the global default image for “{name.trim() || 'this note'}”
+            </Label>
+          </div>
         )}
 
         {error && (

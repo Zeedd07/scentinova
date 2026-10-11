@@ -3,6 +3,8 @@
  * then upload it from the product editor.
  */
 import { useState } from 'react'
+import { DownloadIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { BACKDROPS, BACKDROP_SIZES, downloadBackdrop } from '../../lib/storefrontBackdrops'
 
 export default function BackdropDownloads() {
@@ -54,20 +56,19 @@ export default function BackdropDownloads() {
                 {BACKDROP_SIZES.map((s) => {
                   const key = `${b.id}-${s.id}`
                   return (
-                    <button
+                    <Button
                       key={s.id}
                       type="button"
-                      className="admin-btn gap-1.5 disabled:opacity-50"
+                      variant="outline"
+                      size="sm"
                       disabled={Boolean(busy)}
                       title={`${s.width}×${s.height} PNG`}
                       aria-label={`Download ${b.name}, ${s.label}, ${s.width} by ${s.height} PNG`}
                       onClick={() => download(b, s)}
                     >
-                      <svg aria-hidden viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M8 2v8m0 0L4.5 6.5M8 10l3.5-3.5M2.5 13.5h11" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <DownloadIcon />
                       {busy === key ? 'Preparing…' : s.label}
-                    </button>
+                    </Button>
                   )
                 })}
               </div>

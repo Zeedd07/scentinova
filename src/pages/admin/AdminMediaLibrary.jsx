@@ -4,7 +4,12 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import AdminDialog from '../../components/admin/AdminDialog'
+import Field from '../../components/admin/ui/Field'
+import FilterTabs from '../../components/admin/ui/FilterTabs'
 import AdminModal from '../../components/admin/AdminModal'
 import BackdropDownloads from '../../components/admin/BackdropDownloads'
 import MediaUploadModal from '../../components/admin/MediaUploadModal'
@@ -13,8 +18,9 @@ import { ApiClientError } from '../../services/apiClient'
 import { MEDIA_CATEGORIES, MEDIA_TYPE_LABELS, titleCase } from '../../lib/media'
 
 const PAGE_SIZE = 24
+const ALL = 'ALL'
 const TYPE_TABS = [
-  { value: '', label: 'All' },
+  { value: ALL, label: 'All' },
   { value: 'NOTE', label: 'Note images' },
   { value: 'PRODUCT_BACKGROUND', label: 'Backgrounds' },
   { value: 'OTHER', label: 'Other' },
@@ -95,25 +101,27 @@ function AssetDetail({ assetId, onClose, onChanged, onDeleted }) {
       footer={
         asset && (
           <>
-            <button
+            <Button
               type="button"
-              className="admin-btn admin-btn-danger mr-auto disabled:opacity-50"
+              variant="danger"
+              className="sm:mr-auto"
               disabled={saving}
               onClick={() => setConfirmDelete(true)}
             >
               Delete
-            </button>
-            <a href={asset.downloadUrl} className="admin-btn no-underline" rel="noopener noreferrer">
-              Download original
-            </a>
-            <button
+            </Button>
+            <Button asChild variant="outline">
+              <a href={asset.downloadUrl} rel="noopener noreferrer">
+                Download original
+              </a>
+            </Button>
+            <Button
               type="button"
-              className="admin-btn admin-btn-primary disabled:opacity-50"
               disabled={saving || !form?.name.trim()}
               onClick={() => save({ ...form, name: form.name.trim() })}
             >
               {saving ? 'Saving…' : 'Save'}
-            </button>
+            </Button>
           </>
         )
       }
@@ -136,47 +144,38 @@ function AssetDetail({ assetId, onClose, onChanged, onDeleted }) {
           </div>
           <div className="space-y-4">
             <p className="text-[12px] tracking-wide text-muted uppercase">{MEDIA_TYPE_LABELS[asset.type]}</p>
-            <label className="block">
-              <span className="admin-label">Name</span>
-              <input
-                className="admin-input"
+            <Field label="Name">
+              <Input
                 maxLength={120}
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
-            </label>
-            <label className="block">
-              <span className="admin-label">Alt text</span>
-              <input
-                className="admin-input"
+            </Field>
+            <Field label="Alt text">
+              <Input
                 maxLength={200}
                 value={form.altText}
                 onChange={(e) => setForm((f) => ({ ...f, altText: e.target.value }))}
               />
-            </label>
+            </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="admin-label">Category</span>
-                <select
-                  className="admin-input"
-                  value={form.category}
-                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                >
-                  {MEDIA_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {titleCase(c)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="admin-label">Tags</span>
-                <input
-                  className="admin-input"
-                  value={form.tags}
-                  onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                />
-              </label>
+              <Field label="Category" htmlFor="asset-category">
+                <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
+                  <SelectTrigger id="asset-category" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {MEDIA_CATEGORIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {titleCase(c)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Tags" hint="Separate with commas">
+                <Input value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} />
+              </Field>
             </div>
 
             {asset.type === 'NOTE' && (
@@ -189,14 +188,15 @@ function AssetDetail({ assetId, onClose, onChanged, onDeleted }) {
                 ) : (
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span>Not the global default for “{asset.noteKey}”.</span>
-                    <button
+                    <Button
                       type="button"
-                      className="admin-btn admin-btn-quiet px-3 py-1 text-[13px]"
+                      variant="quiet"
+                      size="sm"
                       disabled={saving}
                       onClick={() => save({ isDefault: true })}
                     >
                       Make global default
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -291,9 +291,9 @@ export default function AdminMediaLibrary() {
             {result.meta ? ` ${result.meta.total} ${result.meta.total === 1 ? 'image' : 'images'}.` : ''}
           </p>
         </div>
-        <button type="button" className="admin-btn admin-btn-primary" onClick={() => setUploadOpen(true)}>
+        <Button type="button" className="w-full sm:w-auto" onClick={() => setUploadOpen(true)}>
           Upload image
-        </button>
+        </Button>
       </div>
 
       {flash && (
@@ -303,54 +303,46 @@ export default function AdminMediaLibrary() {
       )}
 
       <div className="admin-surface space-y-3 p-4">
-        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Asset type">
-          {TYPE_TABS.map((t) => (
-            <button
-              key={t.value || 'all'}
-              type="button"
-              role="tab"
-              aria-selected={type === t.value}
-              onClick={() => {
-                setType(t.value)
-                setPage(1)
-              }}
-              className={`rounded-sm px-3 py-1.5 text-[14px] transition ${
-                type === t.value ? 'bg-charcoal text-warm-white' : 'text-charcoal hover:bg-cream'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <FilterTabs
+          wrap
+          label="Asset type"
+          options={TYPE_TABS}
+          value={type || ALL}
+          onValueChange={(v) => {
+            setType(v === ALL ? '' : v)
+            setPage(1)
+          }}
+        />
         <div className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <label className="block">
-            <span className="admin-label">Search</span>
-            <input
+          <Field label="Search">
+            <Input
               type="search"
-              className="admin-input"
               placeholder="Name or tag"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-          </label>
-          <label className="block">
-            <span className="admin-label">Category</span>
-            <select
-              className="admin-input"
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value)
+          </Field>
+          <Field label="Category" htmlFor="media-category">
+            <Select
+              value={category || ALL}
+              onValueChange={(v) => {
+                setCategory(v === ALL ? '' : v)
                 setPage(1)
               }}
             >
-              <option value="">All categories</option>
-              {MEDIA_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {titleCase(c)}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger id="media-category" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectItem value={ALL}>All categories</SelectItem>
+                {MEDIA_CATEGORIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {titleCase(c)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
         </div>
       </div>
 
@@ -391,15 +383,15 @@ export default function AdminMediaLibrary() {
 
       {pages > 1 && (
         <div className="flex items-center justify-between text-[14px]">
-          <button type="button" className="admin-link disabled:opacity-40" disabled={page <= 1 || loading} onClick={() => setPage((p) => p - 1)}>
+          <Button type="button" variant="quiet" size="sm" disabled={page <= 1 || loading} onClick={() => setPage((p) => p - 1)}>
             ← Previous
-          </button>
+          </Button>
           <span className="admin-muted tabular-nums">
             Page {page} of {pages}
           </span>
-          <button type="button" className="admin-link disabled:opacity-40" disabled={page >= pages || loading} onClick={() => setPage((p) => p + 1)}>
+          <Button type="button" variant="quiet" size="sm" disabled={page >= pages || loading} onClick={() => setPage((p) => p + 1)}>
             Next →
-          </button>
+          </Button>
         </div>
       )}
 

@@ -3,6 +3,17 @@
  * already used by a product, and lets the admin type a new one.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { CATEGORIES } from '../../data/products'
 import { adminFetchProductCategories } from '../../services/productApi'
 
@@ -79,15 +90,14 @@ export default function CategoryField({ value, onChange, error }) {
 
   return (
     <div>
-      <label htmlFor="product-category" className="admin-label">
+      <Label htmlFor="product-category" className="mb-1.5 text-[13px] font-medium text-[#4a4136]">
         Category
-      </label>
+      </Label>
       {adding ? (
         <>
-          <input
+          <Input
             id="product-category"
             ref={inputRef}
-            className="admin-input"
             placeholder="New category, e.g. Aquatic"
             maxLength={CATEGORY_MAX}
             value={value}
@@ -105,31 +115,31 @@ export default function CategoryField({ value, onChange, error }) {
             ) : (
               'Saved with this perfume, then offered in the list for every product.'
             )}{' '}
-            <button type="button" className="admin-link" onClick={backToList}>
+            <Button type="button" variant="link" className="min-h-10 text-[12px] sm:min-h-0" onClick={backToList}>
               Choose from list
-            </button>
+            </Button>
           </p>
         </>
       ) : (
-        <select
-          id="product-category"
-          className="admin-input"
+        <Select
           value={value}
-          onChange={(e) => (e.target.value === NEW_OPTION ? startAdding() : onChange(e.target.value))}
-          aria-invalid={Boolean(error)}
+          onValueChange={(next) => (next === NEW_OPTION ? startAdding() : onChange(next))}
         >
-          {!value && (
-            <option value="" disabled>
-              Choose a category
-            </option>
-          )}
-          {options.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-          <option value={NEW_OPTION}>+ Add new category…</option>
-        </select>
+          <SelectTrigger id="product-category" className="w-full" aria-invalid={Boolean(error)}>
+            <SelectValue placeholder="Choose a category" />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            {options.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
+              </SelectItem>
+            ))}
+            <SelectSeparator />
+            <SelectItem value={NEW_OPTION} className="text-[#7a5f2c]">
+              + Add new category…
+            </SelectItem>
+          </SelectContent>
+        </Select>
       )}
       {error && !adding && <p className="mt-1 text-[12px] text-[#6e1118]">{error}</p>}
     </div>

@@ -3,6 +3,8 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatPrice } from '../../data/products'
 import { adminFetchOrders, adminUpdateOrderStatus } from '../../services/adminOrderApi'
 import { ApiClientError } from '../../services/apiClient'
@@ -28,6 +30,8 @@ const FILTERS = [
   'PAYMENT_FAILED',
   'REFUNDED',
 ]
+
+const ALL = 'ALL'
 
 function itemSummary(order) {
   const items = order.items || []
@@ -105,22 +109,21 @@ export default function AdminOrders() {
       </div>
 
       <div className="grid max-w-2xl gap-3 sm:grid-cols-[13rem_1fr]">
-        <select
-          className="admin-input"
-          value={status}
-          aria-label="Filter by status"
-          onChange={(e) => setStatus(e.target.value)}
-        >
-          <option value="">All orders</option>
-          {FILTERS.map((s) => (
-            <option key={s} value={s}>
-              {orderStatusLabel(s)}
-            </option>
-          ))}
-        </select>
-        <input
+        <Select value={status || ALL} onValueChange={(v) => setStatus(v === ALL ? '' : v)}>
+          <SelectTrigger className="w-full" aria-label="Filter by status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectItem value={ALL}>All orders</SelectItem>
+            {FILTERS.map((s) => (
+              <SelectItem key={s} value={s}>
+                {orderStatusLabel(s)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
           type="search"
-          className="admin-input"
           placeholder="Search order no., name, email or phone"
           aria-label="Search orders"
           value={q}
@@ -144,7 +147,7 @@ export default function AdminOrders() {
             const total = o.pricing?.totalPaise != null ? o.pricing.totalPaise / 100 : o.total
             return (
               <li key={o.id} className="admin-surface p-4 sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <Link to={`/admin/orders/${o.id}`} className="group min-w-0 flex-1">
                     <p className="text-base font-semibold text-[#1b1917] group-hover:underline">
                       {customer.name || 'Customer'}
@@ -158,29 +161,34 @@ export default function AdminOrders() {
                     <p className="mt-0.5 text-[13px] admin-muted">{itemSummary(o)}</p>
                   </Link>
 
-                  <div className="flex flex-col items-end gap-2 text-right">
-                    <p className="text-lg font-semibold text-[#1b1917]">{formatPrice(total)}</p>
-                    <p className="text-[13px] admin-muted">
-                      {isCodOrder(o) ? 'COD' : 'Prepaid'} · {paymentStatusText(o)}
-                    </p>
+                  <div className="flex flex-col gap-2 border-t border-[#ebe4d6] pt-3 sm:items-end sm:border-0 sm:pt-0 sm:text-right">
+                    <div className="flex items-baseline justify-between gap-3 sm:flex-col sm:items-end sm:gap-0">
+                      <p className="text-lg font-semibold text-[#1b1917]">{formatPrice(total)}</p>
+                      <p className="text-[13px] admin-muted">
+                        {isCodOrder(o) ? 'COD' : 'Prepaid'} · {paymentStatusText(o)}
+                      </p>
+                    </div>
                     {options.length ? (
-                      <select
-                        className="admin-input w-auto min-w-[11rem] py-1.5 text-[14px]"
-                        aria-label={`Status of ${o.orderNumber}`}
+                      <Select
                         value=""
                         disabled={updatingId != null}
-                        aria-busy={updating}
-                        onChange={(e) => choose(o, e.target.value)}
+                        onValueChange={(v) => choose(o, v)}
                       >
-                        <option value="">
-                          {updating ? 'Updating…' : orderStatusLabel(o.status)}
-                        </option>
-                        {options.map((s) => (
-                          <option key={s} value={s}>
-                            {s === 'CANCELLED' ? 'Cancel order' : `Mark ${orderStatusLabel(s)}`}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger
+                          className="w-full sm:w-auto sm:min-w-[11rem]"
+                          aria-label={`Status of ${o.orderNumber}`}
+                          aria-busy={updating}
+                        >
+                          <SelectValue placeholder={updating ? 'Updating…' : orderStatusLabel(o.status)} />
+                        </SelectTrigger>
+                        <SelectContent position="popper" align="end">
+                          {options.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s === 'CANCELLED' ? 'Cancel order' : `Mark ${orderStatusLabel(s)}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : (
                       <span className={orderStatusBadgeClass(o.status)}>{orderStatusLabel(o.status)}</span>
                     )}

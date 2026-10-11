@@ -3,8 +3,12 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { formatPrice } from '../../data/products'
 import AdminModal from '../../components/admin/AdminModal'
+import FilterTabs from '../../components/admin/ui/FilterTabs'
+import ResponsiveTable from '../../components/admin/ui/ResponsiveTable'
 import {
   adminDeleteProduct,
   adminDeleteProductPermanently,
@@ -157,37 +161,109 @@ export default function AdminProducts() {
     view === 'all' ? true : view === 'archived' ? isArchived(p) : !isArchived(p),
   )
 
+  const galleryOf = (p) => (p.gallery?.length ? p.gallery : p.image ? [p.image] : []).filter(Boolean)
+
+  const actions = (p) => (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 md:justify-end">
+      <Button asChild variant="link" className="min-h-10 md:min-h-0">
+        <Link to={`/admin/products/${p.id}`}>Edit</Link>
+      </Button>
+      {isArchived(p) ? (
+        <Button
+          type="button"
+          variant="link"
+          className="min-h-10 md:min-h-0"
+          disabled={Boolean(restoringId)}
+          onClick={() => restore(p)}
+        >
+          {restoringId === p.id ? 'Restoring…' : 'Restore'}
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="link"
+          className="min-h-10 text-[#6e1118] md:min-h-0"
+          onClick={() => setPendingArchive(p)}
+        >
+          Archive
+        </Button>
+      )}
+      <Button
+        type="button"
+        variant="link"
+        className="min-h-10 text-[#6e1118] md:min-h-0"
+        onClick={() => setPendingDelete(p)}
+      >
+        Delete
+      </Button>
+    </div>
+  )
+
+  const status = (p) =>
+    isArchived(p) ? <Badge variant="tag">Archived</Badge> : <span>Active</span>
+
+  const columns = [
+    {
+      key: 'product',
+      header: 'Product',
+      cell: (p) => (
+        <div className="flex items-center gap-3">
+          <img src={p.image} alt="" className="h-10 w-10 object-contain" />
+          <div className="min-w-0">
+            <p className="font-medium text-[#1b1917]">{p.name}</p>
+            <p className="text-[13px] admin-muted">{p.slug}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'images',
+      header: 'Images',
+      cell: (p) => {
+        const gallery = galleryOf(p)
+        return (
+          <div className="flex items-center gap-1.5">
+            {gallery.slice(0, 3).map((src, i) => (
+              <img
+                key={`${p.id}-img-${i}`}
+                src={src}
+                alt=""
+                className="h-9 w-9 border border-[#ebe4d6] bg-[#f3eee4] object-contain"
+              />
+            ))}
+            <span className="ml-1 text-[13px] tabular-nums admin-muted">{gallery.length}</span>
+          </div>
+        )
+      },
+    },
+    { key: 'category', header: 'Category', className: 'admin-muted', cell: (p) => p.category },
+    { key: 'price', header: 'Price', cell: (p) => formatPrice(p.price) },
+    { key: 'stock', header: 'Stock', cell: (p) => p.stock ?? 0 },
+    { key: 'sold', header: 'Sold', cell: (p) => salesById[p.id]?.purchases ?? 0 },
+    { key: 'status', header: 'Status', cell: status },
+    { key: 'actions', header: <span className="sr-only">Actions</span>, className: 'whitespace-nowrap', cell: actions },
+  ]
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
           <h2 className="admin-title">Products</h2>
           <p className="mt-1 admin-muted text-[15px]">
             Edit, archive, restore or delete items in the Scentinova catalog.
           </p>
         </div>
-        <Link to="/admin/products/new" className="admin-btn admin-btn-primary">
-          Add perfume
-        </Link>
+        <Button asChild className="w-full sm:w-auto">
+          <Link to="/admin/products/new">Add perfume</Link>
+        </Button>
       </div>
 
-      <div className="flex flex-wrap gap-1" role="tablist" aria-label="Product status">
-        {VIEWS.map((v) => (
-          <button
-            key={v.value}
-            type="button"
-            role="tab"
-            aria-selected={view === v.value}
-            onClick={() => setView(v.value)}
-            className={`rounded-sm px-3 py-1.5 text-[14px] transition ${
-              view === v.value ? 'bg-charcoal text-warm-white' : 'text-charcoal hover:bg-cream'
-            }`}
-          >
-            {v.label}
-            <span className="ml-1.5 tabular-nums opacity-70">{counts[v.value]}</span>
-          </button>
-        ))}
-      </div>
+      <FilterTabs
+        label="Product status"
+        value={view}
+        onValueChange={setView}
+        options={VIEWS.map((v) => ({ ...v, count: counts[v.value] }))}
+      />
 
       {loading ? (
         <p className="admin-muted">Loading products…</p>
@@ -196,109 +272,48 @@ export default function AdminProducts() {
           {view === 'archived' ? 'No archived perfumes.' : view === 'active' ? 'No active perfumes.' : 'No perfumes yet.'}
         </p>
       ) : (
-        <div className="admin-surface overflow-x-auto">
-          <table className="admin-table w-full min-w-[720px] text-left">
-            <thead className="border-b border-[#e0d6c4]">
-              <tr>
-                <th className="px-3 py-2.5">Product</th>
-                <th className="px-3 py-2.5">Images</th>
-                <th className="px-3 py-2.5">Category</th>
-                <th className="px-3 py-2.5">Price</th>
-                <th className="px-3 py-2.5">Stock</th>
-                <th className="px-3 py-2.5">Sold</th>
-                <th className="px-3 py-2.5">Status</th>
-                <th className="px-3 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((p) => {
-                const a = salesById[p.id]
-                const archived = isArchived(p)
-                const gallery = (
-                  p.gallery?.length ? p.gallery : p.image ? [p.image] : []
-                ).filter(Boolean)
-                return (
-                  <tr key={p.id} className={`border-b border-[#ebe4d6] ${archived ? 'bg-[#f3eee4]/60' : ''}`}>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={p.image}
-                          alt=""
-                          className="h-10 w-10 object-contain"
-                        />
-                        <div>
-                          <p className="font-medium text-[#1b1917]">{p.name}</p>
-                          <p className="text-[13px] admin-muted">{p.slug}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-1.5">
-                        {gallery.slice(0, 3).map((src, i) => (
-                          <img
-                            key={`${p.id}-img-${i}`}
-                            src={src}
-                            alt=""
-                            className="h-9 w-9 border border-[#ebe4d6] bg-[#f3eee4] object-contain"
-                          />
-                        ))}
-                        <span className="ml-1 text-[13px] tabular-nums admin-muted">
-                          {gallery.length}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 admin-muted">{p.category}</td>
-                    <td className="px-3 py-3">{formatPrice(p.price)}</td>
-                    <td className="px-3 py-3">{p.stock ?? 0}</td>
-                    <td className="px-3 py-3">{a?.purchases ?? 0}</td>
-                    <td className="px-3 py-3">
-                      {archived ? (
-                        <span className="inline-block border border-[#c9bdaa] px-2 py-0.5 text-[12px] tracking-wide text-[#6b5f4f] uppercase">
-                          Archived
-                        </span>
-                      ) : (
-                        'Active'
-                      )}
-                    </td>
-                    <td className="px-3 py-3 text-right whitespace-nowrap">
-                      <Link
-                        to={`/admin/products/${p.id}`}
-                        className="admin-link mr-3"
-                      >
-                        Edit
-                      </Link>
-                      {archived ? (
-                        <button
-                          type="button"
-                          className="admin-link mr-3 disabled:opacity-50"
-                          disabled={Boolean(restoringId)}
-                          onClick={() => restore(p)}
-                        >
-                          {restoringId === p.id ? 'Restoring…' : 'Restore'}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="admin-link mr-3 text-[#6e1118]"
-                          onClick={() => setPendingArchive(p)}
-                        >
-                          Archive
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="admin-link text-[#6e1118]"
-                        onClick={() => setPendingDelete(p)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ResponsiveTable
+          caption="Products"
+          columns={columns}
+          rows={visible}
+          rowKey={(p) => p.id}
+          rowClassName={(p) => (isArchived(p) ? 'bg-[#f3eee4]/60' : '')}
+          renderCard={(p) => (
+            <div className="space-y-2">
+              <div className="flex items-start gap-3">
+                <img
+                  src={p.image}
+                  alt=""
+                  className="h-14 w-14 shrink-0 border border-[#ebe4d6] bg-[#f3eee4] object-contain"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium text-[#1b1917]">{p.name}</p>
+                    {isArchived(p) && <Badge variant="tag">Archived</Badge>}
+                  </div>
+                  <p className="text-[13px] admin-muted">
+                    {[p.category, `${galleryOf(p).length} images`].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+              </div>
+              <dl className="grid grid-cols-3 gap-2 text-[13px]">
+                <div>
+                  <dt className="admin-muted">Price</dt>
+                  <dd className="text-[15px] text-[#1b1917]">{formatPrice(p.price)}</dd>
+                </div>
+                <div>
+                  <dt className="admin-muted">Stock</dt>
+                  <dd className="text-[15px] text-[#1b1917] tabular-nums">{p.stock ?? 0}</dd>
+                </div>
+                <div>
+                  <dt className="admin-muted">Sold</dt>
+                  <dd className="text-[15px] text-[#1b1917] tabular-nums">{salesById[p.id]?.purchases ?? 0}</dd>
+                </div>
+              </dl>
+              {actions(p)}
+            </div>
+          )}
+        />
       )}
 
       <AdminModal

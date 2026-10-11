@@ -3,6 +3,8 @@
  * No image API is called; admins paste the prompt into their own tool.
  */
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { ApiClientError } from '../../services/apiClient'
 
 async function copyText(text) {
@@ -62,25 +64,20 @@ export default function PromptPanel({ label = 'AI image prompt', generate, disab
           {family && <span className="ml-2 font-normal admin-muted">· {family.toLowerCase()} family</span>}
         </span>
         <div className="flex gap-2">
-          <button
-            type="button"
-            className="admin-btn admin-btn-quiet px-3 py-1 text-[13px] disabled:opacity-50"
-            onClick={run}
-            disabled={disabled || loading}
-          >
+          <Button type="button" variant="quiet" size="sm" onClick={run} disabled={disabled || loading}>
             {loading ? 'Building…' : text ? 'Regenerate' : 'Generate prompt'}
-          </button>
+          </Button>
           {text && (
-            <button type="button" className="admin-btn px-3 py-1 text-[13px]" onClick={onCopy}>
+            <Button type="button" variant="outline" size="sm" onClick={onCopy}>
               {copied ? 'Copied' : 'Copy'}
-            </button>
+            </Button>
           )}
         </div>
       </div>
       {hint && !text && <p className="mt-2 text-[12px] admin-muted">{hint}</p>}
       {text && (
-        <textarea
-          className="admin-input mt-2 min-h-[140px] font-mono text-[12.5px] leading-relaxed"
+        <Textarea
+          className="mt-2 min-h-[140px] font-mono text-base leading-relaxed md:text-[12.5px]"
           value={text}
           onChange={(e) => setText(e.target.value)}
           aria-label={label}

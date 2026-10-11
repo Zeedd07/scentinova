@@ -2,43 +2,45 @@
  * Admin product form - checkout fees charged when this product is in the cart.
  * Values are rupee strings here; AdminProductForm converts them to paise on save.
  */
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import SwitchField from './ui/SwitchField'
 import { MAX_FEE_RUPEES } from '../../lib/productFees'
 
 function Toggle({ id, label, description, checked, onChange }) {
   return (
-    <label htmlFor={id} className="flex cursor-pointer items-start gap-3">
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 shrink-0 accent-[#1b1917]"
-      />
-      <span>
-        <span className="block text-[15px] font-medium text-[#1b1917]">{label}</span>
-        {description && <span className="block text-[13px] admin-muted">{description}</span>}
-      </span>
-    </label>
+    <SwitchField id={id} label={label} hint={description} checked={checked} onCheckedChange={onChange} />
+  )
+}
+
+function CheckOption({ id, label, checked, onChange }) {
+  return (
+    <div className="flex min-h-10 items-center gap-2.5 sm:min-h-0">
+      <Checkbox id={id} checked={checked} onCheckedChange={(next) => onChange(next === true)} />
+      <Label htmlFor={id} className="text-[15px] font-normal text-foreground">
+        {label}
+      </Label>
+    </div>
   )
 }
 
 function MoneyField({ id, label, value, onChange, error, disabled }) {
   return (
     <div className={disabled ? 'opacity-50' : ''}>
-      <label htmlFor={id} className="admin-label">
+      <Label htmlFor={id} className="text-[13px] font-medium text-[#4a4136]">
         {label}
-      </label>
-      <div className="relative mt-1.5 max-w-[12rem]">
+      </Label>
+      <div className="relative mt-1.5 sm:max-w-[12rem]">
         <span
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[15px] admin-muted"
           aria-hidden
         >
           ₹
         </span>
-        <input
+        <Input
           id={id}
-          className="admin-input"
-          style={{ marginTop: 0, paddingLeft: '1.75rem' }}
+          className="pl-7"
           type="text"
           inputMode="decimal"
           autoComplete="off"
@@ -101,15 +103,15 @@ export default function ProductFeesEditor({ value, onChange, errors = {} }) {
             disabled={!value.convenience.enabled}
           />
           <div
-            className={`flex flex-wrap gap-5 ${value.convenience.enabled ? '' : 'opacity-50'}`}
+            className={`flex flex-wrap gap-x-5 gap-y-1 ${value.convenience.enabled ? '' : 'opacity-50'}`}
           >
-            <Toggle
+            <CheckOption
               id="fee-convenience-prepaid"
               label="On online payment"
               checked={value.convenience.applyToPrepaid}
               onChange={update('convenience', 'applyToPrepaid')}
             />
-            <Toggle
+            <CheckOption
               id="fee-convenience-cod"
               label="On COD"
               checked={value.convenience.applyToCod}

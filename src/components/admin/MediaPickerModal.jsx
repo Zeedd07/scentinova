@@ -2,12 +2,21 @@
  * "Select from library" — searchable, paginated picker over the admin media library.
  */
 import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import AdminDialog from './AdminDialog'
+import Field from './ui/Field'
+import FilterTabs from './ui/FilterTabs'
 import { listMedia } from '../../services/mediaApi'
 import { ApiClientError } from '../../services/apiClient'
 import { MEDIA_CATEGORIES, titleCase } from '../../lib/media'
 
 const PAGE_SIZE = 24
+const ALL = 'ALL'
+const CATEGORY_TABS = [
+  { value: ALL, label: 'All' },
+  ...MEDIA_CATEGORIES.map((c) => ({ value: c, label: titleCase(c) })),
+]
 
 export default function MediaPickerModal({
   open,
@@ -81,29 +90,23 @@ export default function MediaPickerModal({
     <AdminDialog
       open={open}
       wide
+      tall
       title={title}
       onClose={onClose}
       footer={
         <>
-          <button type="button" className="admin-btn admin-btn-quiet" onClick={onClose}>
+          <Button type="button" variant="quiet" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="admin-btn admin-btn-primary disabled:opacity-50"
-            disabled={!picked}
-            onClick={() => picked && onSelect(picked)}
-          >
+          </Button>
+          <Button type="button" disabled={!picked} onClick={() => picked && onSelect(picked)}>
             Select
-          </button>
+          </Button>
         </>
       }
     >
-      <label className="block">
-        <span className="admin-label">Search</span>
-        <input
+      <Field label="Search">
+        <Input
           type="search"
-          className="admin-input"
           placeholder="jasmine, amber, oud…"
           value={search}
           onChange={(e) => {
@@ -111,7 +114,7 @@ export default function MediaPickerModal({
             setNoMatch('')
           }}
         />
-      </label>
+      </Field>
 
       {noMatch && (
         <p className="mt-3 border border-stone bg-cream/60 px-3 py-2 text-[13px] text-charcoal" role="status">
@@ -121,26 +124,16 @@ export default function MediaPickerModal({
       )}
 
       {showCategories && (
-        <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Category">
-          {['', ...MEDIA_CATEGORIES].map((c) => (
-            <button
-              key={c || 'all'}
-              type="button"
-              aria-pressed={category === c}
-              onClick={() => {
-                setCategory(c)
-                setPage(1)
-              }}
-              className={`rounded-sm border px-2.5 py-1 text-[12px] transition ${
-                category === c
-                  ? 'border-charcoal bg-charcoal text-warm-white'
-                  : 'border-stone text-charcoal hover:border-charcoal'
-              }`}
-            >
-              {c ? titleCase(c) : 'All'}
-            </button>
-          ))}
-        </div>
+        <FilterTabs
+          className="mt-3"
+          label="Category"
+          options={CATEGORY_TABS}
+          value={category || ALL}
+          onValueChange={(v) => {
+            setCategory(v === ALL ? '' : v)
+            setPage(1)
+          }}
+        />
       )}
 
       {error && (
@@ -189,25 +182,27 @@ export default function MediaPickerModal({
 
       {pages > 1 && (
         <div className="mt-4 flex items-center justify-between text-[13px]">
-          <button
+          <Button
             type="button"
-            className="admin-link disabled:opacity-40"
+            variant="quiet"
+            size="sm"
             disabled={page <= 1 || loading}
             onClick={() => setPage((p) => p - 1)}
           >
             ← Previous
-          </button>
+          </Button>
           <span className="admin-muted tabular-nums">
             Page {page} of {pages}
           </span>
-          <button
+          <Button
             type="button"
-            className="admin-link disabled:opacity-40"
+            variant="quiet"
+            size="sm"
             disabled={page >= pages || loading}
             onClick={() => setPage((p) => p + 1)}
           >
             Next →
-          </button>
+          </Button>
         </div>
       )}
     </AdminDialog>

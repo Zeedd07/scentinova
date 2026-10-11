@@ -3,6 +3,14 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { MinusIcon, PlusIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Slider } from '@/components/ui/slider'
+import { Textarea } from '@/components/ui/textarea'
+import Field from '../../components/admin/ui/Field'
+import FileButton from '../../components/admin/ui/FileButton'
+import SwitchField from '../../components/admin/ui/SwitchField'
 import CategoryField from '../../components/admin/CategoryField'
 import AdminModal from '../../components/admin/AdminModal'
 import {
@@ -32,53 +40,57 @@ import {
   imageScaleStyle,
 } from '../../lib/imageScale'
 
+const STEP_BUTTON = 'size-10 sm:size-8'
+const TILE_ACTION = 'min-h-10 text-[13px] sm:min-h-0 sm:text-[12px]'
+
 function ImageSizeControl({ index, scale, onChange }) {
   const pct = Math.round(scale * 100)
-  const stepBtn =
-    'flex h-7 w-7 shrink-0 items-center justify-center border border-[#e0d6c4] bg-[#fffcf7] text-[15px] leading-none text-[#1b1917] transition hover:bg-[#f0e9dc] disabled:opacity-40'
   return (
     <div className="mt-2">
-      <div className="flex items-center justify-between text-[12px]">
+      <div className="flex min-h-6 items-center justify-between text-[12px]">
         <span className="admin-muted">Size on website</span>
         <span className="flex items-center gap-2">
           <span className="tabular-nums text-[#1b1917]">{pct}%</span>
           {scale !== 1 && (
-            <button type="button" className="admin-link text-[12px]" onClick={() => onChange(1)}>
+            <Button type="button" variant="link" className="text-[12px]" onClick={() => onChange(1)}>
               Reset
-            </button>
+            </Button>
           )}
         </span>
       </div>
-      <div className="mt-1 flex items-center gap-2">
-        <button
+      <div className="mt-1 flex items-center gap-3">
+        <Button
           type="button"
-          className={stepBtn}
+          variant="quiet"
+          size="icon"
+          className={STEP_BUTTON}
           onClick={() => onChange(scale - IMAGE_SCALE_STEP)}
           disabled={scale <= IMAGE_SCALE_MIN}
           aria-label={`Make image ${index + 1} smaller`}
         >
-          −
-        </button>
-        <input
-          type="range"
+          <MinusIcon />
+        </Button>
+        <Slider
           min={IMAGE_SCALE_MIN}
           max={IMAGE_SCALE_MAX}
           step={IMAGE_SCALE_STEP}
-          value={scale}
-          onChange={(e) => onChange(Number(e.target.value))}
-          aria-label={`Size of image ${index + 1} on the website`}
-          aria-valuetext={`${pct}%`}
-          className="min-w-0 flex-1 accent-[#1b1917]"
+          value={[scale]}
+          onValueChange={([next]) => onChange(next)}
+          thumbLabel={`Size of image ${index + 1} on the website`}
+          valueText={`${pct}%`}
+          className="min-w-0 flex-1"
         />
-        <button
+        <Button
           type="button"
-          className={stepBtn}
+          variant="quiet"
+          size="icon"
+          className={STEP_BUTTON}
           onClick={() => onChange(scale + IMAGE_SCALE_STEP)}
           disabled={scale >= IMAGE_SCALE_MAX}
           aria-label={`Make image ${index + 1} bigger`}
         >
-          +
-        </button>
+          <PlusIcon />
+        </Button>
       </div>
     </div>
   )
@@ -168,9 +180,6 @@ function productToForm(p) {
     discount: discountToForm(p.discount),
   }
 }
-
-const fieldClass = 'admin-input'
-const labelClass = 'admin-label'
 
 export default function AdminProductForm() {
   const { id } = useParams()
@@ -612,70 +621,41 @@ export default function AdminProductForm() {
 
       <form onSubmit={onSubmit} className="admin-surface space-y-6 p-4 sm:p-6">
         <section className="grid gap-4 sm:grid-cols-2">
-          <label className="sm:col-span-2">
-            <span className={labelClass}>Name</span>
-            <input
-              required
-              className={fieldClass}
-              value={form.name}
-              onChange={(e) => set('name', e.target.value)}
-            />
-          </label>
-          <label>
-            <span className={labelClass}>Slug</span>
-            <input
-              className={fieldClass}
-              placeholder="auto from name"
-              value={form.slug}
-              onChange={(e) => set('slug', e.target.value)}
-            />
-          </label>
-          <label>
-            <span className={labelClass}>Tagline</span>
-            <input
-              className={fieldClass}
-              value={form.tagline}
-              onChange={(e) => set('tagline', e.target.value)}
-            />
-          </label>
-          <label>
-            <span className={labelClass}>Price (INR)</span>
-            <input
+          <Field label="Name" className="sm:col-span-2">
+            <Input required value={form.name} onChange={(e) => set('name', e.target.value)} />
+          </Field>
+          <Field label="Slug">
+            <Input placeholder="auto from name" value={form.slug} onChange={(e) => set('slug', e.target.value)} />
+          </Field>
+          <Field label="Tagline">
+            <Input value={form.tagline} onChange={(e) => set('tagline', e.target.value)} />
+          </Field>
+          <Field label="Price (INR)">
+            <Input
               required
               type="number"
+              inputMode="numeric"
               min="0"
               step="1"
-              className={fieldClass}
               value={form.price}
               onChange={(e) => set('price', e.target.value)}
             />
-          </label>
-          <label>
-            <span className={labelClass}>Stock</span>
-            <input
+          </Field>
+          <Field label="Stock">
+            <Input
               type="number"
+              inputMode="numeric"
               min="0"
-              className={fieldClass}
               value={form.stock}
               onChange={(e) => set('stock', e.target.value)}
             />
-          </label>
-          <label>
-            <span className={labelClass}>Size</span>
-            <input
-              className={fieldClass}
-              value={form.size}
-              onChange={(e) => set('size', e.target.value)}
-            />
-          </label>
-          <label>
-            <span className={labelClass}>Concentration</span>
-            <input
-              className={fieldClass}
-              value={form.concentration}
-              onChange={(e) => set('concentration', e.target.value)}
-            />
-          </label>
+          </Field>
+          <Field label="Size">
+            <Input value={form.size} onChange={(e) => set('size', e.target.value)} />
+          </Field>
+          <Field label="Concentration">
+            <Input value={form.concentration} onChange={(e) => set('concentration', e.target.value)} />
+          </Field>
           <CategoryField
             key={categoryFieldKey}
             value={form.category}
@@ -685,40 +665,30 @@ export default function AdminProductForm() {
               setCategoryError('')
             }}
           />
-          <label>
-            <span className={labelClass}>Badge</span>
-            <input
-              className={fieldClass}
+          <Field label="Badge">
+            <Input
               placeholder="New / Best Seller / Limited"
               value={form.badge}
               onChange={(e) => set('badge', e.target.value)}
             />
-          </label>
+          </Field>
         </section>
 
-        <section className="flex flex-wrap gap-6">
-          <div>
-            <label className="flex items-center gap-2 text-[15px] text-[#1b1917]">
-              <input
-                type="checkbox"
-                checked={form.featured}
-                aria-describedby="featured-hint"
-                onChange={(e) => set('featured', e.target.checked)}
-              />
-              Featured on homepage
-            </label>
-            <p id="featured-hint" className="mt-1 pl-6 text-[12px] admin-muted">
-              Shown in the homepage signatures section (up to 4 live products).
-            </p>
-          </div>
-          <label className="flex items-center gap-2 text-[15px] text-[#1b1917]">
-            <input
-              type="checkbox"
-              checked={form.active}
-              onChange={(e) => set('active', e.target.checked)}
-            />
-            Live in shop
-          </label>
+        <section className="grid gap-4 sm:grid-cols-2">
+          <SwitchField
+            id="product-featured"
+            label="Featured on homepage"
+            hint="Shown in the homepage signatures section (up to 4 live products)."
+            checked={form.featured}
+            onCheckedChange={(v) => set('featured', v)}
+          />
+          <SwitchField
+            id="product-active"
+            label="Live in shop"
+            hint="When off, the perfume is hidden from the store."
+            checked={form.active}
+            onCheckedChange={(v) => set('active', v)}
+          />
         </section>
 
         <section className="border-t border-stone pt-6">
@@ -748,7 +718,7 @@ export default function AdminProductForm() {
           <div>
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
-                <span className={labelClass}>Product images</span>
+                <span className="admin-label">Product images</span>
                 <p className="mt-1 text-[13px] admin-muted">
                   Upload multiple photos per perfume (bottle, packaging, etc.).
                   First image is the shop cover. All go to Cloudinary. Use
@@ -760,19 +730,15 @@ export default function AdminProductForm() {
               </span>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <label className="admin-btn admin-btn-quiet cursor-pointer">
-                {uploadProgress != null
-                  ? `Uploading ${uploadProgress}%`
-                  : 'Add images'}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  multiple
-                  disabled={uploading}
-                  onChange={onImagesUpload}
-                />
-              </label>
+              <FileButton
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                disabled={uploading}
+                onChange={onImagesUpload}
+                className="w-full sm:w-auto"
+              >
+                {uploadProgress != null ? `Uploading ${uploadProgress}%` : 'Add images'}
+              </FileButton>
               <span className="text-[13px] admin-muted">
                 JPEG / PNG / WebP · max 5 MB each · select several at once
               </span>
@@ -818,39 +784,40 @@ export default function AdminProductForm() {
                         ? 'Cloudinary'
                         : 'Local / URL')}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3">
                     {index > 0 && (
-                      <button
-                        type="button"
-                        className="text-[12px] admin-link"
-                        onClick={() => setPrimaryAt(index)}
-                      >
+                      <Button type="button" variant="link" className={TILE_ACTION} onClick={() => setPrimaryAt(index)}>
                         Set as cover
-                      </button>
+                      </Button>
                     )}
-                    <button
+                    <Button
                       type="button"
-                      className="text-[12px] admin-link"
+                      variant="link"
+                      className={TILE_ACTION}
                       disabled={index === 0}
                       onClick={() => moveGallery(index, -1)}
+                      aria-label={`Move image ${index + 1} earlier`}
                     >
                       ←
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      className="text-[12px] admin-link"
+                      variant="link"
+                      className={TILE_ACTION}
                       disabled={index === form.gallery.length - 1}
                       onClick={() => moveGallery(index, 1)}
+                      aria-label={`Move image ${index + 1} later`}
                     >
                       →
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      className="text-[12px] text-[#6e1118]"
+                      variant="link"
+                      className={`${TILE_ACTION} ml-auto text-destructive`}
                       onClick={() => setPendingRemove({ url, index })}
                     >
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -880,7 +847,7 @@ export default function AdminProductForm() {
           <div>
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
-                <span className={labelClass}>Product videos</span>
+                <span className="admin-label">Product videos</span>
                 <p className="mt-1 text-[13px] admin-muted">
                   Short clips shown after the photos on the product page. They play
                   muted and loop. All go to Cloudinary.
@@ -891,27 +858,19 @@ export default function AdminProductForm() {
               </span>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <label
-                className={`admin-btn admin-btn-quiet ${
-                  uploading || form.videos.length >= MAX_VIDEOS
-                    ? 'cursor-not-allowed opacity-50'
-                    : 'cursor-pointer'
-                }`}
+              <FileButton
+                accept="video/mp4,video/quicktime,video/webm"
+                multiple
+                disabled={uploading || form.videos.length >= MAX_VIDEOS}
+                onChange={onVideosUpload}
+                className="w-full sm:w-auto"
               >
                 {videoUploading
                   ? videoProgress >= 100
                     ? 'Processing…'
                     : `Uploading ${videoProgress}%`
                   : 'Add videos'}
-                <input
-                  type="file"
-                  accept="video/mp4,video/quicktime,video/webm"
-                  className="hidden"
-                  multiple
-                  disabled={uploading || form.videos.length >= MAX_VIDEOS}
-                  onChange={onVideosUpload}
-                />
-              </label>
+              </FileButton>
               <span className="text-[13px] admin-muted">
                 MP4 / MOV / WebM · max {MAX_VIDEO_MB} MB each
               </span>
@@ -949,32 +908,35 @@ export default function AdminProductForm() {
                     {video.publicId}
                     {video.duration ? ` · ${formatDuration(video.duration)}` : ''}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3">
+                    <Button
                       type="button"
-                      className="text-[12px] admin-link"
+                      variant="link"
+                      className={TILE_ACTION}
                       disabled={index === 0}
                       onClick={() => moveVideo(index, -1)}
                       aria-label={`Move video ${index + 1} earlier`}
                     >
                       ←
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      className="text-[12px] admin-link"
+                      variant="link"
+                      className={TILE_ACTION}
                       disabled={index === form.videos.length - 1}
                       onClick={() => moveVideo(index, 1)}
                       aria-label={`Move video ${index + 1} later`}
                     >
                       →
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      className="text-[12px] text-[#6e1118]"
+                      variant="link"
+                      className={`${TILE_ACTION} ml-auto text-destructive`}
                       onClick={() => setPendingVideoRemove(video.publicId)}
                     >
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -989,24 +951,12 @@ export default function AdminProductForm() {
         </section>
 
         <section className="space-y-4">
-          <label className="block">
-            <span className={labelClass}>Description</span>
-            <textarea
-              rows={3}
-              className={fieldClass}
-              value={form.description}
-              onChange={(e) => set('description', e.target.value)}
-            />
-          </label>
-          <label className="block">
-            <span className={labelClass}>Story</span>
-            <textarea
-              rows={2}
-              className={fieldClass}
-              value={form.story}
-              onChange={(e) => set('story', e.target.value)}
-            />
-          </label>
+          <Field label="Description">
+            <Textarea rows={3} value={form.description} onChange={(e) => set('description', e.target.value)} />
+          </Field>
+          <Field label="Story">
+            <Textarea rows={2} value={form.story} onChange={(e) => set('story', e.target.value)} />
+          </Field>
         </section>
 
         <section className="grid items-start gap-4 sm:grid-cols-3">
@@ -1050,15 +1000,21 @@ export default function AdminProductForm() {
           />
         </section>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            disabled={saving || uploading}
-            className="admin-btn admin-btn-primary disabled:opacity-50"
-          >
+        <div className="sticky bottom-0 z-20 -mx-4 -mb-4 flex items-center gap-3 border-t border-border bg-background/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:-mx-6 sm:-mb-6 sm:px-6">
+          <Button type="submit" disabled={saving || uploading} className="flex-1 sm:flex-none">
             {saving ? 'Saving…' : isNew ? 'Create perfume' : 'Save changes'}
-          </button>
-          <Link to="/shop" className="admin-link no-underline hover:underline">
+          </Button>
+          {status.text && (
+            <span
+              role="status"
+              className={`hidden min-w-0 truncate text-[14px] sm:inline ${
+                status.type === 'error' ? 'text-[#6e1118]' : 'text-[#4a7c3f]'
+              }`}
+            >
+              {status.text}
+            </span>
+          )}
+          <Link to="/shop" className="admin-link ml-auto hidden no-underline hover:underline sm:inline">
             Open shop →
           </Link>
         </div>

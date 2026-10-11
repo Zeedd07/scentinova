@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "./admin-theme.css";
 
 /* ─── Scentinova tokens: black → ivory → gold → packaging crimson ─── */
 @theme {
@@ -611,26 +613,6 @@ select {
   border: 1px solid #e0d6c4;
 }
 
-.admin-input {
-  margin-top: 0.35rem;
-  width: 100%;
-  border: 1px solid #d8d0c2;
-  background: #fff;
-  padding: 0.55rem 0.75rem;
-  font-size: 16px;
-  line-height: 1.4;
-  color: #1b1917;
-  outline: none;
-}
-
-.admin-input::placeholder {
-  color: #9a9288;
-}
-
-.admin-input:focus {
-  border-color: var(--color-gold);
-}
-
 .admin-label {
   display: block;
   font-size: 13px;
@@ -650,60 +632,6 @@ select {
   color: #1b1917;
 }
 
-.admin-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #c9bdaa;
-  background: #fff;
-  padding: 0.5rem 1rem;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1b1917;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.admin-btn:hover {
-  border-color: var(--color-gold);
-  background: #faf6ee;
-}
-
-.admin-btn-primary {
-  border-color: #1b1917;
-  background: #1b1917;
-  color: #faf9f6;
-}
-
-.admin-btn-primary:hover {
-  border-color: #1b1917;
-  background: #2a2218;
-  color: #faf9f6;
-}
-
-.admin-btn-quiet {
-  border-color: #d8d0c2;
-  background: transparent;
-  color: var(--color-muted);
-}
-
-.admin-btn-quiet:hover {
-  border-color: #c9bdaa;
-  color: #1b1917;
-  background: #fff;
-}
-
-.admin-btn-danger {
-  border-color: var(--color-burgundy);
-  background: #fff;
-  color: var(--color-burgundy);
-}
-
-.admin-btn-danger:hover {
-  background: #f8f0f0;
-}
-
 .admin-title {
   font-family: var(--font-display);
   font-size: 1.75rem;
@@ -714,20 +642,6 @@ select {
 
 .admin-muted {
   color: var(--color-muted);
-}
-
-.admin-table th {
-  font-size: 12px;
-  font-weight: 600;
-  text-align: left;
-  color: #4a4136;
-  background: #f0e9dc;
-}
-
-.admin-table td {
-  font-size: 14px;
-  color: #1b1917;
-  vertical-align: middle;
 }
 
 @media (prefers-reduced-motion: reduce) {

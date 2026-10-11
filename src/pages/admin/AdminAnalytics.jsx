@@ -3,6 +3,11 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import FilterTabs from '../../components/admin/ui/FilterTabs'
+import ResponsiveTable from '../../components/admin/ui/ResponsiveTable'
 import { formatPrice } from '../../data/products'
 import { adminAnalyticsReport } from '../../services/analyticsApi'
 import { ApiClientError } from '../../services/apiClient'
@@ -30,33 +35,20 @@ function bucketLabel(key, unit, long = false) {
   return date.toLocaleDateString('en-IN', { ...options, timeZone: 'UTC' })
 }
 
-function RangePicker({ value, onChange, disabled }) {
-  return (
-    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Time period">
-      {RANGES.map((r) => (
-        <button
-          key={r.key}
-          type="button"
-          disabled={disabled}
-          aria-pressed={value === r.key}
-          onClick={() => onChange(r.key)}
-          className={`admin-btn !px-3 !py-1.5 !text-[13px] ${value === r.key ? 'admin-btn-primary' : ''}`}
-        >
-          {r.label}
-        </button>
-      ))}
-    </div>
-  )
-}
+const RANGE_OPTIONS = RANGES.map((r) => ({ value: r.key, label: r.label }))
 
-function StatCard({ label, value, hint, highlight = false, tone }) {
+function StatCard({ label, value, hint, highlight = false, tone, wide = false }) {
   return (
     <div
-      className={`px-4 py-4 ${highlight ? 'border border-[#1b1917] bg-[#1b1917] text-[#faf9f6]' : 'admin-surface'}`}
+      className={cn(
+        'min-w-0 rounded-sm px-4 py-4',
+        highlight ? 'border border-[#1b1917] bg-[#1b1917] text-[#faf9f6]' : 'border border-[#e2dbcf] bg-card',
+        wide && 'col-span-2 sm:col-span-1',
+      )}
     >
       <p className={`text-[13px] font-medium ${highlight ? 'text-[#d4c9b4]' : 'text-[#4a4136]'}`}>{label}</p>
       <p
-        className={`mt-1 text-[1.6rem] leading-tight font-semibold tabular-nums ${
+        className={`mt-1 text-[1.3rem] leading-tight font-semibold break-words tabular-nums sm:text-[1.6rem] ${
           highlight ? 'text-white' : tone === 'bad' ? 'text-[#6e1118]' : 'text-[#1b1917]'
         }`}
       >
@@ -73,11 +65,11 @@ function StatCard({ label, value, hint, highlight = false, tone }) {
 
 function Section({ title, description, children, className = '' }) {
   return (
-    <section className={`admin-surface p-4 sm:p-5 ${className}`}>
+    <Card className={cn('min-w-0 gap-0 p-4 sm:p-5', className)}>
       <h3 className="text-base font-semibold text-[#1b1917]">{title}</h3>
       {description && <p className="mt-1 text-[14px] admin-muted">{description}</p>}
       <div className="mt-4">{children}</div>
-    </section>
+    </Card>
   )
 }
 
@@ -120,7 +112,7 @@ function RevenueChart({ timeline }) {
         )}
       </p>
 
-      <div className="relative mt-3 flex h-48 items-end gap-[3px] border-b border-l border-[#e0d6c4] pl-1 sm:gap-1">
+      <div className="relative mt-3 flex h-36 items-end sm:h-48 gap-[3px] border-b border-l border-[#e0d6c4] pl-1 sm:gap-1">
         <span className="absolute -top-1 left-2 text-[11px] admin-muted">{rupees(max)}</span>
         {points.map((p, i) => {
           const height = p.netPaise > 0 ? Math.max(3, (p.netPaise / max) * 100) : 0
@@ -248,51 +240,80 @@ function ProductTable({ products }) {
   )
   const topRevenueId = sorted[0]?.revenuePaise > 0 ? sorted[0].id : null
 
-  return (
-    <div className="overflow-x-auto">
-      <table className="admin-table w-full min-w-[720px] text-left">
-        <thead className="border-b border-[#e0d6c4]">
-          <tr>
-            <th className="px-3 py-2.5">Perfume</th>
-            <th className="px-3 py-2.5 !text-right">Views</th>
-            <th className="px-3 py-2.5 !text-right">Added to cart</th>
-            <th className="px-3 py-2.5 !text-right">Units sold</th>
-            <th className="px-3 py-2.5 !text-right">Sales</th>
-            <th className="px-3 py-2.5 !text-right" title="Units sold per 100 product page views">
-              Views → sale
-            </th>
-            <th className="px-3 py-2.5">Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((p) => {
-            const note = productNote(p, topRevenueId)
-            return (
-              <tr key={p.id} className="border-b border-[#ebe4d6]">
-                <td className="px-3 py-2.5">
-                  <Link to={`/admin/products/${p.id}`} className="font-medium hover:underline">
-                    {p.name}
-                  </Link>
-                  {p.category && <span className="block text-[12px] admin-muted">{p.category}</span>}
-                </td>
-                <td className="px-3 py-2.5 text-right tabular-nums">{count(p.views)}</td>
-                <td className="px-3 py-2.5 text-right tabular-nums">{count(p.addToCarts)}</td>
-                <td className="px-3 py-2.5 text-right tabular-nums">{count(p.unitsSold)}</td>
-                <td className="px-3 py-2.5 text-right font-medium tabular-nums">{rupees(p.revenuePaise)}</td>
-                <td className="px-3 py-2.5 text-right tabular-nums">{percent(p.unitsSold, p.views)}</td>
-                <td className="px-3 py-2.5">
-                  {note && (
-                    <span className={`inline-block border px-2 py-0.5 text-[12px] ${NOTE_STYLES[note.tone]}`}>
-                      {note.text}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+  const noteTag = (p) => {
+    const note = productNote(p, topRevenueId)
+    return (
+      note && (
+        <span className={`inline-block border px-2 py-0.5 text-[12px] ${NOTE_STYLES[note.tone]}`}>{note.text}</span>
+      )
+    )
+  }
+  const name = (p) => (
+    <>
+      <Link to={`/admin/products/${p.id}`} className="font-medium hover:underline">
+        {p.name}
+      </Link>
+      {p.category && <span className="block text-[12px] admin-muted">{p.category}</span>}
+    </>
+  )
+  const num = 'text-right tabular-nums'
+  const columns = [
+    { key: 'name', header: 'Perfume', cell: name },
+    { key: 'views', header: 'Views', cell: (p) => count(p.views), className: num, headClassName: 'text-right' },
+    {
+      key: 'carts',
+      header: 'Added to cart',
+      cell: (p) => count(p.addToCarts),
+      className: num,
+      headClassName: 'text-right',
+    },
+    { key: 'units', header: 'Units sold', cell: (p) => count(p.unitsSold), className: num, headClassName: 'text-right' },
+    {
+      key: 'sales',
+      header: 'Sales',
+      cell: (p) => rupees(p.revenuePaise),
+      className: `${num} font-medium`,
+      headClassName: 'text-right',
+    },
+    {
+      key: 'rate',
+      header: <span title="Units sold per 100 product page views">Views → sale</span>,
+      cell: (p) => percent(p.unitsSold, p.views),
+      className: num,
+      headClassName: 'text-right',
+    },
+    { key: 'note', header: 'Note', cell: noteTag },
+  ]
+
+  const stat = (label, value) => (
+    <div className="min-w-0">
+      <dt className="text-[12px] admin-muted">{label}</dt>
+      <dd className="tabular-nums text-[#1b1917]">{value}</dd>
     </div>
+  )
+
+  return (
+    <ResponsiveTable
+      caption="Perfume performance"
+      columns={columns}
+      rows={sorted}
+      rowKey={(p) => p.id}
+      renderCard={(p) => (
+        <div className="space-y-2 text-[14px]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">{name(p)}</div>
+            <span className="shrink-0 font-semibold tabular-nums">{rupees(p.revenuePaise)}</span>
+          </div>
+          <dl className="grid grid-cols-4 gap-2">
+            {stat('Views', count(p.views))}
+            {stat('In cart', count(p.addToCarts))}
+            {stat('Sold', count(p.unitsSold))}
+            {stat('View → sale', percent(p.unitsSold, p.views))}
+          </dl>
+          {noteTag(p)}
+        </div>
+      )}
+    />
   )
 }
 
@@ -337,11 +358,19 @@ export default function AdminAnalytics() {
             Unpaid, cancelled and not-yet-collected cash orders are shown separately.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <RangePicker value={range} onChange={setRange} disabled={loading && !report} />
-          <button type="button" className="admin-btn admin-btn-quiet !px-3 !py-1.5 !text-[13px]" onClick={() => load(range)} disabled={loading}>
+        <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+          <FilterTabs
+            wrap
+            className="min-w-0 flex-1"
+            label="Time period"
+            options={RANGE_OPTIONS}
+            value={range}
+            onValueChange={setRange}
+            disabled={loading && !report}
+          />
+          <Button type="button" variant="quiet" size="sm" className="shrink-0 self-end sm:self-auto" onClick={() => load(range)} disabled={loading}>
             {loading && report ? 'Refreshing…' : 'Refresh'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -357,14 +386,16 @@ export default function AdminAnalytics() {
             . Updated {new Date(report.generatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}.
           </p>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard
               highlight
+              wide
               label="Net revenue"
               value={rupees(report.money.netPaise)}
               hint="Money received minus refunds"
             />
             <StatCard
+              wide
               label="Money received"
               value={rupees(report.money.receivedPaise)}
               hint={`${plural(report.money.paidOrders, 'paid order')} · online ${rupees(report.money.online.paise)} · cash ${rupees(report.money.cod.paise)}`}

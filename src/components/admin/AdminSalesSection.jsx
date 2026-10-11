@@ -3,7 +3,17 @@
  * The server applies the discount at checkout; this only manages the sales.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import AdminModal from './AdminModal'
+import ChoiceCards from './ui/ChoiceCards'
+import DateTimePicker from './ui/DateTimePicker'
+import Field from './ui/Field'
+import SwitchField from './ui/SwitchField'
 import {
   adminCreateSale,
   adminDeleteSale,
@@ -28,6 +38,11 @@ const EMPTY_FORM = {
   endsAt: '',
   active: true,
 }
+
+const SCOPE_OPTIONS = [
+  { value: 'ALL', label: 'All products' },
+  { value: 'PRODUCTS', label: 'Selected products' },
+]
 
 const STATUS = {
   LIVE: { label: 'Live', className: 'border-[#3f6b3a]/40 text-[#3f6b3a]' },
@@ -241,119 +256,109 @@ export default function AdminSalesSection() {
         </p>
       </div>
 
-      <form ref={formRef} onSubmit={submit} className="admin-surface space-y-4 p-5" noValidate>
+      <form ref={formRef} onSubmit={submit} className="admin-surface space-y-4 p-4 sm:p-5" noValidate>
         <p className="admin-label text-[14px]">{editingId ? 'Edit sale' : 'New sale'}</p>
         <div className="grid gap-4 sm:grid-cols-[1fr_9rem]">
-          <label className="block">
-            <span className="admin-label">Sale name</span>
-            <input
+          <Field label="Sale name">
+            <Input
               type="text"
-              className="admin-input"
               value={form.name}
               maxLength={NAME_MAX}
               placeholder="e.g. Diwali Sale"
               onChange={(e) => set('name', e.target.value)}
             />
-          </label>
-          <label className="block">
-            <span className="admin-label">Percent off</span>
-            <div className="relative">
-              <input
+          </Field>
+          <Field label="Percent off">
+            <span className="relative block">
+              <Input
                 type="number"
                 inputMode="numeric"
                 min={PERCENT_MIN}
                 max={PERCENT_MAX}
                 step={1}
-                className="admin-input pr-8"
+                className="pr-8"
                 value={form.percentOff}
                 placeholder="20"
                 onChange={(e) => set('percentOff', e.target.value)}
               />
-              <span className="pointer-events-none absolute top-1/2 right-3 mt-[0.175rem] -translate-y-1/2 text-[15px] admin-muted">
+              <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[15px] admin-muted">
                 %
               </span>
-            </div>
-          </label>
+            </span>
+          </Field>
         </div>
 
-        <fieldset className="space-y-2">
-          <legend className="admin-label mb-1">Applies to</legend>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-[15px] text-[#1b1917]">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="sale-scope"
-                checked={form.appliesTo === 'ALL'}
-                onChange={() => set('appliesTo', 'ALL')}
-              />
-              All products
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="sale-scope"
-                checked={form.appliesTo === 'PRODUCTS'}
-                onChange={() => set('appliesTo', 'PRODUCTS')}
-              />
-              Selected products
-            </label>
-          </div>
+        <div className="space-y-2">
+          <p id="sale-scope-label" className="admin-label">
+            Applies to
+          </p>
+          <ChoiceCards
+            aria-labelledby="sale-scope-label"
+            className="max-w-md"
+            options={SCOPE_OPTIONS}
+            value={form.appliesTo}
+            onValueChange={(v) => set('appliesTo', v)}
+          />
           {form.appliesTo === 'PRODUCTS' && (
-            <div className="max-h-56 overflow-y-auto border border-[#e0d6c4] bg-white p-3">
+            <div
+              className="max-h-64 overflow-y-auto overscroll-contain border border-[#e0d6c4] bg-white p-1 sm:max-h-56 sm:p-2"
+              data-lenis-prevent
+            >
               {products.length === 0 ? (
-                <p className="text-[14px] admin-muted">No products yet.</p>
+                <p className="p-2 text-[14px] admin-muted">No products yet.</p>
               ) : (
-                <ul className="grid gap-2 sm:grid-cols-2">
+                <ul className="grid sm:grid-cols-2 sm:gap-x-2" aria-label="Products in this sale">
                   {products.map((p) => (
                     <li key={p.id}>
-                      <label className="flex items-center gap-2 text-[15px] text-[#1b1917]">
-                        <input
-                          type="checkbox"
+                      <Label className="min-h-11 cursor-pointer gap-3 rounded-sm px-2 text-[15px] font-normal text-[#1b1917] hover:bg-[#faf6ee] sm:min-h-9">
+                        <Checkbox
                           checked={form.productIds.includes(p.id)}
-                          onChange={() => toggleProduct(p.id)}
+                          onCheckedChange={() => toggleProduct(p.id)}
                         />
-                        <span className="min-w-0 truncate">{p.name}</span>
+                        <span className="min-w-0 flex-1 truncate">{p.name}</span>
                         <span className="shrink-0 text-[13px] admin-muted">
                           {formatPrice(p.price)}
                           {!p.active && ' · not live'}
                         </span>
-                      </label>
+                      </Label>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
           )}
-        </fieldset>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="admin-label">Starts (optional)</span>
-            <input
-              type="datetime-local"
-              className="admin-input"
+          <Field label="Starts (optional)" htmlFor="sale-starts">
+            <DateTimePicker
+              id="sale-starts"
               value={form.startsAt}
-              onChange={(e) => set('startsAt', e.target.value)}
+              placeholder="Starts straight away"
+              defaultTime="00:00"
+              onChange={(v) => set('startsAt', v)}
             />
-          </label>
-          <label className="block">
-            <span className="admin-label">Ends (optional)</span>
-            <input
-              type="datetime-local"
-              className="admin-input"
+          </Field>
+          <Field label="Ends (optional)" htmlFor="sale-ends">
+            <DateTimePicker
+              id="sale-ends"
               value={form.endsAt}
-              onChange={(e) => set('endsAt', e.target.value)}
+              placeholder="No end date"
+              defaultTime="23:59"
+              onChange={(v) => set('endsAt', v)}
             />
-          </label>
+          </Field>
         </div>
         <p className="-mt-2 text-[13px] admin-muted">
           Leave the dates empty to run the sale for as long as it is switched on.
         </p>
 
-        <label className="flex items-center gap-2 text-[15px] text-[#1b1917]">
-          <input type="checkbox" checked={form.active} onChange={(e) => set('active', e.target.checked)} />
-          Switched on
-        </label>
+        <SwitchField
+          id="sale-active"
+          label="Switched on"
+          checked={form.active}
+          onCheckedChange={(v) => set('active', v)}
+        />
 
         {examplePrice && Number.isInteger(percent) && percent >= PERCENT_MIN && percent <= PERCENT_MAX && (
           <p className="border border-[#e0d6c4] bg-white px-3 py-2 text-[14px] text-[#1b1917]">
@@ -370,18 +375,14 @@ export default function AdminSalesSection() {
           </p>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            className="admin-btn admin-btn-primary disabled:opacity-50"
-            disabled={busy || atLimit}
-          >
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <Button type="submit" disabled={busy || atLimit}>
             {editingId ? 'Save sale' : 'Add sale'}
-          </button>
+          </Button>
           {editingId && (
-            <button type="button" className="admin-btn admin-btn-quiet" onClick={resetForm} disabled={busy}>
+            <Button type="button" variant="quiet" onClick={resetForm} disabled={busy}>
               Cancel
-            </button>
+            </Button>
           )}
         </div>
       </form>
@@ -399,48 +400,51 @@ export default function AdminSalesSection() {
             return (
               <li
                 key={sale.id}
-                className={`flex flex-wrap items-start gap-3 px-4 py-3 ${sale.status === 'LIVE' ? '' : 'bg-[#f3eee4]/60'}`}
+                className={`flex flex-wrap items-start gap-x-3 gap-y-2 px-4 py-3 ${sale.status === 'LIVE' ? '' : 'bg-[#f3eee4]/60'}`}
               >
-                <div className="min-w-[14rem] flex-1 space-y-0.5">
+                <div className="min-w-0 flex-1 space-y-0.5 sm:min-w-[14rem]">
                   <p className="text-[15px] text-[#1b1917]">
                     <span className="font-medium">{sale.name}</span>
                     <span className="ml-2 text-[#7d5e22]">{sale.percentOff}% off</span>
                   </p>
-                  <p className="text-[13px] admin-muted">{scopeText(sale)}</p>
+                  <p className="text-[13px] break-words admin-muted">{scopeText(sale)}</p>
                   <p className="text-[13px] admin-muted">{scheduleText(sale)}</p>
                 </div>
 
-                <span
-                  className={`inline-block border px-2 py-0.5 text-[12px] tracking-wide uppercase ${status.className}`}
-                >
+                <Badge variant="tag" className={`shrink-0 bg-transparent ${status.className}`}>
                   {status.label}
-                </span>
+                </Badge>
 
-                <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
-                  <button
-                    type="button"
-                    className="admin-link disabled:opacity-50"
-                    onClick={() => startEdit(sale)}
-                    disabled={busy}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-link disabled:opacity-50"
-                    onClick={() => toggleActive(sale)}
-                    disabled={busy}
-                  >
-                    {sale.active ? 'Turn off' : 'Turn on'}
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-link text-[#6e1118] disabled:opacity-50"
-                    onClick={() => setPendingDelete(sale)}
-                    disabled={busy}
-                  >
-                    Delete
-                  </button>
+                <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+                  <Label className="min-h-10 cursor-pointer font-normal">
+                    <Switch
+                      checked={sale.active}
+                      disabled={busy}
+                      onCheckedChange={() => toggleActive(sale)}
+                      aria-label={`${sale.name} switched on`}
+                    />
+                    {sale.active ? 'On' : 'Off'}
+                  </Label>
+                  <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="min-h-10"
+                      onClick={() => startEdit(sale)}
+                      disabled={busy}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="min-h-10 text-destructive"
+                      onClick={() => setPendingDelete(sale)}
+                      disabled={busy}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </li>
             )

@@ -4,15 +4,10 @@
  * "Rose, Amber" splits into separate notes.
  */
 import { useEffect, useRef } from 'react'
+import { XIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { MAX_NOTES_PER_TIER, noteRow } from '../../lib/productNotes'
-
-function RemoveIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 export default function NoteListEditor({ id, label, noun, placeholder, rows, onChange }) {
   const inputs = useRef(new Map())
@@ -84,14 +79,12 @@ export default function NoteListEditor({ id, label, noun, placeholder, rows, onC
       <ul className="mt-1.5 space-y-2">
         {rows.map((row, index) => (
           <li key={row.id} className="flex items-stretch gap-2">
-            <input
+            <Input
               ref={(el) => {
                 if (el) inputs.current.set(row.id, el)
                 else inputs.current.delete(row.id)
               }}
               id={index === 0 ? id : undefined}
-              className="admin-input"
-              style={{ marginTop: 0 }}
               placeholder={index === 0 ? placeholder : `${noun} ${index + 1}`}
               aria-label={`${label}: note ${index + 1} of ${rows.length}`}
               value={row.text}
@@ -100,26 +93,29 @@ export default function NoteListEditor({ id, label, noun, placeholder, rows, onC
               onKeyDown={(e) => onKeyDown(e, index, row)}
               onPaste={(e) => onPaste(e, index, row)}
             />
-            <button
+            <Button
               type="button"
+              variant="quiet"
+              size="icon"
               onClick={() => remove(index)}
               disabled={rows.length === 1 && !row.text}
-              className="flex w-11 shrink-0 items-center justify-center border border-[#e0d6c4] bg-[#fffcf7] text-[#4a4136] transition-colors hover:border-[#6e1118] hover:text-[#6e1118] disabled:opacity-30 disabled:hover:border-[#e0d6c4] disabled:hover:text-[#4a4136]"
+              className="size-11 hover:border-destructive hover:text-destructive sm:size-10"
               aria-label={`Remove ${row.text.trim() || `${noun.toLowerCase()} ${index + 1}`}`}
             >
-              <RemoveIcon />
-            </button>
+              <XIcon />
+            </Button>
           </li>
         ))}
       </ul>
-      <button
+      <Button
         type="button"
-        className="admin-link mt-2 text-[14px]"
+        variant="link"
+        className="mt-1 min-h-10"
         onClick={() => insertAfter(rows.length - 1)}
         disabled={full}
       >
         + Add {noun.toLowerCase()}
-      </button>
+      </Button>
       {full && (
         <p className="mt-1 text-[12px] admin-muted">Up to {MAX_NOTES_PER_TIER} notes.</p>
       )}

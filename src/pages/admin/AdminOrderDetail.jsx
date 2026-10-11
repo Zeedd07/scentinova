@@ -3,6 +3,11 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import Field from '../../components/admin/ui/Field'
 import { formatPrice } from '../../data/products'
 import {
   adminFetchOrder,
@@ -29,21 +34,23 @@ const URL_PATTERN = /^https?:\/\/\S+$/i
 
 const rupees = (paise, fallback = 0) => formatPrice(paise != null ? paise / 100 : fallback || 0)
 
-function Card({ title, action, children }) {
+const KEEP_STATUS = '__current__'
+
+function Panel({ title, action, children }) {
   return (
-    <section className="admin-surface p-4 sm:p-6">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <Card className="gap-0 p-4 sm:p-6">
+      <div className="mb-3 flex min-h-8 items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-[#1b1917]">{title}</h3>
         {action}
       </div>
       {children}
-    </section>
+    </Card>
   )
 }
 
 function Row({ label, children }) {
   return (
-    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-3 py-1.5 text-[15px]">
+    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 py-1.5 text-[15px] sm:grid-cols-[8.5rem_minmax(0,1fr)]">
       <dt className="admin-muted">{label}</dt>
       <dd className="min-w-0 break-words text-[#1b1917]">{children || '—'}</dd>
     </div>
@@ -54,35 +61,31 @@ function TrackingFields({ value, onChange, disabled }) {
   const set = (patch) => onChange({ ...value, ...patch })
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <label className="block">
-        <span className="admin-label">Courier *</span>
-        <input
-          className="admin-input mt-1"
+      <Field label="Courier *">
+        <Input
           placeholder="e.g. Delhivery"
           value={value.carrier}
           disabled={disabled}
           onChange={(e) => set({ carrier: e.target.value })}
         />
-      </label>
-      <label className="block">
-        <span className="admin-label">Tracking number *</span>
-        <input
-          className="admin-input mt-1"
+      </Field>
+      <Field label="Tracking number *">
+        <Input
           value={value.trackingNumber}
           disabled={disabled}
           onChange={(e) => set({ trackingNumber: e.target.value })}
         />
-      </label>
-      <label className="block">
-        <span className="admin-label">Tracking link</span>
-        <input
-          className="admin-input mt-1"
+      </Field>
+      <Field label="Tracking link">
+        <Input
+          type="url"
+          inputMode="url"
           placeholder="https://…"
           value={value.trackingUrl}
           disabled={disabled}
           onChange={(e) => set({ trackingUrl: e.target.value })}
         />
-      </label>
+      </Field>
     </div>
   )
 }
@@ -135,32 +138,34 @@ function StatusCard({ order, initialTarget, busy, onStatus }) {
   }
 
   return (
-    <Card title="Update status">
+    <Panel title="Update status">
       <form className="space-y-4" onSubmit={submit} noValidate>
-        <label className="block">
-          <span className="admin-label">Order status</span>
-          <select
-            className="admin-input mt-1"
-            value={target}
-            disabled={busy}
-            onChange={(e) => {
-              setTarget(e.target.value)
+        <Field
+          label="Order status"
+          htmlFor="order-status"
+          hint={options.length === 0 ? "This order can't move to another status." : undefined}
+        >
+          <Select
+            value={target || KEEP_STATUS}
+            disabled={busy || options.length === 0}
+            onValueChange={(v) => {
+              setTarget(v === KEEP_STATUS ? '' : v)
               setError('')
             }}
           >
-            <option value="">{orderStatusLabel(order.status)} (current)</option>
-            {options.map((s) => (
-              <option key={s} value={s}>
-                {s === 'CANCELLED' ? 'Cancel order' : orderStatusLabel(s)}
-              </option>
-            ))}
-          </select>
-          {options.length === 0 && (
-            <span className="mt-1 block text-[13px] admin-muted">
-              This order can&apos;t move to another status.
-            </span>
-          )}
-        </label>
+            <SelectTrigger id="order-status" className="w-full sm:max-w-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value={KEEP_STATUS}>{orderStatusLabel(order.status)} (current)</SelectItem>
+              {options.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s === 'CANCELLED' ? 'Cancel order' : orderStatusLabel(s)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
 
         {askTracking && <TrackingFields value={tracking} onChange={setTracking} disabled={busy} />}
 
@@ -171,10 +176,11 @@ function StatusCard({ order, initialTarget, busy, onStatus }) {
         )}
 
         {options.length > 0 && (
-          <button
+          <Button
             type="submit"
             disabled={busy || !target}
-            className={`admin-btn ${target === 'CANCELLED' ? 'admin-btn-danger' : 'admin-btn-primary'} disabled:opacity-50`}
+            variant={target === 'CANCELLED' ? 'danger' : 'default'}
+            className="w-full sm:w-auto"
           >
             {busy
               ? 'Saving…'
@@ -183,7 +189,7 @@ function StatusCard({ order, initialTarget, busy, onStatus }) {
                 : target
                   ? `Update to ${orderStatusLabel(target)}`
                   : 'Update status'}
-          </button>
+          </Button>
         )}
       </form>
 
@@ -200,7 +206,7 @@ function StatusCard({ order, initialTarget, busy, onStatus }) {
           await send()
         }}
       />
-    </Card>
+    </Panel>
   )
 }
 
@@ -225,13 +231,13 @@ function ShipmentCard({ order, busy, onSave }) {
   }
 
   return (
-    <Card
+    <Panel
       title="Shipment"
       action={
         !editing && (
-          <button type="button" className="admin-link text-[14px]" onClick={() => setEditing(true)}>
+          <Button type="button" variant="link" className="min-h-10 px-1" onClick={() => setEditing(true)}>
             Edit
-          </button>
+          </Button>
         )
       }
     >
@@ -243,13 +249,13 @@ function ShipmentCard({ order, busy, onSave }) {
               {error}
             </p>
           )}
-          <div className="flex gap-2">
-            <button type="button" disabled={busy} className="admin-btn admin-btn-primary" onClick={save}>
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-            <button type="button" disabled={busy} className="admin-btn admin-btn-quiet" onClick={() => setEditing(false)}>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button type="button" variant="quiet" disabled={busy} onClick={() => setEditing(false)}>
               Cancel
-            </button>
+            </Button>
+            <Button type="button" disabled={busy} onClick={save}>
+              {busy ? 'Saving…' : 'Save'}
+            </Button>
           </div>
         </div>
       ) : (
@@ -267,7 +273,7 @@ function ShipmentCard({ order, busy, onSave }) {
           <Row label="Delivered on">{f.deliveredAt && formatDateTime(f.deliveredAt)}</Row>
         </dl>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -290,9 +296,9 @@ function LabelCard({ order }) {
   }
 
   return (
-    <Card title="Shipping label">
+    <Panel title="Shipping label">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-        <div className="w-full max-w-[15rem] shrink-0 border border-[#e2dbcf] bg-white shadow-sm">
+        <div className="mx-auto w-full max-w-[15rem] shrink-0 border border-[#e2dbcf] bg-white shadow-sm sm:mx-0">
           <ShippingLabel ref={svgRef} order={order} className="block h-auto w-full" />
         </div>
         <div className="space-y-3 text-[14px]">
@@ -309,24 +315,18 @@ function LabelCard({ order }) {
               in <code>src/config/shipper.js</code>.
             </p>
           )}
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="admin-btn admin-btn-primary disabled:opacity-60"
-              disabled={downloading}
-              aria-busy={downloading}
-              onClick={download}
-            >
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button type="button" disabled={downloading} aria-busy={downloading} onClick={download}>
               {downloading ? 'Preparing…' : 'Download PDF'}
-            </button>
-            <button type="button" className="admin-btn admin-btn-quiet" onClick={() => printLabel(svgRef.current)}>
+            </Button>
+            <Button type="button" variant="quiet" onClick={() => printLabel(svgRef.current)}>
               Print
-            </button>
+            </Button>
           </div>
           {error && <p className="text-[#6e1118]">{error}</p>}
         </div>
       </div>
-    </Card>
+    </Panel>
   )
 }
 
@@ -416,7 +416,7 @@ export default function AdminOrderDetail() {
         ← Orders
       </Link>
 
-      <header className="admin-surface flex flex-wrap items-start justify-between gap-4 p-4 sm:p-6">
+      <header className="admin-surface flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-6">
         <div className="min-w-0">
           <h2 className="admin-title break-all">{order.orderNumber}</h2>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-[14px] admin-muted">
@@ -424,7 +424,7 @@ export default function AdminOrderDetail() {
             Placed {formatDateTime(order.createdAt)}
           </p>
         </div>
-        <div className="text-right">
+        <div className="border-t border-[#ebe4d6] pt-3 sm:border-0 sm:pt-0 sm:text-right">
           <p className="text-2xl font-semibold text-[#1b1917]">{formatPrice(total)}</p>
           <p className="mt-1 text-[14px] admin-muted">
             {cod ? 'Cash on Delivery' : 'Prepaid'} · {paymentStatusText(order)}
@@ -448,7 +448,7 @@ export default function AdminOrderDetail() {
       {canPrintLabel(order) && <LabelCard order={order} />}
 
       <div className="grid gap-5 md:grid-cols-2">
-        <Card title="Customer">
+        <Panel title="Customer">
           <dl>
             <Row label="Name">{customer.name}</Row>
             <Row label="Phone">
@@ -467,9 +467,9 @@ export default function AdminOrderDetail() {
             </Row>
             {order.customerNote && <Row label="Customer note">{order.customerNote}</Row>}
           </dl>
-        </Card>
+        </Panel>
 
-        <Card title="Delivery address">
+        <Panel title="Delivery address">
           <dl>
             <Row label="Deliver to">{addr.fullName || customer.name}</Row>
             <Row label="Phone">{addr.phone || customer.phone}</Row>
@@ -490,10 +490,10 @@ export default function AdminOrderDetail() {
             <Row label="PIN code">{addr.postalCode}</Row>
             <Row label="Country">{addr.country || 'India'}</Row>
           </dl>
-        </Card>
+        </Panel>
       </div>
 
-      <Card title={`Items (${itemCount})`}>
+      <Panel title={`Items (${itemCount})`}>
         <ul className="divide-y divide-[#ece5da]">
           {order.items?.map((item, i) => {
             const unit = item.unitPricePaise != null ? item.unitPricePaise / 100 : item.unitPrice
@@ -533,9 +533,9 @@ export default function AdminOrderDetail() {
             <dd>{formatPrice(total)}</dd>
           </div>
         </dl>
-      </Card>
+      </Panel>
 
-      <Card title="Payment">
+      <Panel title="Payment">
         <dl>
           <Row label="Method">{cod ? 'Cash on Delivery' : 'Prepaid (Razorpay)'}</Row>
           <Row label="Status">{paymentStatusText(order)}</Row>
@@ -548,34 +548,28 @@ export default function AdminOrderDetail() {
           {!cod && <Row label="Razorpay order">{order.payment?.razorpayOrderId}</Row>}
         </dl>
         {(canMarkCodPaid || canRefund) && (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             {canMarkCodPaid && (
-              <button
+              <Button
                 type="button"
                 disabled={busy}
-                className="admin-btn admin-btn-primary"
                 onClick={() => run(() => adminMarkCodPaid(id, {}), 'Cash payment marked as received.')}
               >
                 Mark cash received
-              </button>
+              </Button>
             )}
             {canRefund && (
-              <button
-                type="button"
-                disabled={busy}
-                className="admin-btn admin-btn-quiet text-[#6e1118]"
-                onClick={() => setConfirmRefund(true)}
-              >
+              <Button type="button" variant="danger" disabled={busy} onClick={() => setConfirmRefund(true)}>
                 Refund
-              </button>
+              </Button>
             )}
           </div>
         )}
-      </Card>
+      </Panel>
 
       {hasShipment && <ShipmentCard key={order.updatedAt} order={order} busy={busy} onSave={(body) => run(() => adminUpdateShipping(id, body), 'Shipment details saved.')} />}
 
-      <Card title="History">
+      <Panel title="History">
         <ul className="divide-y divide-[#ece5da] text-[14px]">
           {[...(order.statusHistory || [])].reverse().map((h, i) => {
             const changed = h.previousStatus !== h.status
@@ -603,7 +597,7 @@ export default function AdminOrderDetail() {
             )
           })}
         </ul>
-      </Card>
+      </Panel>
 
       <AdminModal
         open={confirmRefund}
