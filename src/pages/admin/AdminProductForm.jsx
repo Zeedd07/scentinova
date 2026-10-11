@@ -3,7 +3,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { CATEGORIES } from '../../data/products'
+import CategoryField from '../../components/admin/CategoryField'
 import AdminModal from '../../components/admin/AdminModal'
 import {
   adminCreateProduct,
@@ -16,6 +16,14 @@ import { ApiClientError } from '../../services/apiClient'
 import NoteImageEditor from '../../components/admin/NoteImageEditor'
 import ProductFeesEditor from '../../components/admin/ProductFeesEditor'
 import { EMPTY_FEES_FORM, feesToForm, parseFeesForm } from '../../lib/productFees'
+import ProductDiscountEditor from '../../components/admin/ProductDiscountEditor'
+import NoteListEditor from '../../components/admin/NoteListEditor'
+import { notesToRows, rowsToNotes } from '../../lib/productNotes'
+import {
+  EMPTY_DISCOUNT_FORM,
+  discountToForm,
+  parseDiscountForm,
+} from '../../lib/productDiscount'
 import {
   IMAGE_SCALE_MAX,
   IMAGE_SCALE_MIN,
@@ -106,11 +114,12 @@ const emptyForm = {
   videos: [],
   description: '',
   story: '',
-  notesTop: '',
-  notesHeart: '',
-  notesBase: '',
+  notesTop: notesToRows([]),
+  notesHeart: notesToRows([]),
+  notesBase: notesToRows([]),
   noteImages: [],
   fees: EMPTY_FEES_FORM,
+  discount: EMPTY_DISCOUNT_FORM,
 }
 
 function productToForm(p) {
@@ -145,15 +154,9 @@ function productToForm(p) {
     videos: (p.videos || []).filter((v) => v?.publicId && v?.url),
     description: p.description ?? '',
     story: p.story ?? '',
-    notesTop: Array.isArray(p.notes?.top)
-      ? p.notes.top.join(', ')
-      : String(p.notes?.top || ''),
-    notesHeart: Array.isArray(p.notes?.heart)
-      ? p.notes.heart.join(', ')
-      : String(p.notes?.heart || ''),
-    notesBase: Array.isArray(p.notes?.base)
-      ? p.notes.base.join(', ')
-      : String(p.notes?.base || ''),
+    notesTop: notesToRows(p.notes?.top),
+    notesHeart: notesToRows(p.notes?.heart),
+    notesBase: notesToRows(p.notes?.base),
     noteImages: (p.noteImages || []).map((n) => ({
       tier: n.tier,
       noteKey: n.noteKey,
@@ -162,14 +165,8 @@ function productToForm(p) {
       hideImage: Boolean(n.hideImage),
     })),
     fees: feesToForm(p.fees),
+    discount: discountToForm(p.discount),
   }
-}
-
-function parseNotes(value) {
-  return String(value || '')
-    .split(',')
-    .map((n) => n.trim())
-    .filter(Boolean)
 }
 
 const fieldClass = 'admin-input'
@@ -193,6 +190,9 @@ export default function AdminProductForm() {
   const [uploadProgress, setUploadProgress] = useState(null)
   const [uploadError, setUploadError] = useState('')
   const [feeErrors, setFeeErrors] = useState({})
+  const [discountError, setDiscountError] = useState('')
+  const [categoryError, setCategoryError] = useState('')
+  const [categoryFieldKey, setCategoryFieldKey] = useState(0)
   const [pendingRemove, setPendingRemove] = useState(null)
   const [videoProgress, setVideoProgress] = useState(null)
   const [videoError, setVideoError] = useState('')
@@ -200,9 +200,9 @@ export default function AdminProductForm() {
 
   const parsedNotes = useMemo(
     () => ({
-      top: parseNotes(form.notesTop),
-      heart: parseNotes(form.notesHeart),
-      base: parseNotes(form.notesBase),
+      top: rowsToNotes(form.notesTop),
+      heart: rowsToNotes(form.notesHeart),
+      base: rowsToNotes(form.notesBase),
     }),
     [form.notesTop, form.notesHeart, form.notesBase],
   )
@@ -440,10 +440,24 @@ export default function AdminProductForm() {
       return
     }
 
+    const category = form.category.trim().replace(/\s+/g, ' ')
+    if (!category) {
+      setCategoryError('Choose a category or type a new one.')
+      setStatus({ type: 'error', text: 'Choose a category before saving.' })
+      return
+    }
+
     const { fees, errors: nextFeeErrors } = parseFeesForm(form.fees)
     setFeeErrors(nextFeeErrors)
     if (!fees) {
       setStatus({ type: 'error', text: 'Fix the fee amounts before saving.' })
+      return
+    }
+
+    const { discount, error: nextDiscountError } = parseDiscountForm(form.discount, price)
+    setDiscountError(nextDiscountError)
+    if (!discount) {
+      setStatus({ type: 'error', text: 'Fix the discount before saving.' })
       return
     }
 
@@ -455,7 +469,7 @@ export default function AdminProductForm() {
       currency: 'INR',
       size: form.size,
       concentration: form.concentration,
-      category: form.category,
+      category,
       featured: form.featured,
       active: form.active,
       badge: form.badge || null,
@@ -480,6 +494,7 @@ export default function AdminProductForm() {
       notes: parsedNotes,
       noteImages: form.noteImages,
       fees,
+      discount,
     })
     setConfirmSave(true)
   }
@@ -514,6 +529,7 @@ export default function AdminProductForm() {
 
       setExisting(product)
       setForm(productToForm(product))
+      setCategoryFieldKey((k) => k + 1)
       setResultModal({
         tone: 'success',
         title: 'Changes saved',
@@ -554,7 +570,6 @@ export default function AdminProductForm() {
     )
   }
 
-  const cats = CATEGORIES.filter((c) => c !== 'All')
   const shopSlug = existing?.slug || form.slug
   const videoUploading = videoProgress != null
   const uploading = uploadProgress != null || videoUploading
@@ -661,20 +676,15 @@ export default function AdminProductForm() {
               onChange={(e) => set('concentration', e.target.value)}
             />
           </label>
-          <label>
-            <span className={labelClass}>Category</span>
-            <select
-              className={fieldClass}
-              value={form.category}
-              onChange={(e) => set('category', e.target.value)}
-            >
-              {cats.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
+          <CategoryField
+            key={categoryFieldKey}
+            value={form.category}
+            error={categoryError}
+            onChange={(next) => {
+              set('category', next)
+              setCategoryError('')
+            }}
+          />
           <label>
             <span className={labelClass}>Badge</span>
             <input
@@ -709,6 +719,18 @@ export default function AdminProductForm() {
             />
             Live in shop
           </label>
+        </section>
+
+        <section className="border-t border-stone pt-6">
+          <ProductDiscountEditor
+            value={form.discount}
+            price={form.price}
+            error={discountError}
+            onChange={(next) => {
+              set('discount', next)
+              setDiscountError('')
+            }}
+          />
         </section>
 
         <section className="border-t border-stone pt-6">
@@ -987,34 +1009,35 @@ export default function AdminProductForm() {
           </label>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-3">
-          <label>
-            <span className={labelClass}>Top notes</span>
-            <input
-              className={fieldClass}
-              placeholder="Bergamot, Saffron"
-              value={form.notesTop}
-              onChange={(e) => set('notesTop', e.target.value)}
-            />
-          </label>
-          <label>
-            <span className={labelClass}>Heart notes</span>
-            <input
-              className={fieldClass}
-              placeholder="Rose, Amber"
-              value={form.notesHeart}
-              onChange={(e) => set('notesHeart', e.target.value)}
-            />
-          </label>
-          <label>
-            <span className={labelClass}>Base notes</span>
-            <input
-              className={fieldClass}
-              placeholder="Oud, Musk"
-              value={form.notesBase}
-              onChange={(e) => set('notesBase', e.target.value)}
-            />
-          </label>
+        <section className="grid items-start gap-4 sm:grid-cols-3">
+          <NoteListEditor
+            id="notes-top"
+            label="Top notes"
+            noun="Top note"
+            placeholder="e.g. Bergamot"
+            rows={form.notesTop}
+            onChange={(next) => set('notesTop', next)}
+          />
+          <NoteListEditor
+            id="notes-heart"
+            label="Heart notes"
+            noun="Heart note"
+            placeholder="e.g. Rose"
+            rows={form.notesHeart}
+            onChange={(next) => set('notesHeart', next)}
+          />
+          <NoteListEditor
+            id="notes-base"
+            label="Base notes"
+            noun="Base note"
+            placeholder="e.g. Oud"
+            rows={form.notesBase}
+            onChange={(next) => set('notesBase', next)}
+          />
+          <p className="text-[12px] admin-muted sm:col-span-3">
+            One note per box. Press Enter to add another; pasting a comma-separated list splits it
+            into separate notes.
+          </p>
         </section>
 
         <section className="border-t border-stone pt-6">

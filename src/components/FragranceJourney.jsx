@@ -160,7 +160,7 @@ export default function FragranceJourney() {
   return (
     <section
       id="notes"
-      className="relative scroll-mt-[calc(4rem+var(--offer-h))] overflow-hidden bg-black py-16 text-warm-white sm:scroll-mt-[calc(5rem+var(--offer-h))] sm:py-24 lg:scroll-mt-[calc(6rem+var(--offer-h))]"
+      className="relative scroll-mt-[calc(4rem+env(safe-area-inset-top,0px))] overflow-hidden bg-black py-16 text-warm-white sm:scroll-mt-[calc(5rem+env(safe-area-inset-top,0px))] sm:py-24 lg:scroll-mt-[calc(6rem+env(safe-area-inset-top,0px))]"
     >
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-50 blur-[100px]"

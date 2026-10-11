@@ -106,7 +106,7 @@ export default function ShopPage() {
   }, [sort, activeProducts])
 
   return (
-    <div className="bg-ivory pt-[calc(4rem+var(--offer-h))]">
+    <div className="bg-ivory pt-[calc(var(--page-top)+0.5rem)]">
       <section className="border-b border-stone px-6 py-16 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <motion.p

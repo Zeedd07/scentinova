@@ -22,10 +22,45 @@ import { COUNTRY_NAME } from '../lib/indiaLocations'
 const IDEMPOTENCY_STORAGE_KEY = 'scentinova-checkout-idempotency'
 const PIN_CODE = /^[1-9][0-9]{5}$/
 const PIN_MESSAGE = 'Enter a valid 6-digit PIN code.'
-const ADDRESS_FIELDS = ['state', 'city', 'postalCode']
+const ADDRESS_PART_MAX = 120
+const ADDRESS_PARTS = {
+  houseNumber: 'Enter your flat, house or room number.',
+  building: 'Enter your building or house name.',
+  area: 'Enter your street, area or locality.',
+}
+const ADDRESS_FIELDS = [...Object.keys(ADDRESS_PARTS), 'state', 'city', 'postalCode']
+
+const cleanText = (value) => String(value || '').trim().replace(/\s+/g, ' ')
 
 const inputBase = 'w-full border bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red'
 const inputClass = `${inputBase} border-stone`
+
+function AddressTextField({ id, label, required = false, error, inputRef, className = '', ...input }) {
+  const errorId = `${id}-error`
+  return (
+    <div className={className}>
+      <FieldLabel htmlFor={id} required={required}>
+        {label}
+        {!required && <span className="ml-1.5 tracking-normal normal-case">(optional)</span>}
+      </FieldLabel>
+      <input
+        ref={inputRef}
+        id={id}
+        required={required}
+        maxLength={ADDRESS_PART_MAX}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        className={`${inputBase} placeholder:text-muted/70 ${error ? 'border-scent-red' : 'border-stone'}`}
+        {...input}
+      />
+      {error && (
+        <p id={errorId} className="mt-1.5 text-[12px] text-scent-red">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
 
 function cartFingerprint(items, paymentMethod) {
   return `${items
@@ -105,8 +140,9 @@ export default function CheckoutPage() {
     name: '',
     email: '',
     phone: '',
-    addressLine1: '',
-    addressLine2: '',
+    houseNumber: '',
+    building: '',
+    area: '',
     landmark: '',
     city: '',
     state: '',
@@ -115,6 +151,9 @@ export default function CheckoutPage() {
     country: COUNTRY_NAME,
   })
   const [fieldErrors, setFieldErrors] = useState({})
+  const houseNumberRef = useRef(null)
+  const buildingRef = useRef(null)
+  const areaRef = useRef(null)
   const stateRef = useRef(null)
   const cityRef = useRef(null)
   const postalRef = useRef(null)
@@ -225,6 +264,11 @@ export default function CheckoutPage() {
     if (name) setFieldError('city', '')
   }
 
+  const onAddressPartChange = (key, value) => {
+    setField(key, value)
+    if (cleanText(value)) setFieldError(key, '')
+  }
+
   const onPostalChange = (raw) => {
     const digits = raw.replace(/\D/g, '').slice(0, 6)
     setField('postalCode', digits)
@@ -234,13 +278,23 @@ export default function CheckoutPage() {
   /** Client-side address checks; the server re-validates everything. */
   const validateAddress = () => {
     const errs = {}
+    for (const [key, message] of Object.entries(ADDRESS_PARTS)) {
+      if (!cleanText(form[key])) errs[key] = message
+    }
     if (!form.state || !form.stateCode) errs.state = 'Please select your state.'
     if (!form.city) errs.city = 'Please select your city.'
     if (!PIN_CODE.test(form.postalCode)) errs.postalCode = PIN_MESSAGE
     setFieldErrors(errs)
     const first = ADDRESS_FIELDS.find((key) => errs[key])
     if (first) {
-      const ref = { state: stateRef, city: cityRef, postalCode: postalRef }[first]
+      const ref = {
+        houseNumber: houseNumberRef,
+        building: buildingRef,
+        area: areaRef,
+        state: stateRef,
+        city: cityRef,
+        postalCode: postalRef,
+      }[first]
       ref.current?.focus({ preventScroll: true })
       ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
@@ -318,9 +372,10 @@ export default function CheckoutPage() {
           shippingAddress: {
             fullName: form.name,
             phone: form.phone || null,
-            addressLine1: form.addressLine1,
-            addressLine2: form.addressLine2 || null,
-            landmark: form.landmark || null,
+            houseNumber: cleanText(form.houseNumber),
+            building: cleanText(form.building),
+            area: cleanText(form.area),
+            landmark: cleanText(form.landmark) || null,
             city: form.city,
             state: form.state,
             postalCode: form.postalCode,
@@ -445,7 +500,7 @@ export default function CheckoutPage() {
 
   if (!count) {
     return (
-      <div className="bg-ivory px-6 pt-[calc(7rem+var(--offer-h))] pb-20 text-center">
+      <div className="bg-ivory px-6 pt-[calc(var(--page-top)+3.5rem)] pb-20 text-center">
         <h1 className="font-display text-4xl text-charcoal">Your bag is empty</h1>
         <Link
           to="/shop"
@@ -458,7 +513,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="bg-ivory pt-[calc(4rem+var(--offer-h))]">
+    <div className="bg-ivory pt-[calc(var(--page-top)+0.5rem)]">
       <section className="px-6 pt-14 pb-8 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <motion.p
@@ -524,27 +579,53 @@ export default function CheckoutPage() {
           <section className="border border-stone bg-warm-white p-6">
             <h2 className="font-display text-2xl text-charcoal">Shipping address</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="sm:col-span-2">
-                <FieldLabel required>Address line 1</FieldLabel>
-                <input
-                  required
-                  name="address-line1"
-                  autoComplete="address-line1"
-                  value={form.addressLine1}
-                  onChange={(e) => setField('addressLine1', e.target.value)}
-                  className={inputClass}
-                />
-              </label>
-              <label className="sm:col-span-2">
-                <FieldLabel>Address line 2</FieldLabel>
-                <input
-                  name="address-line2"
-                  autoComplete="address-line2"
-                  value={form.addressLine2}
-                  onChange={(e) => setField('addressLine2', e.target.value)}
-                  className={inputClass}
-                />
-              </label>
+              <AddressTextField
+                id="checkout-house"
+                label="Flat / House / Room no."
+                required
+                name="address-line1"
+                autoComplete="address-line1"
+                placeholder="e.g. Flat 12B"
+                value={form.houseNumber}
+                onChange={(e) => onAddressPartChange('houseNumber', e.target.value)}
+                error={fieldErrors.houseNumber}
+                inputRef={houseNumberRef}
+              />
+              <AddressTextField
+                id="checkout-building"
+                label="Building / House name"
+                required
+                name="address-line2"
+                autoComplete="address-line2"
+                placeholder="e.g. Rose Apartments"
+                value={form.building}
+                onChange={(e) => onAddressPartChange('building', e.target.value)}
+                error={fieldErrors.building}
+                inputRef={buildingRef}
+              />
+              <AddressTextField
+                id="checkout-area"
+                className="sm:col-span-2"
+                label="Street / Area / Locality"
+                required
+                name="address-line3"
+                autoComplete="address-line3"
+                placeholder="e.g. MG Road, Andheri West"
+                value={form.area}
+                onChange={(e) => onAddressPartChange('area', e.target.value)}
+                error={fieldErrors.area}
+                inputRef={areaRef}
+              />
+              <AddressTextField
+                id="checkout-landmark"
+                className="sm:col-span-2"
+                label="Nearby landmark"
+                name="landmark"
+                autoComplete="off"
+                placeholder="e.g. Opposite City Mall"
+                value={form.landmark}
+                onChange={(e) => setField('landmark', e.target.value)}
+              />
               <IndiaStateCityFields
                 state={form.state}
                 stateCode={form.stateCode}
@@ -686,7 +767,7 @@ export default function CheckoutPage() {
           </section>
         </div>
 
-        <aside className="h-fit border border-stone bg-warm-white p-6 lg:sticky lg:top-[calc(7rem+var(--offer-h))]">
+        <aside className="h-fit border border-stone bg-warm-white p-6 lg:sticky lg:top-[calc(var(--header-visible-h)+3rem)]">
           <p className="text-[11px] tracking-[0.42em] text-muted uppercase">
             Order summary
           </p>
@@ -726,8 +807,8 @@ export default function CheckoutPage() {
               </div>
             )}
             {display.discount > 0 && (
-              <div className="flex justify-between">
-                <dt className="text-muted">Discount</dt>
+              <div className="flex justify-between text-scent-red">
+                <dt>{pricing.discountLabel || 'Discount'}</dt>
                 <dd>-{formatPrice(display.discount)}</dd>
               </div>
             )}

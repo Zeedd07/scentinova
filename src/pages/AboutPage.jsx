@@ -10,7 +10,7 @@ export default function AboutPage() {
   const { activeProducts } = useCatalog()
 
   return (
-    <div className="bg-ivory pt-[calc(var(--header-h)+0.5rem)]">
+    <div className="bg-ivory pt-[calc(var(--page-top)+0.5rem)]">
       <section className="relative overflow-hidden px-6 py-16 sm:px-10 sm:py-24 lg:px-16 lg:py-28">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"

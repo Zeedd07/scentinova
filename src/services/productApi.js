@@ -21,6 +21,12 @@ export async function adminFetchProducts() {
   return data.data.products
 }
 
+/** Categories already used by products (admin defined, so the list grows as they add new ones). */
+export async function adminFetchProductCategories() {
+  const data = await apiRequest('/admin/products/categories', { auth: true })
+  return data.data.categories
+}
+
 export async function adminFetchProduct(id) {
   const data = await apiRequest(`/admin/products/${id}`, { auth: true })
   return data.data.product

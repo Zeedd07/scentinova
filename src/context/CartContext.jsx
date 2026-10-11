@@ -10,9 +10,16 @@ import {
   useState,
 } from 'react'
 import { useCatalog } from './CatalogContext'
+import { activeSale } from '../lib/sale'
 
 const CartContext = createContext(null)
 const STORAGE_KEY = 'scentinova-cart-v2'
+
+/** Display-only sale price for a cart line; checkout always re-prices on the server. */
+function saleFields(product) {
+  const sale = activeSale(product)
+  return { salePrice: sale?.price ?? null, salePercent: sale?.percentOff ?? null }
+}
 
 function loadCart() {
   try {
@@ -47,7 +54,14 @@ export function CartProvider({ children }) {
           changed = true
           continue
         }
-        if (match.id !== line.id || match.name !== line.name || match.price !== line.price) {
+        const sale = saleFields(match)
+        if (
+          match.id !== line.id ||
+          match.name !== line.name ||
+          match.price !== line.price ||
+          sale.salePrice !== (line.salePrice ?? null) ||
+          sale.salePercent !== (line.salePercent ?? null)
+        ) {
           changed = true
           next.push({
             ...line,
@@ -55,6 +69,7 @@ export function CartProvider({ children }) {
             slug: match.slug,
             name: match.name,
             price: match.price,
+            ...sale,
             image: match.image || line.image,
             size: match.size || line.size,
           })
@@ -82,6 +97,7 @@ export function CartProvider({ children }) {
             slug: product.slug,
             name: product.name,
             price: product.price,
+            ...saleFields(product),
             image: product.image,
             size: product.size,
             qty,
@@ -117,7 +133,16 @@ export function CartProvider({ children }) {
     () =>
       items.reduce((sum, i) => {
         if (i.price == null) return sum
-        return sum + i.price * i.qty
+        return sum + (i.salePrice ?? i.price) * i.qty
+      }, 0),
+    [items],
+  )
+
+  const savings = useMemo(
+    () =>
+      items.reduce((sum, i) => {
+        if (i.price == null || i.salePrice == null) return sum
+        return sum + (i.price - i.salePrice) * i.qty
       }, 0),
     [items],
   )
@@ -131,6 +156,7 @@ export function CartProvider({ children }) {
     items,
     count,
     subtotal,
+    savings,
     hasPricedItems,
     drawerOpen,
     setDrawerOpen,

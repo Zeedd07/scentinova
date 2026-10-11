@@ -49,10 +49,10 @@ export default function AdminOverview() {
     { label: 'Add to cart', value: String(data.addToCarts ?? 0) },
     { label: 'Units sold', value: String(data.unitsSold ?? 0) },
     {
-      label: 'Revenue',
-      value: formatPrice(data.revenue === 0 ? null : data.revenue),
+      label: 'Net revenue (received)',
+      value: formatPrice(data.revenue ?? 0),
     },
-    { label: 'Orders', value: String(data.orders ?? 0) },
+    { label: 'Paid orders', value: String(data.orders ?? 0) },
     {
       label: 'Low stock',
       value: String(data.lowStock?.length ?? 0),

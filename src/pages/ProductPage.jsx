@@ -4,13 +4,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { formatPrice } from '../data/products'
 import { useCart } from '../context/CartContext'
 import { useCatalog } from '../context/CatalogContext'
 import { fetchProductBySlug } from '../services/productApi'
 import ProductCard from '../components/ProductCard'
 import ProductGallery from '../components/ProductGallery'
+import PriceTag from '../components/PriceTag'
 import { easeOutExpo } from '../lib/motion'
+import { activeSale } from '../lib/sale'
+
+function formatSaleEnd(iso) {
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+}
 
 function asNoteList(value) {
   if (Array.isArray(value)) return value.filter(Boolean)
@@ -91,7 +96,7 @@ export default function ProductPage() {
 
   if (!product || product.active === false) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-ivory px-6 pt-[calc(4rem+var(--offer-h))] text-center">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-ivory px-6 pt-[calc(var(--page-top)+0.5rem)] text-center">
         <h1 className="font-display text-3xl text-charcoal">Fragrance not found</h1>
         <Link to="/shop" className="mt-6 text-[11px] tracking-[0.28em] text-scent-red uppercase">
           Back to shop →
@@ -101,6 +106,7 @@ export default function ProductPage() {
   }
 
   const media = noteMedia.slug === slug ? noteMedia.data : null
+  const sale = activeSale(product)
   const notesLine =
     product.descriptors?.join(' · ') ||
     [
@@ -110,7 +116,7 @@ export default function ProductPage() {
     ].join(' · ')
 
   return (
-    <div className="bg-ivory pt-[calc(4rem+var(--offer-h))]">
+    <div className="bg-ivory pt-[calc(var(--page-top)+0.5rem)]">
       <div className="mx-auto grid max-w-6xl gap-12 px-6 py-12 sm:px-10 lg:grid-cols-2 lg:gap-16 lg:px-16 lg:py-20">
         <motion.div
           initial={{ opacity: 0 }}
@@ -139,9 +145,22 @@ export default function ProductPage() {
           <p className="mt-2 font-display text-xl text-muted">
             {product.tagline}
           </p>
-          <p className="mt-6 font-display text-3xl text-bronze">
-            {formatPrice(product.price)}
+          <p className="mt-6">
+            <PriceTag
+              price={product.price}
+              salePrice={sale?.price}
+              percentOff={sale?.percentOff}
+              className="font-display text-3xl text-bronze"
+              originalClassName="font-display text-xl text-muted"
+              align="start"
+            />
           </p>
+          {sale && (
+            <p className="mt-2 text-[11px] tracking-[0.25em] text-scent-red uppercase">
+              {sale.name}
+              {sale.endsAt && ` · Ends ${formatSaleEnd(sale.endsAt)}`}
+            </p>
+          )}
           <p className="mt-1 text-xs text-muted">{product.size}</p>
 
           <p className="mt-8 max-w-md text-sm leading-relaxed text-muted">

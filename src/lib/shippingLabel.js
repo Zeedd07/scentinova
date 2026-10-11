@@ -94,7 +94,7 @@ export function labelFromOrder(order) {
     to: {
       name: addr.fullName || customer.name || '',
       street: [addr.addressLine1 || addr.line1, addr.addressLine2 || addr.line2].filter(Boolean).join(', '),
-      landmark: addr.landmark || '',
+      landmark: addr.landmark ? `Landmark: ${addr.landmark}` : '',
       cityLine: cityLine(addr),
       country: addr.country || 'India',
       phone: addr.phone || customer.phone || '',

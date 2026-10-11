@@ -3,8 +3,9 @@
  */
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { formatPrice } from '../data/products'
+import PriceTag from './PriceTag'
 import { useCart } from '../context/CartContext'
+import { activeSale } from '../lib/sale'
 import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
 import { imageScaleStyle, productImageScale } from '../lib/imageScale'
 
@@ -17,6 +18,7 @@ export function shopLane(index) {
 
 export default function ProductCard({ product, index = 0 }) {
   const { addItem } = useCart()
+  const sale = activeSale(product)
   const notes =
     product.descriptors?.join(' · ') ||
     [
@@ -80,9 +82,12 @@ export default function ProductCard({ product, index = 0 }) {
         {notes}
       </p>
       <div className="mt-4 flex flex-col items-center gap-2 sm:mt-5 sm:gap-3">
-        <span className="font-display text-base text-bronze sm:text-lg">
-          {formatPrice(product.price)}
-        </span>
+        <PriceTag
+          price={product.price}
+          salePrice={sale?.price}
+          percentOff={sale?.percentOff}
+          className="font-display text-base text-bronze sm:text-lg"
+        />
         <button
           type="button"
           onClick={() => addItem(product)}

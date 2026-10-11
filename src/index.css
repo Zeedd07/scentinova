@@ -57,7 +57,13 @@ html {
   --nav-h: 3.5rem;
   /* Announcement bar above the nav; 0 when there are no active offers */
   --offer-h: 0px;
+  /* How much of the offer bar has scrolled away (0 to --offer-h); set by OfferBar */
+  --offer-shift: 0px;
   --header-h: calc(var(--nav-h) + var(--offer-h));
+  /* Space the header takes at the top of the page, before any scrolling */
+  --page-top: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+  /* Space the fixed header covers right now; the offer bar scrolls away with the page */
+  --header-visible-h: calc(var(--page-top) - var(--offer-shift));
 }
 
 html.has-offer-bar {

@@ -12,7 +12,7 @@ import { chapterAt } from '../data/storyChapters'
 import Particles from './Particles'
 import { useLenis } from './SmoothScroll'
 import { easeOutExpo, fadeUp } from '../lib/motion'
-import { smoothScrollTo } from '../lib/smoothScroll'
+import { pinnedHeaderHeight, smoothScrollTo } from '../lib/smoothScroll'
 
 const BG = '#0d0c0b'
 
@@ -31,8 +31,7 @@ const WHEEL_IDLE_MS = 200
 function goToCollection(lenis) {
   const el = document.getElementById('collection')
   if (!el) return
-  const navH = document.querySelector('.site-nav')?.getBoundingClientRect().height || 56
-  const top = el.getBoundingClientRect().top + window.scrollY - navH - 8
+  const top = el.getBoundingClientRect().top + window.scrollY - pinnedHeaderHeight() - 8
   if (lenis) lenis.scrollTo(top, { offset: 0, duration: 1.2 })
   else smoothScrollTo(top)
 }

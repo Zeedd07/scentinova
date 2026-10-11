@@ -10,7 +10,7 @@ const LINKS = [
   { to: '/admin/media', label: 'Media' },
   { to: '/admin/analytics', label: 'Analytics' },
   { to: '/admin/orders', label: 'Orders' },
-  { to: '/admin/offers', label: 'Offers' },
+  { to: '/admin/offers', label: 'Offers & sales' },
 ]
 
 export default function AdminLayout() {

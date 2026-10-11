@@ -15,7 +15,7 @@ import { CatalogProvider } from './context/CatalogContext'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import MotionProvider from './components/MotionProvider'
 import SmoothScroll, { useLenis } from './components/SmoothScroll'
-import { smoothScrollTo } from './lib/smoothScroll'
+import { pinnedHeaderHeight, smoothScrollTo } from './lib/smoothScroll'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
@@ -48,8 +48,7 @@ function ScrollToTop() {
       const timer = window.setTimeout(() => {
         const el = document.getElementById(id)
         if (!el) return
-        const navH = document.querySelector('.site-nav')?.getBoundingClientRect().height || 64
-        const top = el.getBoundingClientRect().top + window.scrollY - navH
+        const top = el.getBoundingClientRect().top + window.scrollY - pinnedHeaderHeight(64)
         if (lenis) lenis.scrollTo(top, { duration: 1 })
         else smoothScrollTo(top)
       }, 120)

@@ -259,6 +259,11 @@ function OrderResult({ order, onReset }) {
               ))}
             </ul>
             <dl className="mt-2 border-t border-stone pt-2">
+              {order.pricing.discountPaise > 0 && (
+                <Row label={order.pricing.discountLabel || 'Discount'}>
+                  −{rupees(order.pricing.discountPaise)}
+                </Row>
+              )}
               <Row label="Total" strong>
                 {rupees(order.pricing.totalPaise)}
               </Row>
@@ -413,7 +418,7 @@ export default function TrackOrderPage() {
   const loading = state.kind === 'loading'
 
   return (
-    <div className="min-h-[80vh] bg-ivory px-5 pt-[calc(var(--header-h)+env(safe-area-inset-top,0px)+3rem)] pb-24 sm:px-10 lg:px-16">
+    <div className="min-h-[80vh] bg-ivory px-5 pt-[calc(var(--page-top)+3rem)] pb-24 sm:px-10 lg:px-16">
       <div className="mx-auto max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: 12 }}

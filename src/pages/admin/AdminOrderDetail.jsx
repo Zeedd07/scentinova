@@ -407,7 +407,7 @@ export default function AdminOrderDetail() {
     ['Shipping', pricing.shippingPaise, order.shipping, true],
     ['Convenience fee', pricing.convenienceFeePaise, order.convenienceFee],
     ['COD fee', pricing.codFeePaise, order.codFee],
-    ['Discount', pricing.discountPaise, order.discount],
+    [pricing.discountLabel || 'Discount', pricing.discountPaise, order.discount, false, true],
   ].filter(([, paise, legacy, always]) => always || (paise ?? legacy ?? 0) > 0)
 
   return (
@@ -473,9 +473,17 @@ export default function AdminOrderDetail() {
           <dl>
             <Row label="Deliver to">{addr.fullName || customer.name}</Row>
             <Row label="Phone">{addr.phone || customer.phone}</Row>
-            <Row label="Address">
-              {[addr.addressLine1 || addr.line1, addr.addressLine2 || addr.line2].filter(Boolean).join(', ')}
-            </Row>
+            {addr.houseNumber ? (
+              <>
+                <Row label="Flat / house no.">{addr.houseNumber}</Row>
+                <Row label="Building">{addr.building}</Row>
+                <Row label="Street / area">{addr.area}</Row>
+              </>
+            ) : (
+              <Row label="Address">
+                {[addr.addressLine1 || addr.line1, addr.addressLine2 || addr.line2].filter(Boolean).join(', ')}
+              </Row>
+            )}
             {addr.landmark && <Row label="Landmark">{addr.landmark}</Row>}
             <Row label="City">{addr.city}</Row>
             <Row label="State">{addr.state}</Row>
@@ -503,17 +511,19 @@ export default function AdminOrderDetail() {
                     {unit != null && ` · ${formatPrice(unit)} × ${item.quantity}`}
                   </p>
                 </div>
-                <p className="shrink-0 text-[15px]">{rupees(item.totalPaise, item.lineTotal)}</p>
+                <p className="shrink-0 text-[15px]">
+                  {rupees(item.subtotalPaise ?? item.totalPaise, item.lineTotal)}
+                </p>
               </li>
             )
           })}
         </ul>
         <dl className="mt-3 space-y-1 border-t border-[#ece5da] pt-3 text-[15px]">
-          {bill.map(([label, paise, legacy]) => (
+          {bill.map(([label, paise, legacy, , negative]) => (
             <div key={label} className="flex justify-between">
               <dt className="admin-muted">{label}</dt>
               <dd>
-                {label === 'Discount' ? '− ' : ''}
+                {negative ? '− ' : ''}
                 {rupees(paise, legacy)}
               </dd>
             </div>

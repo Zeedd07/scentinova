@@ -27,13 +27,16 @@ export async function trackEvent(type, { productId, metadata } = {}) {
   })
 }
 
-export async function adminAnalyticsOverview() {
-  const data = await apiRequest('/admin/analytics/overview', { auth: true })
+export async function adminAnalyticsProducts() {
+  const data = await apiRequest('/admin/analytics/products', { auth: true })
   return data.data
 }
 
-export async function adminAnalyticsProducts() {
-  const data = await apiRequest('/admin/analytics/products', { auth: true })
+/** @param {'7d'|'30d'|'90d'|'all'} range */
+export async function adminAnalyticsReport(range) {
+  const data = await apiRequest(`/admin/analytics/report?range=${encodeURIComponent(range)}`, {
+    auth: true,
+  })
   return data.data
 }
 

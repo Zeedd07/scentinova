@@ -5,6 +5,17 @@
  */
 let cancelActive = null
 
+/**
+ * Height of the header that stays pinned once the page is scrolled: the navbar and
+ * safe area, without the offer bar (which scrolls away with the page).
+ */
+export function pinnedHeaderHeight(fallback = 56) {
+  const header = document.querySelector('.site-nav')
+  if (!header) return fallback
+  const offer = header.querySelector('.site-nav-offer')
+  return header.getBoundingClientRect().height - (offer?.getBoundingClientRect().height ?? 0)
+}
+
 export function smoothScrollTo(top) {
   cancelActive?.()
   const target = Math.max(0, Math.round(top))

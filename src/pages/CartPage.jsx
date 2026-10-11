@@ -5,12 +5,13 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../data/products'
+import PriceTag from '../components/PriceTag'
 
 export default function CartPage() {
-  const { items, subtotal, count, setQty, removeItem, clearCart } = useCart()
+  const { items, subtotal, savings, count, setQty, removeItem, clearCart } = useCart()
 
   return (
-    <div className="bg-ivory pt-[calc(4rem+var(--offer-h))]">
+    <div className="bg-ivory pt-[calc(var(--page-top)+0.5rem)]">
       <section className="px-6 pt-14 pb-10 sm:px-10 lg:px-16">
         <div className="mx-auto max-w-6xl">
           <motion.p
@@ -85,11 +86,21 @@ export default function CartPage() {
                           {item.name}
                         </Link>
                         <p className="mt-1 text-sm text-muted">
-                          {formatPrice(item.price)} each
+                          {formatPrice(item.salePrice ?? item.price)} each
+                          {item.salePercent != null && (
+                            <span className="ml-2 text-scent-red">{item.salePercent}% off</span>
+                          )}
                         </p>
                       </div>
-                      <p className="shrink-0 font-display text-xl text-bronze sm:text-2xl">
-                        {formatPrice(item.price * item.qty)}
+                      <p className="shrink-0 text-right">
+                        <PriceTag
+                          price={item.price * item.qty}
+                          salePrice={item.salePrice != null ? item.salePrice * item.qty : null}
+                          badge={false}
+                          className="font-display text-xl text-bronze sm:text-2xl"
+                          originalClassName="text-sm text-muted"
+                          align="end"
+                        />
                       </p>
                     </div>
                     <div className="mt-auto flex flex-wrap items-center gap-5 pt-6">
@@ -145,7 +156,7 @@ export default function CartPage() {
           )}
         </div>
 
-        <aside className="h-fit lg:sticky lg:top-[calc(7rem+var(--offer-h))]">
+        <aside className="h-fit lg:sticky lg:top-[calc(var(--header-visible-h)+3rem)]">
           <div className="border border-stone bg-warm-white px-6 py-8 sm:px-8">
             <p className="text-[11px] tracking-[0.42em] text-muted uppercase">
               Order summary
@@ -158,6 +169,11 @@ export default function CartPage() {
                 <dt className="text-muted">Subtotal</dt>
                 <dd className="text-charcoal">{formatPrice(subtotal)}</dd>
               </div>
+              {savings > 0 && (
+                <p className="-mt-2 text-right text-[12px] text-scent-red">
+                  Includes {formatPrice(savings)} sale savings
+                </p>
+              )}
               <div className="flex justify-between">
                 <dt className="text-muted">Shipping</dt>
                 <dd className="text-charcoal">Calculated at checkout</dd>

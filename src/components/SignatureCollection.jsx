@@ -7,6 +7,8 @@ import { useCatalog } from '../context/CatalogContext'
 import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
 import { signatureStageCss } from '../lib/storefrontBackdrops'
 import { imageScaleStyle, productImageScale } from '../lib/imageScale'
+import { activeSale } from '../lib/sale'
+import SaleAnnouncement from './SaleAnnouncement'
 
 /** Preferred order and family labels for the house signatures. */
 const SHOWCASE = [
@@ -43,7 +45,7 @@ export default function SignatureCollection() {
       {/* Cream-gold stage - warm ivory with golden light */}
       <section
         id="collection"
-        className="signatures relative scroll-mt-[calc(4rem+var(--offer-h))] overflow-x-clip sm:scroll-mt-[calc(5rem+var(--offer-h))] lg:scroll-mt-[calc(6rem+var(--offer-h))]"
+        className="signatures relative scroll-mt-[calc(4rem+env(safe-area-inset-top,0px))] overflow-x-clip sm:scroll-mt-[calc(5rem+env(safe-area-inset-top,0px))] lg:scroll-mt-[calc(6rem+env(safe-area-inset-top,0px))]"
         style={{ background: signatureStageCss.base }}
       >
         <div
@@ -92,6 +94,8 @@ export default function SignatureCollection() {
           </div>
         </div>
 
+        <SaleAnnouncement products={activeProducts} />
+
         {/* Separator into products */}
         <div className="relative z-10 mx-auto h-px max-w-6xl bg-gradient-to-r from-transparent via-gold/65 to-transparent" />
 
@@ -114,6 +118,7 @@ export default function SignatureCollection() {
               const isOddCol = i % 2 === 0 && i + 1 < items.length
               const isTopRow = i < 2 && items.length > 2
               const spansRow = items.length > 1 && items.length % 2 === 1 && i === items.length - 1
+              const sale = activeSale(item.product)
 
               return (
                 <motion.article
@@ -135,6 +140,11 @@ export default function SignatureCollection() {
                       : ''
                   } ${spansRow ? 'col-span-2 lg:col-span-1' : ''}`}
                 >
+                  {sale && (
+                    <span className="absolute top-3 right-3 bg-scent-red px-2 py-1 text-[8px] font-medium tracking-[0.2em] text-ivory uppercase sm:top-5 sm:right-5 sm:text-[9px]">
+                      {sale.percentOff}% off
+                    </span>
+                  )}
                   <p className="mb-5 text-[9px] font-medium tracking-[0.28em] text-bronze uppercase sm:mb-8 sm:text-[10px] sm:tracking-[0.4em]">
                     {item.family}
                   </p>

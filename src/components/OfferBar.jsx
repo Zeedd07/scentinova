@@ -1,15 +1,18 @@
 /**
  * Cream announcement bar above the navbar. Rotates the active offers set in
  * admin (arrows + auto-advance); hidden entirely when there are none.
- * Its height is exposed as --offer-h via `html.has-offer-bar` (see index.css).
+ * Its height is exposed as --offer-h via `html.has-offer-bar` (see index.css), and it
+ * scrolls away with the page: --offer-shift tracks how much of it is out of view so
+ * only the navbar stays pinned.
  */
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { fetchOffers } from '../services/offerApi'
 
 const CACHE_KEY = 'scentinova:offers:v1'
 const ROTATE_MS = 4500
 const HTML_CLASS = 'has-offer-bar'
+const SHIFT_VAR = '--offer-shift'
 
 function isOfferList(value) {
   return (
@@ -66,6 +69,7 @@ export default function OfferBar() {
   const [[index, direction], setSlide] = useState([0, 1])
   const [paused, setPaused] = useState(false)
   const reduceMotion = useReducedMotion()
+  const barRef = useRef(null)
   const count = offers.length
   const current = count ? offers[index % count] : null
 
@@ -91,6 +95,36 @@ export default function OfferBar() {
   }, [count])
 
   useEffect(() => {
+    const root = document.documentElement
+    if (!count) {
+      root.style.removeProperty(SHIFT_VAR)
+      return undefined
+    }
+    let frame = 0
+    let last = -1
+    const update = () => {
+      frame = 0
+      const height = barRef.current?.offsetHeight ?? 0
+      const shift = Math.round(Math.min(Math.max(window.scrollY, 0), height))
+      if (shift === last) return
+      last = shift
+      root.style.setProperty(SHIFT_VAR, `${shift}px`)
+    }
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      root.style.removeProperty(SHIFT_VAR)
+    }
+  }, [count])
+
+  useEffect(() => {
     if (count < 2 || paused) return undefined
     const id = window.setInterval(() => {
       setSlide(([i]) => [(i + 1) % count, 1])
@@ -105,6 +139,7 @@ export default function OfferBar() {
 
   return (
     <div
+      ref={barRef}
       role="region"
       aria-roledescription="carousel"
       aria-label="Offers"

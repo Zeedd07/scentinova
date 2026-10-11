@@ -44,7 +44,7 @@ export default function OrderConfirmationPage() {
 
   if (error) {
     return (
-      <div className="bg-ivory px-6 pt-[calc(7rem+var(--offer-h))] pb-20 text-center">
+      <div className="bg-ivory px-6 pt-[calc(var(--page-top)+3.5rem)] pb-20 text-center">
         <h1 className="font-display text-3xl text-charcoal">Order not found</h1>
         <p className="mt-3 text-sm text-muted">{error}</p>
         <Link
@@ -59,7 +59,7 @@ export default function OrderConfirmationPage() {
 
   if (!order) {
     return (
-      <div className="bg-ivory px-6 pt-[calc(7rem+var(--offer-h))] pb-20 text-center text-muted">
+      <div className="bg-ivory px-6 pt-[calc(var(--page-top)+3.5rem)] pb-20 text-center text-muted">
         Confirming your order…
       </div>
     )
@@ -93,8 +93,9 @@ export default function OrderConfirmationPage() {
       hidden: !isCod,
     },
     {
-      label: 'Discount',
+      label: pricing.discountLabel || 'Discount',
       value: paiseOrRupee(pricing.discountPaise, order.discount),
+      negative: true,
       hideIfZero: true,
     },
     {
@@ -105,7 +106,7 @@ export default function OrderConfirmationPage() {
   ]
 
   return (
-    <div className="flex min-h-[80vh] flex-col items-center justify-center bg-ivory px-6 pt-[calc(6rem+var(--offer-h))] pb-20">
+    <div className="flex min-h-[80vh] flex-col items-center justify-center bg-ivory px-6 pt-[calc(var(--page-top)+2.5rem)] pb-20">
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -173,7 +174,9 @@ export default function OrderConfirmationPage() {
                     row.emphasize ? 'font-display text-xl text-bronze' : 'text-charcoal'
                   }
                 >
-                  {row.complimentary ? 'Complimentary' : formatPrice(row.value)}
+                  {row.complimentary
+                    ? 'Complimentary'
+                    : `${row.negative ? '−' : ''}${formatPrice(row.value)}`}
                 </dd>
               </div>
             )

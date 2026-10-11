@@ -5,11 +5,13 @@ import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../data/products'
+import PriceTag from './PriceTag'
 
 export default function CartDrawer() {
   const {
     items,
     subtotal,
+    savings,
     drawerOpen,
     setDrawerOpen,
     setQty,
@@ -91,8 +93,14 @@ export default function CartDrawer() {
                             </Link>
                             <p className="text-[11px] text-muted">{item.size}</p>
                           </div>
-                          <p className="text-sm text-bronze">
-                            {formatPrice(item.price * item.qty)}
+                          <p className="text-right text-sm text-bronze">
+                            <PriceTag
+                              price={item.price * item.qty}
+                              salePrice={item.salePrice != null ? item.salePrice * item.qty : null}
+                              badge={false}
+                              originalClassName="text-[11px] text-muted"
+                              align="end"
+                            />
                           </p>
                         </div>
                         <div className="mt-3 flex items-center gap-3">
@@ -140,6 +148,11 @@ export default function CartDrawer() {
                     {formatPrice(subtotal)}
                   </span>
                 </div>
+                {savings > 0 && (
+                  <p className="-mt-2 mb-4 text-right text-[12px] text-scent-red">
+                    You save {formatPrice(savings)} with the sale
+                  </p>
+                )}
                 <p className="mb-4 text-[11px] text-muted">
                   Prices in INR · Shipping calculated at checkout
                 </p>

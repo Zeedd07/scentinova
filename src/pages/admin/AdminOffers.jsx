@@ -1,8 +1,9 @@
 /**
- * Admin offers - messages for the cream announcement bar above the store navbar.
+ * Admin offers - festival sales, plus messages for the cream announcement bar above the store navbar.
  */
 import { useCallback, useEffect, useState } from 'react'
 import AdminModal from '../../components/admin/AdminModal'
+import AdminSalesSection from '../../components/admin/AdminSalesSection'
 import {
   adminCreateOffer,
   adminDeleteOffer,
@@ -152,11 +153,16 @@ export default function AdminOffers() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="admin-title">Offers</h2>
+      <h2 className="admin-title">Offers &amp; sales</h2>
+
+      <AdminSalesSection />
+
+      <div className="border-t border-[#e0d6c4] pt-6">
+        <h3 className="font-display text-[1.35rem] text-[#1b1917]">Offer bar</h3>
         <p className="mt-1 admin-muted text-[15px]">
           Short messages shown in the cream bar above the store menu. Visible offers rotate in the
-          order below; with none visible, the bar is hidden.
+          order below; with none visible, the bar is hidden. Announce a sale here too, e.g.
+          &ldquo;Diwali Sale: 20% off everything&rdquo;.
         </p>
       </div>
 
