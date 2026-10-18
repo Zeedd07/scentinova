@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import PriceTag from './PriceTag'
 import { useCart } from '../context/CartContext'
-import { activeSale } from '../lib/sale'
+import { productSizes } from '../lib/productSizes'
 import { easeOutExpo, fadeUp, viewportOnce } from '../lib/motion'
 import { imageScaleStyle, productImageScale } from '../lib/imageScale'
 
@@ -18,7 +18,9 @@ export function shopLane(index) {
 
 export default function ProductCard({ product, index = 0 }) {
   const { addItem } = useCart()
-  const sale = activeSale(product)
+  const sizes = productSizes(product)
+  const defaultSize = sizes[0]
+  const sale = defaultSize?.sale || null
   const notes =
     product.descriptors?.join(' · ') ||
     [
@@ -83,17 +85,17 @@ export default function ProductCard({ product, index = 0 }) {
       </p>
       <div className="mt-4 flex flex-col items-center gap-2 sm:mt-5 sm:gap-3">
         <PriceTag
-          price={product.price}
+          price={defaultSize?.price ?? product.price}
           salePrice={sale?.price}
           percentOff={sale?.percentOff}
           className="font-display text-base text-bronze sm:text-lg"
         />
         <button
           type="button"
-          onClick={() => addItem(product)}
+          onClick={() => addItem(product, 1, defaultSize)}
           className="btn-luxury border border-charcoal/25 px-3 py-1.5 text-[10px] text-charcoal sm:px-4 sm:py-2 sm:text-[11px]"
         >
-          Add
+          Add {defaultSize?.label || ''}
         </button>
       </div>
     </motion.article>

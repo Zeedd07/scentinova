@@ -64,7 +64,7 @@ function AddressTextField({ id, label, required = false, error, inputRef, classN
 
 function cartFingerprint(items, paymentMethod) {
   return `${items
-    .map((i) => `${i.id}:${i.qty}`)
+    .map((i) => `${i.id}:${i.sizeMl ?? ''}:${i.qty}`)
     .sort()
     .join('|')}|${paymentMethod}`
 }
@@ -163,6 +163,7 @@ export default function CheckoutPage() {
       items.map((i) => ({
         productId: i.id,
         quantity: i.qty,
+        sizeMl: i.sizeMl,
         unitPricePaise:
           i.pricePaise != null
             ? i.pricePaise
@@ -773,9 +774,10 @@ export default function CheckoutPage() {
           </p>
           <ul className="mt-6 space-y-4 border-b border-stone pb-6">
             {items.map((item) => (
-              <li key={item.id} className="flex justify-between gap-3 text-sm">
+              <li key={`${item.id}-${item.sizeMl ?? ''}`} className="flex justify-between gap-3 text-sm">
                 <span className="text-charcoal">
-                  {item.name} × {item.qty}
+                  {item.name}
+                  {item.size ? ` · ${item.size}` : ''} × {item.qty}
                 </span>
                 <span className="text-bronze">
                   {formatPrice(item.price * item.qty)}

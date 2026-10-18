@@ -10,15 +10,30 @@ import {
   useState,
 } from 'react'
 import { useCatalog } from './CatalogContext'
-import { activeSale } from '../lib/sale'
+import { productSizes } from '../lib/productSizes'
 
 const CartContext = createContext(null)
 const STORAGE_KEY = 'scentinova-cart-v2'
 
-/** Display-only sale price for a cart line; checkout always re-prices on the server. */
-function saleFields(product) {
-  const sale = activeSale(product)
-  return { salePrice: sale?.price ?? null, salePercent: sale?.percentOff ?? null }
+function sameLine(line, id, sizeMl) {
+  return line.id === id && (line.sizeMl ?? null) === (sizeMl ?? null)
+}
+
+/** One cart line for a chosen bottle size. */
+function lineFrom(product, size, qty, image) {
+  return {
+    id: product.id,
+    slug: product.slug,
+    name: product.name,
+    price: size.price,
+    pricePaise: size.pricePaise,
+    salePrice: size.sale?.price ?? null,
+    salePercent: size.sale?.percentOff ?? null,
+    image: image || product.image,
+    size: size.label,
+    sizeMl: size.ml,
+    qty,
+  }
 }
 
 function loadCart() {
@@ -54,25 +69,21 @@ export function CartProvider({ children }) {
           changed = true
           continue
         }
-        const sale = saleFields(match)
+        const sizes = productSizes(match)
+        const size = sizes.find((s) => s.ml === line.sizeMl) || sizes[0]
+        const fresh = lineFrom(match, size, line.qty, match.image || line.image)
         if (
-          match.id !== line.id ||
-          match.name !== line.name ||
-          match.price !== line.price ||
-          sale.salePrice !== (line.salePrice ?? null) ||
-          sale.salePercent !== (line.salePercent ?? null)
+          fresh.id !== line.id ||
+          fresh.name !== line.name ||
+          fresh.price !== line.price ||
+          fresh.pricePaise !== line.pricePaise ||
+          fresh.salePrice !== (line.salePrice ?? null) ||
+          fresh.salePercent !== (line.salePercent ?? null) ||
+          fresh.size !== line.size ||
+          fresh.sizeMl !== line.sizeMl
         ) {
           changed = true
-          next.push({
-            ...line,
-            id: match.id,
-            slug: match.slug,
-            name: match.name,
-            price: match.price,
-            ...sale,
-            image: match.image || line.image,
-            size: match.size || line.size,
-          })
+          next.push(fresh)
         } else {
           next.push(line)
         }
@@ -82,27 +93,17 @@ export function CartProvider({ children }) {
   }, [loading, products])
 
   const addItem = useCallback(
-    (product, qty = 1) => {
+    (product, qty = 1, size) => {
+      const chosen = size || productSizes(product)[0]
+      if (!chosen) return
       setItems((prev) => {
-        const existing = prev.find((i) => i.id === product.id)
+        const existing = prev.find((i) => sameLine(i, product.id, chosen.ml))
         if (existing) {
           return prev.map((i) =>
-            i.id === product.id ? { ...i, qty: i.qty + qty } : i,
+            sameLine(i, product.id, chosen.ml) ? { ...i, qty: i.qty + qty } : i,
           )
         }
-        return [
-          ...prev,
-          {
-            id: product.id,
-            slug: product.slug,
-            name: product.name,
-            price: product.price,
-            ...saleFields(product),
-            image: product.image,
-            size: product.size,
-            qty,
-          },
-        ]
+        return [...prev, lineFrom(product, chosen, qty)]
       })
       trackAddToCart(product.id, qty)
       setDrawerOpen(true)
@@ -110,14 +111,14 @@ export function CartProvider({ children }) {
     [trackAddToCart],
   )
 
-  const removeItem = useCallback((id) => {
-    setItems((prev) => prev.filter((i) => i.id !== id))
+  const removeItem = useCallback((id, sizeMl) => {
+    setItems((prev) => prev.filter((i) => !sameLine(i, id, sizeMl)))
   }, [])
 
-  const setQty = useCallback((id, qty) => {
+  const setQty = useCallback((id, qty, sizeMl) => {
     setItems((prev) =>
       prev
-        .map((i) => (i.id === id ? { ...i, qty: Math.max(0, qty) } : i))
+        .map((i) => (sameLine(i, id, sizeMl) ? { ...i, qty: Math.max(0, qty) } : i))
         .filter((i) => i.qty > 0),
     )
   }, [])

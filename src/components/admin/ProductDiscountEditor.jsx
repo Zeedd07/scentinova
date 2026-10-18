@@ -80,7 +80,7 @@ export default function ProductDiscountEditor({ value, price, onChange, error })
               <p id="discount-help" className="mt-1 text-[13px] admin-muted">
                 {isPercent
                   ? `Whole number from ${DISCOUNT_PERCENT_MIN} to ${DISCOUNT_PERCENT_MAX}. The result is rounded to the nearest rupee.`
-                  : 'Whole rupees, lower than the regular price.'}
+                  : 'Whole rupees, lower than the first size. This price replaces the first size only. Other sizes keep their own price.'}
               </p>
             )}
           </div>

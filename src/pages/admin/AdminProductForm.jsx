@@ -25,6 +25,7 @@ import NoteImageEditor from '../../components/admin/NoteImageEditor'
 import ProductFeesEditor from '../../components/admin/ProductFeesEditor'
 import { EMPTY_FEES_FORM, feesToForm, parseFeesForm } from '../../lib/productFees'
 import ProductDiscountEditor from '../../components/admin/ProductDiscountEditor'
+import SizeListEditor from '../../components/admin/SizeListEditor'
 import NoteListEditor from '../../components/admin/NoteListEditor'
 import { notesToRows, rowsToNotes } from '../../lib/productNotes'
 import {
@@ -111,6 +112,7 @@ const emptyForm = {
   slug: '',
   tagline: '',
   price: '',
+  sizes: [{ ml: '50', price: '' }],
   size: '50ML',
   concentration: 'Parfum',
   category: 'Floral',
@@ -134,6 +136,69 @@ const emptyForm = {
   discount: EMPTY_DISCOUNT_FORM,
 }
 
+function sizesToRows(p) {
+  const stored = Array.isArray(p.sizes) && p.sizes.length ? p.sizes : null
+  const rows = stored || [
+    {
+      ml: Number(String(p.size || '').replace(/\D/g, '')) || 50,
+      price: p.price,
+    },
+  ]
+  return rows.map((s) => ({
+    ml: s.ml == null || s.ml === '' ? '' : String(s.ml),
+    price: s.price == null || s.price === '' ? '' : String(s.price),
+    gallery: Array.isArray(s.gallery) ? [...s.gallery] : [],
+    galleryPublicIds: Array.isArray(s.galleryPublicIds) ? [...s.galleryPublicIds] : [],
+    galleryScales: Array.isArray(s.galleryScales) ? [...s.galleryScales] : [],
+    videos: Array.isArray(s.videos) ? s.videos.filter((v) => v?.publicId && v?.url) : [],
+  }))
+}
+
+/** Rows from the size editor, or an error message for the first problem. */
+function parseSizes(rows) {
+  if (!rows.length) return { error: 'Add at least one size.' }
+  const seen = new Set()
+  const sizes = []
+  for (const [i, row] of rows.entries()) {
+    const mlRaw = String(row.ml ?? '').trim()
+    const priceRaw = String(row.price ?? '').trim()
+    const where = `Size ${i + 1}`
+    if (!/^\d+$/.test(mlRaw) || Number(mlRaw) < 1 || Number(mlRaw) > 500) {
+      return { error: `${where}: enter a whole number of ml from 1 to 500.` }
+    }
+    if (!/^\d+$/.test(priceRaw) || Number(priceRaw) < 1) {
+      return { error: `${where}: enter a whole price of at least ₹1.` }
+    }
+    const ml = Number(mlRaw)
+    if (seen.has(ml)) return { error: `${ml}ml is already in the list.` }
+    seen.add(ml)
+    const next = { ml, price: Number(priceRaw) }
+    if (i > 0) {
+      const gallery = Array.isArray(row.gallery) ? row.gallery.filter(Boolean) : []
+      if (gallery.length) {
+        const ids = Array.isArray(row.galleryPublicIds) ? [...row.galleryPublicIds] : []
+        while (ids.length < gallery.length) ids.push('')
+        next.gallery = gallery
+        next.galleryPublicIds = ids.slice(0, gallery.length).map((id) => id || '')
+        next.galleryScales = gallery.map((_, n) => clampImageScale(row.galleryScales?.[n] ?? 1))
+      }
+      const videos = (row.videos || []).filter((v) => v?.publicId && v?.url)
+      if (videos.length) {
+        next.videos = videos.map(({ publicId, url, posterUrl, width, height, duration }) => ({
+          publicId,
+          url,
+          posterUrl: posterUrl ?? null,
+          width: width ?? null,
+          height: height ?? null,
+          duration: duration ?? null,
+        }))
+      }
+    }
+    sizes.push(next)
+  }
+  return { sizes }
+}
+
 function productToForm(p) {
   let gallery = Array.isArray(p.gallery) ? [...p.gallery] : []
   let galleryPublicIds = Array.isArray(p.galleryPublicIds)
@@ -151,6 +216,7 @@ function productToForm(p) {
     slug: p.slug ?? '',
     tagline: p.tagline ?? '',
     price: p.price == null ? '' : p.price,
+    sizes: sizesToRows(p),
     size: p.size ?? '50ML',
     concentration: p.concentration ?? 'Parfum',
     category: p.category ?? 'Floral',
@@ -201,6 +267,7 @@ export default function AdminProductForm() {
   const [feeErrors, setFeeErrors] = useState({})
   const [discountError, setDiscountError] = useState('')
   const [categoryError, setCategoryError] = useState('')
+  const [sizeError, setSizeError] = useState('')
   const [categoryFieldKey, setCategoryFieldKey] = useState(0)
   const [pendingRemove, setPendingRemove] = useState(null)
   const [videoProgress, setVideoProgress] = useState(null)
@@ -438,16 +505,13 @@ export default function AdminProductForm() {
     const galleryPublicIds = (form.galleryPublicIds || []).slice(0, gallery.length)
     while (galleryPublicIds.length < gallery.length) galleryPublicIds.push(null)
 
-    const priceRaw = form.price
-    if (priceRaw === '' || priceRaw == null) {
-      setStatus({ type: 'error', text: 'Price is required.' })
+    const { sizes, error: nextSizeError } = parseSizes(form.sizes)
+    setSizeError(nextSizeError || '')
+    if (!sizes) {
+      setStatus({ type: 'error', text: nextSizeError })
       return
     }
-    const price = Number(priceRaw)
-    if (!Number.isFinite(price) || price < 0) {
-      setStatus({ type: 'error', text: 'Enter a valid price in INR.' })
-      return
-    }
+    const price = sizes[0].price
 
     const category = form.category.trim().replace(/\s+/g, ' ')
     if (!category) {
@@ -476,7 +540,7 @@ export default function AdminProductForm() {
       tagline: form.tagline,
       price,
       currency: 'INR',
-      size: form.size,
+      sizes,
       concentration: form.concentration,
       category,
       featured: form.featured,
@@ -630,17 +694,6 @@ export default function AdminProductForm() {
           <Field label="Tagline">
             <Input value={form.tagline} onChange={(e) => set('tagline', e.target.value)} />
           </Field>
-          <Field label="Price (INR)">
-            <Input
-              required
-              type="number"
-              inputMode="numeric"
-              min="0"
-              step="1"
-              value={form.price}
-              onChange={(e) => set('price', e.target.value)}
-            />
-          </Field>
           <Field label="Stock">
             <Input
               type="number"
@@ -650,9 +703,17 @@ export default function AdminProductForm() {
               onChange={(e) => set('stock', e.target.value)}
             />
           </Field>
-          <Field label="Size">
-            <Input value={form.size} onChange={(e) => set('size', e.target.value)} />
-          </Field>
+          <div className="sm:col-span-2">
+            <SizeListEditor
+              rows={form.sizes}
+              slug={form.slug || form.name || 'product'}
+              error={sizeError}
+              onChange={(sizes) => {
+                setForm((f) => ({ ...f, sizes, price: sizes[0]?.price ?? '' }))
+                setSizeError('')
+              }}
+            />
+          </div>
           <Field label="Concentration">
             <Input value={form.concentration} onChange={(e) => set('concentration', e.target.value)} />
           </Field>
@@ -694,7 +755,7 @@ export default function AdminProductForm() {
         <section className="border-t border-stone pt-6">
           <ProductDiscountEditor
             value={form.discount}
-            price={form.price}
+            price={form.sizes[0]?.price ?? ''}
             error={discountError}
             onChange={(next) => {
               set('discount', next)

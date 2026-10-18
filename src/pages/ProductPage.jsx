@@ -11,7 +11,7 @@ import ProductCard from '../components/ProductCard'
 import ProductGallery from '../components/ProductGallery'
 import PriceTag from '../components/PriceTag'
 import { easeOutExpo } from '../lib/motion'
-import { activeSale } from '../lib/sale'
+import { mediaForSize, productSizes } from '../lib/productSizes'
 
 function formatSaleEnd(iso) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
@@ -67,10 +67,14 @@ export default function ProductPage() {
   const product = getBySlug(slug)
   const { addItem } = useCart()
   const [qty, setQty] = useState(1)
+  const [sizeMl, setSizeMl] = useState(null)
   const [noteMedia, setNoteMedia] = useState({ slug: null, data: null })
+  const sizes = useMemo(() => (product ? productSizes(product) : []), [product])
+  const selected = sizes.find((s) => s.ml === sizeMl) || sizes[0] || null
 
   useEffect(() => {
     setQty(1)
+    setSizeMl(null)
   }, [slug])
 
   useEffect(() => {
@@ -106,7 +110,7 @@ export default function ProductPage() {
   }
 
   const media = noteMedia.slug === slug ? noteMedia.data : null
-  const sale = activeSale(product)
+  const sale = selected?.sale || null
   const notesLine =
     product.descriptors?.join(' · ') ||
     [
@@ -124,7 +128,7 @@ export default function ProductPage() {
           transition={{ duration: 0.45, ease: easeOutExpo }}
           className="min-w-0"
         >
-          <ProductGallery key={product.id} product={product} />
+          <ProductGallery key={`${product.id}-${selected?.ml ?? 'default'}`} product={mediaForSize(product, selected)} />
         </motion.div>
 
         <div>
@@ -147,7 +151,7 @@ export default function ProductPage() {
           </p>
           <p className="mt-6">
             <PriceTag
-              price={product.price}
+              price={selected?.price}
               salePrice={sale?.price}
               percentOff={sale?.percentOff}
               className="font-display text-3xl text-bronze"
@@ -161,7 +165,26 @@ export default function ProductPage() {
               {sale.endsAt && ` · Ends ${formatSaleEnd(sale.endsAt)}`}
             </p>
           )}
-          <p className="mt-1 text-xs text-muted">{product.size}</p>
+          <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Bottle size">
+            {sizes.map((size) => {
+              const on = size.ml === selected?.ml
+              return (
+                <button
+                  key={size.ml}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setSizeMl(size.ml)}
+                  className={`min-h-11 min-w-16 border px-4 text-[13px] tracking-[0.12em] uppercase transition ${
+                    on
+                      ? 'border-charcoal bg-charcoal text-ivory'
+                      : 'border-stone bg-warm-white text-charcoal hover:border-charcoal'
+                  }`}
+                >
+                  {size.label}
+                </button>
+              )
+            })}
+          </div>
 
           <p className="mt-8 max-w-md text-sm leading-relaxed text-muted">
             {product.description}
@@ -237,7 +260,7 @@ export default function ProductPage() {
             </div>
             <button
               type="button"
-              onClick={() => addItem(product, qty)}
+              onClick={() => selected && addItem(product, qty, selected)}
               className="btn-luxury flex-1 border border-charcoal px-8 py-3.5 text-charcoal sm:flex-none"
             >
               Add to Cart

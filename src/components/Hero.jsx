@@ -723,15 +723,13 @@ export default function Hero({
             <div className="absolute right-5 bottom-[3.25rem] sm:right-10 sm:bottom-9">
               <ScrollGauge ref={gaugeRef} label={isMobile ? 'Swipe' : 'Scroll'} initial={progressRef.current} />
             </div>
-            {isMobile && (
-              <button
-                type="button"
-                onClick={scrollToCollection}
-                className="pointer-events-auto absolute inset-x-0 bottom-2 mx-auto w-max px-3 py-1.5 text-[8.5px] tracking-[0.32em] text-warm-white/40 uppercase"
-              >
-                Skip to the collection <span aria-hidden className="text-gold">↓</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={scrollToCollection}
+              className="pointer-events-auto absolute inset-x-0 bottom-2 mx-auto w-max px-3 py-1.5 text-[8.5px] tracking-[0.32em] text-warm-white/40 uppercase sm:bottom-4 sm:text-[11px] sm:tracking-[0.42em]"
+            >
+              Skip to the collection <span aria-hidden className="text-gold">↓</span>
+            </button>
           </motion.div>
         </div>
       </div>

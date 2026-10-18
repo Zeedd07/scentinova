@@ -69,7 +69,7 @@ export default function CartDrawer() {
               ) : (
                 <ul className="space-y-5">
                   {items.map((item) => (
-                    <li key={item.id} className="flex gap-4">
+                    <li key={`${item.id}-${item.sizeMl ?? ''}`} className="flex gap-4">
                       <Link
                         to={`/product/${item.slug}`}
                         onClick={() => setDrawerOpen(false)}
@@ -108,7 +108,7 @@ export default function CartDrawer() {
                             <button
                               type="button"
                               className="px-2.5 py-1 text-muted hover:text-charcoal"
-                              onClick={() => setQty(item.id, item.qty - 1)}
+                              onClick={() => setQty(item.id, item.qty - 1, item.sizeMl)}
                               aria-label="Decrease"
                             >
                               −
@@ -119,7 +119,7 @@ export default function CartDrawer() {
                             <button
                               type="button"
                               className="px-2.5 py-1 text-muted hover:text-charcoal"
-                              onClick={() => setQty(item.id, item.qty + 1)}
+                              onClick={() => setQty(item.id, item.qty + 1, item.sizeMl)}
                               aria-label="Increase"
                             >
                               +
@@ -127,7 +127,7 @@ export default function CartDrawer() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => removeItem(item.id)}
+                            onClick={() => removeItem(item.id, item.sizeMl)}
                             className="text-[11px] tracking-wider text-muted uppercase hover:text-charcoal"
                           >
                             Remove

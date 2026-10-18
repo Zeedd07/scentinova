@@ -57,7 +57,7 @@ export default function CartPage() {
             <ul className="border-t border-stone">
               {items.map((item, i) => (
                 <motion.li
-                  key={item.id}
+                  key={`${item.id}-${item.sizeMl ?? ''}`}
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.06 }}
@@ -108,7 +108,7 @@ export default function CartPage() {
                         <button
                           type="button"
                           className="px-3.5 py-2 text-muted transition hover:text-charcoal"
-                          onClick={() => setQty(item.id, item.qty - 1)}
+                          onClick={() => setQty(item.id, item.qty - 1, item.sizeMl)}
                         >
                           −
                         </button>
@@ -118,14 +118,14 @@ export default function CartPage() {
                         <button
                           type="button"
                           className="px-3.5 py-2 text-muted transition hover:text-charcoal"
-                          onClick={() => setQty(item.id, item.qty + 1)}
+                          onClick={() => setQty(item.id, item.qty + 1, item.sizeMl)}
                         >
                           +
                         </button>
                       </div>
                       <button
                         type="button"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeItem(item.id, item.sizeMl)}
                         className="text-[11px] tracking-[0.28em] text-muted uppercase transition hover:text-scent-red"
                       >
                         Remove
