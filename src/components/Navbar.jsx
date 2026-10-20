@@ -13,6 +13,7 @@ import { SOCIAL_LINKS } from '../config/site'
 import BrandLogo from './BrandLogo'
 import OfferBar from './OfferBar'
 import { InstagramIcon } from './SocialIcons'
+import ThiingsIcon from './ThiingsIcon'
 
 const MENU_ID = 'site-menu'
 const BELOW_NAV = 'var(--header-visible-h)'
@@ -55,38 +56,6 @@ function MenuToggle({ open, onClick, buttonRef }) {
   )
 }
 
-function BagIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M6 8h12l-1 12H7L6 8zM9 8V6a3 3 0 016 0v2" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  )
-}
-
-function CartIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M2.5 3.5h2.2l2.3 11.2a1.5 1.5 0 0 0 1.5 1.2h8.9a1.5 1.5 0 0 0 1.5-1.1l1.6-6.3H6"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="9.5" cy="19.5" r="1.3" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="17" cy="19.5" r="1.3" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  )
-}
-
-function ParcelIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5v-9Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d="M3.5 7.5 12 12l8.5-4.5M12 12v9M7.75 5.25l8.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-    </svg>
-  )
-}
 
 const SOCIAL_ICONS = { instagram: InstagramIcon }
 
@@ -176,7 +145,7 @@ export default function Navbar() {
             <Link
               to="/shop"
               aria-current={shopActive ? 'page' : undefined}
-              className="inline-flex h-8 shrink-0 items-center rounded-md bg-warm-white px-3 text-[13px] font-medium whitespace-nowrap text-black transition-colors duration-300 outline-none hover:bg-champagne focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-champagne md:hidden"
+              className="inline-flex h-8 shrink-0 items-center rounded-none bg-warm-white px-3 text-[13px] font-medium whitespace-nowrap text-black transition-colors duration-300 outline-none hover:bg-champagne focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-champagne md:hidden"
             >
               Buy Now
             </Link>
@@ -197,12 +166,7 @@ export default function Navbar() {
               className="relative -mr-2 flex h-11 w-11 items-center justify-center border-0 bg-transparent text-warm-white transition-colors hover:text-champagne focus-visible:outline focus-visible:outline-1 focus-visible:outline-champagne"
               aria-label={`Bag, ${count} ${count === 1 ? 'item' : 'items'}`}
             >
-              <span className="md:hidden">
-                <CartIcon />
-              </span>
-              <span className="hidden md:block">
-                <BagIcon />
-              </span>
+              <ThiingsIcon name="shopping-bag" alt="" className="h-7 w-7" />
               {count > 0 && (
                 <span className="absolute top-1.5 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-scent-red px-1 text-[10px] leading-none font-medium text-warm-white tabular-nums">
                   {count > 99 ? '99+' : count}
@@ -290,7 +254,7 @@ export default function Navbar() {
                       `${drawerLink} text-[12px] sm:text-[12px] ${active ? 'text-scent-red' : 'text-charcoal hover:text-scent-red'}`
                     }
                   >
-                    <ParcelIcon />
+                    <ThiingsIcon name="parcel" alt="" className="h-6 w-6" />
                     Track Order
                   </NavLink>
                 </motion.div>

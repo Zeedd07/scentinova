@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatPrice } from '../../data/products'
 import AdminModal from '../../components/admin/AdminModal'
-import FilterTabs from '../../components/admin/ui/FilterTabs'
+import FilterButton from '../../components/admin/ui/FilterButton'
 import ResponsiveTable from '../../components/admin/ui/ResponsiveTable'
 import {
   adminDeleteProduct,
@@ -38,6 +38,8 @@ export default function AdminProducts() {
 
   const [products, setProducts] = useState([])
   const [salesById, setSalesById] = useState({})
+  const [salesUnavailable, setSalesUnavailable] = useState(false)
+  const soldOf = (p) => (salesUnavailable ? '—' : (salesById[p.id]?.purchases ?? 0))
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('all')
   const [pendingArchive, setPendingArchive] = useState(null)
@@ -50,11 +52,12 @@ export default function AdminProducts() {
     try {
       const [list, analytics] = await Promise.all([
         adminFetchProducts(),
-        adminAnalyticsProducts().catch(() => ({ products: [] })),
+        adminAnalyticsProducts().catch(() => null),
       ])
       setProducts(list)
+      setSalesUnavailable(!analytics)
       const map = {}
-      for (const row of analytics.products || []) {
+      for (const row of analytics?.products || []) {
         map[row.id] = row
       }
       setSalesById(map)
@@ -164,36 +167,26 @@ export default function AdminProducts() {
   const galleryOf = (p) => (p.gallery?.length ? p.gallery : p.image ? [p.image] : []).filter(Boolean)
 
   const actions = (p) => (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 md:justify-end">
-      <Button asChild variant="link" className="min-h-10 md:min-h-0">
+    <div className="flex flex-wrap items-center gap-2 md:justify-end">
+      <Button asChild variant="outline" size="sm">
         <Link to={`/admin/products/${p.id}`}>Edit</Link>
       </Button>
       {isArchived(p) ? (
         <Button
           type="button"
-          variant="link"
-          className="min-h-10 md:min-h-0"
+          variant="outline"
+          size="sm"
           disabled={Boolean(restoringId)}
           onClick={() => restore(p)}
         >
           {restoringId === p.id ? 'Restoring…' : 'Restore'}
         </Button>
       ) : (
-        <Button
-          type="button"
-          variant="link"
-          className="min-h-10 text-[#6e1118] md:min-h-0"
-          onClick={() => setPendingArchive(p)}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => setPendingArchive(p)}>
           Archive
         </Button>
       )}
-      <Button
-        type="button"
-        variant="link"
-        className="min-h-10 text-[#6e1118] md:min-h-0"
-        onClick={() => setPendingDelete(p)}
-      >
+      <Button type="button" variant="danger" size="sm" onClick={() => setPendingDelete(p)}>
         Delete
       </Button>
     </div>
@@ -239,7 +232,7 @@ export default function AdminProducts() {
     { key: 'category', header: 'Category', className: 'admin-muted', cell: (p) => p.category },
     { key: 'price', header: 'Price', cell: (p) => formatPrice(p.price) },
     { key: 'stock', header: 'Stock', cell: (p) => p.stock ?? 0 },
-    { key: 'sold', header: 'Sold', cell: (p) => salesById[p.id]?.purchases ?? 0 },
+    { key: 'sold', header: 'Sold', cell: soldOf },
     { key: 'status', header: 'Status', cell: status },
     { key: 'actions', header: <span className="sr-only">Actions</span>, className: 'whitespace-nowrap', cell: actions },
   ]
@@ -252,17 +245,30 @@ export default function AdminProducts() {
           <p className="mt-1 admin-muted text-[15px]">
             Edit, archive, restore or delete items in the Scentinova catalog.
           </p>
+          {salesUnavailable && (
+            <p className="mt-1 text-[13px] text-[#7a5a1e]">
+              Sales figures could not be loaded, so the Sold column shows —.
+            </p>
+          )}
         </div>
         <Button asChild className="w-full sm:w-auto">
           <Link to="/admin/products/new">Add perfume</Link>
         </Button>
       </div>
 
-      <FilterTabs
-        label="Product status"
-        value={view}
-        onValueChange={setView}
-        options={VIEWS.map((v) => ({ ...v, count: counts[v.value] }))}
+      <FilterButton
+        groups={[
+          {
+            id: 'catalog',
+            title: 'Catalog',
+            value: view,
+            onValueChange: setView,
+            options: VIEWS.map((v) => ({
+              value: v.value,
+              label: `${v.label} (${counts[v.value]})`,
+            })),
+          },
+        ]}
       />
 
       {loading ? (
@@ -307,7 +313,7 @@ export default function AdminProducts() {
                 </div>
                 <div>
                   <dt className="admin-muted">Sold</dt>
-                  <dd className="text-[15px] text-[#1b1917] tabular-nums">{salesById[p.id]?.purchases ?? 0}</dd>
+                  <dd className="text-[15px] text-[#1b1917] tabular-nums">{soldOf(p)}</dd>
                 </div>
               </dl>
               {actions(p)}

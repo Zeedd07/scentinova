@@ -32,11 +32,17 @@ export async function adminAnalyticsProducts() {
   return data.data
 }
 
-/** @param {'7d'|'30d'|'90d'|'all'} range */
+/** @param {'7d'|'30d'|'90d'|'all'|'custom'| { range: string, from?: string, to?: string }} range */
 export async function adminAnalyticsReport(range) {
-  const data = await apiRequest(`/admin/analytics/report?range=${encodeURIComponent(range)}`, {
-    auth: true,
-  })
+  const params = new URLSearchParams()
+  if (typeof range === 'string') {
+    params.set('range', range)
+  } else {
+    params.set('range', range.range)
+    if (range.from) params.set('from', range.from)
+    if (range.to) params.set('to', range.to)
+  }
+  const data = await apiRequest(`/admin/analytics/report?${params}`, { auth: true })
   return data.data
 }
 

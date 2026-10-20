@@ -11,6 +11,13 @@ const API_URL = resolveApiUrl()
 
 let accessToken = null
 let refreshPromise = null
+const sessionExpiredListeners = new Set()
+
+/** Called when the refresh cookie is rejected, so the admin UI can sign out instead of failing silently. */
+export function onSessionExpired(listener) {
+  sessionExpiredListeners.add(listener)
+  return () => sessionExpiredListeners.delete(listener)
+}
 
 export function setAccessToken(token) {
   accessToken = token
@@ -138,7 +145,7 @@ export async function apiRequest(
 /**
  * Multipart upload with optional XMLHttpRequest progress callback (0-100).
  */
-export function apiUpload(path, formData, { auth = true, onProgress } = {}) {
+export function apiUpload(path, formData, { auth = true, onProgress, retry = true } = {}) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `${API_URL}${path}`)
@@ -159,10 +166,9 @@ export function apiUpload(path, formData, { auth = true, onProgress } = {}) {
       } catch {
         data = null
       }
-
-      if (xhr.status === 401 && auth) {
+      if (xhr.status === 401 && auth && retry) {
         refreshAccessToken()
-          .then(() => apiUpload(path, formData, { auth, onProgress }))
+          .then(() => apiUpload(path, formData, { auth, onProgress, retry: false }))
           .then(resolve)
           .catch(reject)
         return

@@ -323,7 +323,7 @@ const Combobox = forwardRef(function Combobox(
           onClick={openList}
           onBlur={closeList}
           onKeyDown={onKeyDown}
-          className={`w-full border bg-ivory py-3 pr-10 pl-4 text-base text-charcoal outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted/70 focus:border-scent-red focus:ring-1 focus:ring-scent-red/20 disabled:cursor-not-allowed disabled:bg-stone/25 disabled:text-muted ${
+          className={`w-full rounded-none border bg-ivory py-3 pr-10 pl-4 text-base text-charcoal outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted/70 focus:border-scent-red focus:ring-1 focus:ring-scent-red/20 disabled:cursor-not-allowed disabled:bg-stone/25 disabled:text-muted ${
             error ? 'border-scent-red' : 'border-stone'
           }`}
         />

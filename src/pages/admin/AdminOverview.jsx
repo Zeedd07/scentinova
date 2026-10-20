@@ -9,18 +9,23 @@ import { NumberTicker } from '@/components/ui/number-ticker'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { formatPrice } from '../../data/products'
+import { orderStatusBadgeClass, orderStatusLabel } from '../../lib/orderStatus'
 import { adminDashboard } from '../../services/analyticsApi'
 import { ApiClientError } from '../../services/apiClient'
 
 const formatRupees = (n) => formatPrice(Math.round(n))
+const orderTotal = (o) => (o.pricing?.totalPaise != null ? o.pricing.totalPaise / 100 : o.total)
 
 export default function AdminOverview() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
+    setError('')
     ;(async () => {
       try {
         const d = await adminDashboard()
@@ -40,9 +45,9 @@ export default function AdminOverview() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [attempt])
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="space-y-8" aria-busy="true" aria-label="Loading overview">
         <Skeleton className="h-9 w-48 bg-secondary" />
@@ -55,19 +60,28 @@ export default function AdminOverview() {
     )
   }
 
-  if (error) {
-    return <p className="text-[#6e1118]">{error}</p>
+  if (error && !data) {
+    return (
+      <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#e6c2c5] bg-[#fbeeef] px-4 py-3 text-[14px] text-[#6e1118]">
+        <span className="min-w-0">{error}</span>
+        <Button type="button" variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+          Try again
+        </Button>
+      </div>
+    )
   }
 
-  const lowStockCount = data.lowStock?.length ?? 0
+  const lowStockCount = data.lowStockCount ?? data.lowStock?.length ?? 0
+  const listedLowStock = data.lowStock?.length ?? 0
   const kpis = [
-    { label: 'Products', value: data.products ?? 0 },
-    { label: 'Catalog views', value: data.views ?? 0 },
-    { label: 'Add to cart', value: data.addToCarts ?? 0 },
-    { label: 'Units sold', value: data.unitsSold ?? 0 },
-    { label: 'Net revenue (received)', value: data.revenue ?? 0, format: formatRupees, wide: true },
+    { label: 'Net revenue (received, all time)', value: data.revenue ?? 0, format: formatRupees, wide: true },
     { label: 'Paid orders', value: data.orders ?? 0 },
-    { label: 'Low stock', value: lowStockCount, warn: lowStockCount > 0 },
+    { label: 'Cash on delivery to collect', value: data.codAwaitingRevenue ?? 0, format: formatRupees },
+    { label: 'Units sold', value: data.unitsSold ?? 0 },
+    { label: 'Product page views', value: data.views ?? 0 },
+    { label: 'Added to cart', value: data.addToCarts ?? 0 },
+    { label: 'Products', value: data.products ?? 0, hint: `${data.activeProducts ?? 0} on sale` },
+    { label: 'Low stock', value: lowStockCount, warn: lowStockCount > 0, hint: `${data.lowStockThreshold ?? 8} or fewer left` },
   ]
 
   return (
@@ -84,27 +98,34 @@ export default function AdminOverview() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {kpis.map((k) => (
           <Card
             key={k.label}
-            className={cn('gap-0 rounded-sm px-4 py-3 shadow-none', k.wide && 'col-span-2 lg:col-span-1')}
+            className={cn('min-w-0 gap-0 rounded-md px-4 py-3 shadow-none', k.wide && 'col-span-2 lg:col-span-1')}
           >
             <p className="text-[13px] text-muted">{k.label}</p>
             <NumberTicker
               value={Number(k.value) || 0}
               formatValue={k.format}
               className={cn(
-                'mt-1 text-xl font-semibold tracking-normal sm:text-2xl',
+                'mt-1 text-xl font-semibold tracking-normal break-words tabular-nums sm:text-2xl',
                 k.warn ? 'text-[#6e1118]' : 'text-[#1b1917]',
               )}
             />
+            {k.hint && <p className="mt-0.5 text-[12px] admin-muted">{k.hint}</p>}
           </Card>
         ))}
       </div>
+      <p className="-mt-3 text-[13px] admin-muted md:-mt-5">
+        Revenue counts only money collected, after refunds.{' '}
+        <Link to="/admin/analytics" className="admin-link">
+          See analytics by date
+        </Link>
+      </p>
 
       <div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-        <Card className="gap-0 rounded-sm py-0 shadow-none">
+        <Card className="min-w-0 gap-0 rounded-sm py-0 shadow-none">
           <CardHeader className="px-4 pt-4 sm:px-5 sm:pt-5">
             <CardTitle className="text-base font-semibold text-[#1b1917]">Recent orders</CardTitle>
           </CardHeader>
@@ -120,11 +141,14 @@ export default function AdminOverview() {
                       className="flex min-h-11 items-center justify-between gap-3 py-2 text-[15px] hover:text-[#7a5f2c]"
                     >
                       <span className="min-w-0">
-                        <span className="block truncate">{o.orderNumber}</span>
-                        <span className="block truncate text-[13px] admin-muted">{o.customer?.name}</span>
+                        <span className="block truncate" title={o.orderNumber}>{o.orderNumber}</span>
+                        <span className="block truncate text-[13px] admin-muted">
+                          {(o.customerSnapshot || o.customer)?.name}
+                        </span>
                       </span>
-                      <span className="admin-muted shrink-0 tabular-nums">
-                        {formatPrice(o.total)}
+                      <span className="flex shrink-0 flex-col items-end gap-1">
+                        <span className="tabular-nums text-[#1b1917]">{formatPrice(orderTotal(o))}</span>
+                        <span className={orderStatusBadgeClass(o.status)}>{orderStatusLabel(o.status)}</span>
                       </span>
                     </Link>
                   </li>
@@ -134,7 +158,7 @@ export default function AdminOverview() {
           </CardContent>
         </Card>
 
-        <Card className="gap-0 rounded-sm py-0 shadow-none">
+        <Card className="min-w-0 gap-0 rounded-sm py-0 shadow-none">
           <CardHeader className="px-4 pt-4 sm:px-5 sm:pt-5">
             <CardTitle className="text-base font-semibold text-[#1b1917]">Needs attention</CardTitle>
           </CardHeader>
@@ -149,12 +173,20 @@ export default function AdminOverview() {
                       to={`/admin/products/${p.id}`}
                       className="flex min-h-11 items-center justify-between gap-3 py-2 text-[15px] text-[#1b1917] hover:underline"
                     >
-                      <span className="min-w-0 truncate">{p.name}</span>
-                      <span className="shrink-0 text-[#6e1118]">{p.stock} left</span>
+                      <span className="min-w-0 truncate" title={p.name}>{p.name}</span>
+                      <span className="shrink-0 text-[#6e1118]">{p.stock > 0 ? `${p.stock} left` : 'Out of stock'}</span>
                     </Link>
                   </li>
                 ))}
               </ul>
+            )}
+            {lowStockCount > listedLowStock && (
+              <p className="mt-2 text-[13px] admin-muted">
+                Showing the {listedLowStock} lowest of {lowStockCount}.{' '}
+                <Link to="/admin/products" className="admin-link">
+                  All products
+                </Link>
+              </p>
             )}
           </CardContent>
         </Card>

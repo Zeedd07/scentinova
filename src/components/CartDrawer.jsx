@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../data/products'
 import PriceTag from './PriceTag'
+import ThiingsIcon from './ThiingsIcon'
 
 export default function CartDrawer() {
   const {
@@ -33,7 +34,8 @@ export default function CartDrawer() {
             onClick={() => setDrawerOpen(false)}
           />
           <motion.aside
-            className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-md flex-col border-l border-stone bg-warm-white shadow-[0_0_60px_rgba(27,25,23,0.18)]"
+            className="fixed right-0 bottom-0 z-[70] flex w-full max-w-md flex-col border-l border-stone bg-warm-white shadow-[0_0_60px_rgba(27,25,23,0.18)]"
+            style={{ top: 'var(--header-visible-h)' }}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -56,6 +58,7 @@ export default function CartDrawer() {
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {items.length === 0 ? (
                 <div className="py-16 text-center">
+                  <ThiingsIcon name="shopping-bag" alt="" className="mx-auto mb-5 h-28 w-28" />
                   <p className="font-display text-xl text-charcoal">Empty for now</p>
                   <p className="mt-2 text-sm text-muted">Discover a scent that stays.</p>
                   <Link
@@ -73,12 +76,12 @@ export default function CartDrawer() {
                       <Link
                         to={`/product/${item.slug}`}
                         onClick={() => setDrawerOpen(false)}
-                        className="flex h-24 w-20 shrink-0 items-center justify-center overflow-hidden bg-cream"
+                        className="flex h-24 w-20 shrink-0 items-center justify-center bg-cream p-1.5"
                       >
                         <img
                           src={item.image}
                           alt=""
-                          className="h-[90%] w-auto object-contain"
+                          className="max-h-full max-w-full object-contain"
                         />
                       </Link>
                       <div className="min-w-0 flex-1">
@@ -104,7 +107,7 @@ export default function CartDrawer() {
                           </p>
                         </div>
                         <div className="mt-3 flex items-center gap-3">
-                          <div className="flex items-center border border-stone">
+                          <div className="flex items-center overflow-hidden rounded-none border border-stone">
                             <button
                               type="button"
                               className="px-2.5 py-1 text-muted hover:text-charcoal"
@@ -141,7 +144,7 @@ export default function CartDrawer() {
             </div>
 
             {items.length > 0 && (
-              <div className="border-t border-stone px-6 py-5">
+              <div className="border-t border-stone px-6 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                 <div className="mb-4 flex justify-between text-sm">
                   <span className="text-muted">Subtotal</span>
                   <span className="font-display text-xl text-charcoal">

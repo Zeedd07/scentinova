@@ -11,7 +11,7 @@ export const SHIPPER = {
   state: 'Maharashtra',
   postalCode: '400072',
   country: 'India',
-  phone: '',
+  phone: '7045536871',
   /** Opened by the "Visit our store" QR code. Defaults to the site the admin is using. */
   storeUrl: '',
 }

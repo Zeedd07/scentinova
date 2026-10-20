@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import AdminDialog from '../../components/admin/AdminDialog'
 import Field from '../../components/admin/ui/Field'
-import FilterTabs from '../../components/admin/ui/FilterTabs'
+import FilterButton from '../../components/admin/ui/FilterButton'
 import AdminModal from '../../components/admin/AdminModal'
 import BackdropDownloads from '../../components/admin/BackdropDownloads'
 import MediaUploadModal from '../../components/admin/MediaUploadModal'
@@ -303,45 +303,41 @@ export default function AdminMediaLibrary() {
       )}
 
       <div className="admin-surface space-y-3 p-4">
-        <FilterTabs
-          wrap
-          label="Asset type"
-          options={TYPE_TABS}
-          value={type || ALL}
-          onValueChange={(v) => {
-            setType(v === ALL ? '' : v)
-            setPage(1)
-          }}
-        />
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <Field label="Search">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <FilterButton
+            groups={[
+              {
+                id: 'type',
+                title: 'Type',
+                value: type || ALL,
+                onValueChange: (value) => {
+                  setType(value === ALL ? '' : value)
+                  setPage(1)
+                },
+                options: TYPE_TABS,
+              },
+              {
+                id: 'category',
+                title: 'Category',
+                value: category || ALL,
+                onValueChange: (value) => {
+                  setCategory(value === ALL ? '' : value)
+                  setPage(1)
+                },
+                options: [
+                  { value: ALL, label: 'All categories' },
+                  ...MEDIA_CATEGORIES.map((c) => ({ value: c, label: titleCase(c) })),
+                ],
+              },
+            ]}
+          />
+          <Field label="Search" className="min-w-0 flex-1">
             <Input
               type="search"
               placeholder="Name or tag"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-          </Field>
-          <Field label="Category" htmlFor="media-category">
-            <Select
-              value={category || ALL}
-              onValueChange={(v) => {
-                setCategory(v === ALL ? '' : v)
-                setPage(1)
-              }}
-            >
-              <SelectTrigger id="media-category" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectItem value={ALL}>All categories</SelectItem>
-                {MEDIA_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {titleCase(c)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </Field>
         </div>
       </div>
@@ -371,7 +367,9 @@ export default function AdminMediaLibrary() {
                 <span className="block aspect-square overflow-hidden bg-cream">
                   <img src={asset.thumbUrl} alt={asset.altText || asset.name} loading="lazy" className="h-full w-full object-cover" />
                 </span>
-                <span className="mt-1.5 block truncate text-[13px] text-charcoal">{asset.name}</span>
+                <span className="mt-1.5 block truncate text-[13px] text-charcoal" title={asset.name}>
+                  {asset.name}
+                </span>
                 <span className="block truncate text-[10px] tracking-wide text-muted uppercase">
                   {asset.type === 'NOTE' ? (asset.isDefault ? 'Default · ' : '') + titleCase(asset.category) : MEDIA_TYPE_LABELS[asset.type]}
                 </span>

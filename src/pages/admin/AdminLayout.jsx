@@ -4,7 +4,7 @@
 import { useRef, useState } from 'react'
 import { NavLink, Link, useLocation, useOutlet } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { MenuIcon } from 'lucide-react'
+import { ArrowLeftIcon, MenuIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -26,12 +26,12 @@ const LINKS = [
 ]
 
 const tabClass = ({ isActive }) =>
-  `shrink-0 rounded-sm px-3 py-2 text-[15px] font-medium transition ${
+  `shrink-0 rounded-none px-3 py-2 text-[15px] font-medium transition ${
     isActive ? 'bg-[#1b1917] text-[#faf9f6]' : 'text-[#4a4136] hover:bg-[#f0e9dc]'
   }`
 
 const menuClass = ({ isActive }) =>
-  `flex min-h-12 items-center rounded-sm px-4 text-[16px] font-medium transition ${
+  `flex min-h-12 items-center rounded-none px-4 text-[16px] font-medium transition ${
     isActive ? 'bg-[#1b1917] text-[#faf9f6]' : 'text-[#1b1917] hover:bg-[#f0e9dc]'
   }`
 
@@ -64,12 +64,15 @@ export default function AdminLayout() {
             )}
           </div>
 
-          <div className="hidden items-center gap-1 md:flex">
-            <Button type="button" variant="link" className="px-2" onClick={() => logout()}>
+          <div className="hidden items-center gap-2 md:flex">
+            <Button type="button" variant="outline" size="sm" onClick={() => logout()}>
               Sign out
             </Button>
-            <Button asChild variant="link" className="px-2 no-underline hover:underline">
-              <Link to="/">← Back to store</Link>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/">
+                <ArrowLeftIcon />
+                Back to store
+              </Link>
             </Button>
           </div>
 
@@ -117,7 +120,7 @@ export default function AdminLayout() {
                 </Button>
                 <Button
                   type="button"
-                  variant="quiet"
+                  variant="outline"
                   onClick={() => {
                     setMenuOpen(false)
                     logout()

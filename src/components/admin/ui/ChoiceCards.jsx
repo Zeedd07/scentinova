@@ -30,7 +30,7 @@ export default function ChoiceCards({
           <Label
             key={opt.value}
             htmlFor={itemId}
-            className="min-h-11 cursor-pointer items-start gap-3 rounded-sm border border-input bg-white px-3 py-2.5 font-normal transition-colors hover:border-[#c9bdaa] has-[[data-state=checked]]:border-[#1b1917] has-[[data-state=checked]]:bg-[#faf6ee] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
+            className="min-h-11 cursor-pointer items-start gap-3 rounded-none border border-input bg-white px-3 py-2.5 font-normal transition-colors hover:border-[#c9bdaa] has-[[data-state=checked]]:border-[#1b1917] has-[[data-state=checked]]:bg-[#faf6ee] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
           >
             <RadioGroupItem id={itemId} value={opt.value} className="mt-0.5" />
             <span className="min-w-0">

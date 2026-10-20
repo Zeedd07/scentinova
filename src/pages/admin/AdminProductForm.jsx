@@ -3,7 +3,7 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { MinusIcon, PlusIcon } from 'lucide-react'
+import { ArrowLeftIcon, MinusIcon, PlusIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Slider } from '@/components/ui/slider'
@@ -501,7 +501,16 @@ export default function AdminProductForm() {
       : form.image
         ? [form.image]
         : []
-    const image = gallery[0] || '/products/lunar-leather.png'
+    if (!gallery.length) {
+      setStatus({ type: 'error', text: 'Add at least one product image before saving.' })
+      return
+    }
+    const image = gallery[0]
+    const stock = Number(form.stock === '' ? 0 : form.stock)
+    if (!Number.isInteger(stock) || stock < 0) {
+      setStatus({ type: 'error', text: 'Stock must be a whole number of 0 or more.' })
+      return
+    }
     const galleryPublicIds = (form.galleryPublicIds || []).slice(0, gallery.length)
     while (galleryPublicIds.length < gallery.length) galleryPublicIds.push(null)
 
@@ -633,12 +642,12 @@ export default function AdminProductForm() {
     return (
       <div>
         <p className="admin-muted">{loadError || 'Product not found.'}</p>
-        <Link
-          to="/admin/products"
-          className="admin-link mt-3 inline-block no-underline hover:underline"
-        >
-          Back to products
-        </Link>
+        <Button asChild variant="outline" size="sm" className="mt-3">
+          <Link to="/admin/products">
+            <ArrowLeftIcon />
+            Back to products
+          </Link>
+        </Button>
       </div>
     )
   }
@@ -650,18 +659,16 @@ export default function AdminProductForm() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <Button asChild variant="outline" size="sm">
+        <Link to="/admin/products">
+          <ArrowLeftIcon />
+          Back to products
+        </Link>
+      </Button>
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <Link
-            to="/admin/products"
-            className="admin-link no-underline hover:underline"
-          >
-            ← Products
-          </Link>
-          <h2 className="admin-title mt-2">
-            {isNew ? 'New perfume' : `Edit ${existing.name}`}
-          </h2>
-        </div>
+        <h2 className="admin-title">
+          {isNew ? 'New perfume' : `Edit ${existing.name}`}
+        </h2>
         <div className="flex flex-wrap items-center gap-3">
           {status.text && (
             <span
@@ -1061,14 +1068,15 @@ export default function AdminProductForm() {
           />
         </section>
 
-        <div className="sticky bottom-0 z-20 -mx-4 -mb-4 flex items-center gap-3 border-t border-border bg-background/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:-mx-6 sm:-mb-6 sm:px-6">
+        <div className="sticky bottom-0 z-20 -mx-4 -mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border bg-background/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:-mx-6 sm:-mb-6 sm:flex-nowrap sm:px-6">
           <Button type="submit" disabled={saving || uploading} className="flex-1 sm:flex-none">
             {saving ? 'Saving…' : isNew ? 'Create perfume' : 'Save changes'}
           </Button>
           {status.text && (
             <span
               role="status"
-              className={`hidden min-w-0 truncate text-[14px] sm:inline ${
+              title={status.text}
+              className={`order-first w-full min-w-0 text-[14px] sm:order-none sm:w-auto sm:truncate ${
                 status.type === 'error' ? 'text-[#6e1118]' : 'text-[#4a7c3f]'
               }`}
             >

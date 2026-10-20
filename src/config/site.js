@@ -14,3 +14,8 @@ export const WHATSAPP = {
   label: '+91 70455 36871',
   href: 'https://wa.me/917045536871',
 }
+
+export const CONTACT_EMAIL = {
+  label: 'scentinova2000@gmail.com',
+  href: 'mailto:scentinova2000@gmail.com',
+}

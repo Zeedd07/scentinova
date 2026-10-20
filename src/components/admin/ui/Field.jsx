@@ -9,7 +9,9 @@ const LABEL_CLASS = 'text-[13px] font-medium text-[#4a4136]'
 
 export default function Field({ label, htmlFor, hint, error, className, children }) {
   const note = error ? (
-    <span className="mt-1 block text-[12px] text-destructive">{error}</span>
+    <span role="alert" className="mt-1 block text-[12px] text-destructive">
+      {error}
+    </span>
   ) : hint ? (
     <span className="mt-1 block text-[12px] text-muted-foreground">{hint}</span>
   ) : null

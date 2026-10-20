@@ -26,6 +26,20 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-background: var(--chart-background);
+  --color-chart-foreground: var(--chart-foreground);
+  --color-chart-foreground-muted: var(--chart-foreground-muted);
+  --color-chart-crosshair: var(--chart-crosshair);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-label: var(--chart-label);
+  --color-chart-marker-background: var(--chart-marker-background);
+  --color-chart-marker-border: var(--chart-marker-border);
+  --color-chart-marker-foreground: var(--chart-marker-foreground);
 }
 
 /* Tailwind's default radius scale is left alone; the storefront relies on it. */
@@ -47,4 +61,26 @@
   --border: #e0d6c4;
   --input: #d8d0c2;
   --ring: #c9a24a;
+
+  /* Bklit charts: bronze leads because gold alone is too light on cream. */
+  --chart-1: #7a5f2c;
+  --chart-2: #c9a24a;
+  --chart-3: #6e1118;
+  --chart-4: #3f6b3a;
+  --chart-5: #b9ad99;
+  --chart-background: #fffcf7;
+  --chart-foreground: #1b1917;
+  --chart-foreground-muted: #6b645b;
+  --chart-line-primary: var(--chart-1);
+  --chart-line-secondary: var(--chart-2);
+  --chart-crosshair: #7a5f2c;
+  --chart-grid: #ebe4d6;
+  --chart-brush-border: var(--chart-grid);
+  --chart-tooltip-background: var(--popover);
+  --chart-tooltip-foreground: var(--popover-foreground);
+  --chart-tooltip-muted: var(--muted-foreground);
+  --chart-marker-background: #f3ece0;
+  --chart-marker-border: #d8d0c2;
+  --chart-marker-foreground: #4a4136;
+  --chart-label: #6b645b;
 }

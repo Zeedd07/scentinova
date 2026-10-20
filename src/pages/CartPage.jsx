@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { useCart } from '../context/CartContext'
 import { formatPrice } from '../data/products'
 import PriceTag from '../components/PriceTag'
+import ThiingsIcon from '../components/ThiingsIcon'
 
 export default function CartPage() {
   const { items, subtotal, savings, count, setQty, removeItem, clearCart } = useCart()
@@ -45,6 +46,7 @@ export default function CartPage() {
               animate={{ opacity: 1 }}
               className="flex flex-col items-start border-t border-stone py-16"
             >
+              <ThiingsIcon name="shopping-bag" alt="" className="mb-6 h-28 w-28 sm:h-36 sm:w-36" />
               <p className="font-display text-3xl text-charcoal">Your cart is empty</p>
               <Link
                 to="/shop"
@@ -104,7 +106,7 @@ export default function CartPage() {
                       </p>
                     </div>
                     <div className="mt-auto flex flex-wrap items-center gap-5 pt-6">
-                      <div className="flex items-center border border-stone">
+                      <div className="flex items-center overflow-hidden rounded-none border border-stone">
                         <button
                           type="button"
                           className="px-3.5 py-2 text-muted transition hover:text-charcoal"

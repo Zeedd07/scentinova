@@ -231,25 +231,16 @@ export default function Hero({
       const cached = coverRef.current.cache.get(key)
       if (cached) return cached
 
-      const ir = iw / ih
-      const cr = cw / ch
-      let dw
-      let dh
-      let dx
-      let dy
-      if (cr > ir) {
-        dw = cw
-        dh = cw / ir
-        dx = 0
-        dy = (ch - dh) / 2
-      } else {
-        dh = ch
-        dw = ch * ir
-        dx = (cw - dw) / 2
-        dy = 0
+      // Fill the screen. Extra is cropped; contain left black bars around the frame.
+      const scale = Math.max(cw / iw, ch / ih)
+      const dw = iw * scale
+      const dh = ih * scale
+      const rect = {
+        dw,
+        dh,
+        dx: (cw - dw) / 2,
+        dy: (ch - dh) / 2,
       }
-
-      const rect = { dw, dh, dx, dy }
       coverRef.current.cache.set(key, rect)
       return rect
     }
@@ -437,11 +428,14 @@ export default function Hero({
     io.observe(ioTarget)
 
     window.addEventListener('resize', onResize, { passive: true })
+    const ro = new ResizeObserver(() => resize())
+    ro.observe(canvas)
     return () => {
       frameState.current.running = false
       cancelAnimationFrame(rafRef.current)
       window.clearTimeout(resizeTimer)
       window.removeEventListener('resize', onResize)
+      ro.disconnect()
       io.disconnect()
     }
   }, [priorityReady, getFrame, getExactFrame, totalFrames, isMobile])
@@ -620,8 +614,8 @@ export default function Hero({
     >
       <div
         ref={stickyRef}
-        className={`hero-sticky sticky top-0 flex w-full flex-col overflow-hidden bg-black ${
-          isMobile ? 'h-svh' : 'h-dvh'
+        className={`hero-sticky sticky top-0 overflow-hidden bg-black ${
+          isMobile ? 'flex w-full flex-col h-svh' : 'h-dvh'
         }`}
         style={{
           contain: 'layout paint size',
@@ -630,15 +624,15 @@ export default function Hero({
           touchAction: 'pan-y',
         }}
       >
-        <div
-          className="shrink-0 bg-black"
-          style={{
-            height: 'calc(var(--header-h) + env(safe-area-inset-top, 0px))',
-          }}
-          aria-hidden
-        />
+        {isMobile && (
+          <div
+            className="shrink-0 bg-black"
+            style={{ height: 'var(--header-visible-h)' }}
+            aria-hidden
+          />
+        )}
 
-        <div className="relative min-h-0 flex-1">
+        <div className={isMobile ? 'relative min-h-0 flex-1' : 'relative h-full w-full'}>
           <div className="pointer-events-none absolute inset-0 z-0 bg-luxury-dark" />
 
           <canvas
@@ -653,10 +647,15 @@ export default function Hero({
             }}
           />
 
-          <div className="hero-vignette pointer-events-none absolute inset-0 z-[2]" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[55%] bg-gradient-to-t from-black via-black/90 to-transparent sm:h-72 sm:via-black/80" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-28 bg-black sm:h-20" />
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-[2] w-1/3 bg-gradient-to-r from-black/80 via-black/30 to-transparent max-sm:hidden" />
+          {isMobile ? (
+            <>
+              <div className="hero-vignette pointer-events-none absolute inset-0 z-[2]" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[55%] bg-gradient-to-t from-black via-black/90 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-28 bg-black" />
+            </>
+          ) : (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-16 bg-gradient-to-t from-black/70 to-transparent" />
+          )}
 
           {!isMobile && (
             <div className="absolute inset-0 z-[3]">
@@ -664,7 +663,9 @@ export default function Hero({
             </div>
           )}
 
-          <div className="pointer-events-none absolute inset-0 z-[5] flex items-end px-5 pb-[3.25rem] sm:items-center sm:px-10 sm:pb-0 md:pl-24 lg:pl-36">
+          <div className={`pointer-events-none absolute inset-0 z-[5] flex px-5 sm:px-10 md:pl-24 lg:pl-36 ${
+            isMobile ? 'items-end pb-[3.25rem]' : 'items-center pb-0'
+          }`}>
             <AnimatePresence>
               {ready && (
                 <motion.div
@@ -720,13 +721,17 @@ export default function Hero({
             animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 8 }}
             transition={{ delay: 1.1, duration: 0.8, ease: easeOutExpo }}
           >
-            <div className="absolute right-5 bottom-[3.25rem] sm:right-10 sm:bottom-9">
+            <div className={`absolute right-5 sm:right-10 ${isMobile ? 'bottom-[3.25rem]' : 'bottom-7'}`}>
               <ScrollGauge ref={gaugeRef} label={isMobile ? 'Swipe' : 'Scroll'} initial={progressRef.current} />
             </div>
             <button
               type="button"
               onClick={scrollToCollection}
-              className="pointer-events-auto absolute inset-x-0 bottom-2 mx-auto w-max px-3 py-1.5 text-[8.5px] tracking-[0.32em] text-warm-white/40 uppercase sm:bottom-4 sm:text-[11px] sm:tracking-[0.42em]"
+              className={`pointer-events-auto absolute inset-x-0 mx-auto w-max uppercase text-warm-white/40 ${
+                isMobile
+                  ? 'bottom-2 px-3 py-1.5 text-[8.5px] tracking-[0.32em]'
+                  : 'bottom-1 px-2 py-0.5 text-[8px] tracking-[0.22em]'
+              }`}
             >
               Skip to the collection <span aria-hidden className="text-gold">↓</span>
             </button>

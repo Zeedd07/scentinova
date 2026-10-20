@@ -22,7 +22,7 @@ export default function FilterTabs({ options, value, onValueChange, label, disab
             value={o.value}
             disabled={disabled}
             className={cn(
-              'h-10 flex-none rounded-sm border-0 px-3 text-[14px] font-normal text-[#1b1917] hover:bg-cream data-[state=active]:bg-[#1b1917] data-[state=active]:text-[#faf9f6] data-[state=active]:shadow-none sm:h-9',
+              'h-10 flex-none rounded-none border-0 px-3 text-[14px] font-normal text-[#1b1917] hover:bg-cream data-[state=active]:bg-[#1b1917] data-[state=active]:text-[#faf9f6] data-[state=active]:shadow-none sm:h-9',
               wrap && 'w-full sm:w-auto',
             )}
           >

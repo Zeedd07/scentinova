@@ -2,7 +2,7 @@
  * Scentinova - luxury perfume boutique.
  * Storefront + protected /admin (MongoDB via API).
  */
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import {
   BrowserRouter,
   Routes,
@@ -12,14 +12,12 @@ import {
 } from 'react-router-dom'
 import { CartProvider } from './context/CartContext'
 import { CatalogProvider } from './context/CatalogContext'
-import { AdminAuthProvider } from './context/AdminAuthContext'
 import MotionProvider from './components/MotionProvider'
 import SmoothScroll, { useLenis } from './components/SmoothScroll'
 import { pinnedHeaderHeight, smoothScrollTo } from './lib/smoothScroll'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
-import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute'
 import HomePage from './pages/HomePage'
 import ShopPage from './pages/ShopPage'
 import ProductPage from './pages/ProductPage'
@@ -28,16 +26,16 @@ import CheckoutPage from './pages/CheckoutPage'
 import OrderConfirmationPage from './pages/OrderConfirmationPage'
 import TrackOrderPage from './pages/TrackOrderPage'
 import AboutPage from './pages/AboutPage'
-import AdminLayout from './pages/admin/AdminLayout'
-import AdminLogin from './pages/admin/AdminLogin'
-import AdminOverview from './pages/admin/AdminOverview'
-import AdminProducts from './pages/admin/AdminProducts'
-import AdminProductForm from './pages/admin/AdminProductForm'
-import AdminAnalytics from './pages/admin/AdminAnalytics'
-import AdminOrders from './pages/admin/AdminOrders'
-import AdminOrderDetail from './pages/admin/AdminOrderDetail'
-import AdminMediaLibrary from './pages/admin/AdminMediaLibrary'
-import AdminOffers from './pages/admin/AdminOffers'
+
+const AdminApp = lazy(() => import('./AdminApp'))
+
+function AdminLoading() {
+  return (
+    <div className="admin-shell flex items-center justify-center" aria-busy="true">
+      <p className="admin-eyebrow">Loading admin…</p>
+    </div>
+  )
+}
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
@@ -100,30 +98,12 @@ function AppShell() {
 
   if (isAdmin) {
     return (
-      <AdminAuthProvider>
+      <>
         <ScrollToTop />
-        <Routes>
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedAdminRoute>
-                <AdminLayout />
-              </ProtectedAdminRoute>
-            }
-          >
-            <Route index element={<AdminOverview />} />
-            <Route path="products" element={<AdminProducts />} />
-            <Route path="products/new" element={<AdminProductForm />} />
-            <Route path="products/:id" element={<AdminProductForm />} />
-            <Route path="media" element={<AdminMediaLibrary />} />
-            <Route path="analytics" element={<AdminAnalytics />} />
-            <Route path="orders" element={<AdminOrders />} />
-            <Route path="orders/:id" element={<AdminOrderDetail />} />
-            <Route path="offers" element={<AdminOffers />} />
-          </Route>
-        </Routes>
-      </AdminAuthProvider>
+        <Suspense fallback={<AdminLoading />}>
+          <AdminApp />
+        </Suspense>
+      </>
     )
   }
 

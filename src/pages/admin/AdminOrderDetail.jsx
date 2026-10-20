@@ -1,8 +1,9 @@
 /**
  * Admin order detail - one status dropdown, then everything about the order at a glance.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { ArrowLeftIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -210,15 +211,25 @@ function StatusCard({ order, initialTarget, busy, onStatus }) {
   )
 }
 
-function ShipmentCard({ order, busy, onSave }) {
-  const f = order.fulfillment || {}
-  const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState({
+function savedTracking(f) {
+  return {
     carrier: f.carrier || '',
     trackingNumber: f.trackingNumber || '',
     trackingUrl: f.trackingUrl || '',
-  })
+  }
+}
+
+function ShipmentCard({ order, busy, onSave }) {
+  const f = order.fulfillment || {}
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState(() => savedTracking(f))
   const [error, setError] = useState('')
+
+  const startEditing = () => {
+    setValue(savedTracking(f))
+    setError('')
+    setEditing(true)
+  }
 
   const save = async () => {
     const problem = trackingError(value)
@@ -235,7 +246,7 @@ function ShipmentCard({ order, busy, onSave }) {
       title="Shipment"
       action={
         !editing && (
-          <Button type="button" variant="link" className="min-h-10 px-1" onClick={() => setEditing(true)}>
+          <Button type="button" variant="outline" size="sm" onClick={startEditing}>
             Edit
           </Button>
         )
@@ -346,17 +357,21 @@ export default function AdminOrderDetail() {
   const [confirmRefund, setConfirmRefund] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      setOrder(await adminFetchOrder(id))
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'Could not load order.')
+  useEffect(() => {
+    let cancelled = false
+    setOrder(null)
+    setError('')
+    adminFetchOrder(id)
+      .then((data) => {
+        if (!cancelled) setOrder(data)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof ApiClientError ? err.message : 'Could not load order.')
+      })
+    return () => {
+      cancelled = true
     }
   }, [id])
-
-  useEffect(() => {
-    load()
-  }, [load])
 
   const run = async (fn, successMessage) => {
     setBusy(true)
@@ -380,9 +395,12 @@ export default function AdminOrderDetail() {
     return (
       <div>
         <p className="admin-muted">{error}</p>
-        <Link to="/admin/orders" className="admin-link mt-3 inline-block">
-          ← Orders
-        </Link>
+        <Button asChild variant="outline" size="sm" className="mt-3">
+          <Link to="/admin/orders">
+            <ArrowLeftIcon />
+            Back to orders
+          </Link>
+        </Button>
       </div>
     )
   }
@@ -412,9 +430,12 @@ export default function AdminOrderDetail() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <Link to="/admin/orders" className="admin-link">
-        ← Orders
-      </Link>
+      <Button asChild variant="outline" size="sm">
+        <Link to="/admin/orders">
+          <ArrowLeftIcon />
+          Back to orders
+        </Link>
+      </Button>
 
       <header className="admin-surface flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-6">
         <div className="min-w-0">

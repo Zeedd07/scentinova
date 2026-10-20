@@ -4,12 +4,14 @@
 import { Link } from 'react-router-dom'
 import BrandLogo from './BrandLogo'
 import { InstagramIcon, WhatsAppIcon } from './SocialIcons'
-import { SOCIAL_LINKS, WHATSAPP } from '../config/site'
+import ThiingsIcon from './ThiingsIcon'
+import { CONTACT_EMAIL, SOCIAL_LINKS, WHATSAPP } from '../config/site'
 
 const INSTAGRAM = SOCIAL_LINKS.find((s) => s.id === 'instagram')
 
 const CONTACT = [
   { href: WHATSAPP.href, label: WHATSAPP.label, hint: 'WhatsApp', Icon: WhatsAppIcon },
+  { href: CONTACT_EMAIL.href, label: CONTACT_EMAIL.label, hint: 'Email', thiings: 'envelope', blank: false },
   ...(INSTAGRAM
     ? [{ href: INSTAGRAM.href, label: INSTAGRAM.handle, hint: 'Instagram', Icon: InstagramIcon }]
     : []),
@@ -65,17 +67,16 @@ export default function Footer() {
             <div>
               <p className="text-[10px] tracking-[0.36em] text-champagne uppercase">Contact us</p>
               <ul className="mt-5 flex flex-col items-center gap-3 text-[12px] tracking-[0.08em] text-white/55 lg:items-start">
-                {CONTACT.map(({ href, label, hint, Icon }) => (
+                {CONTACT.map(({ href, label, hint, Icon, thiings, blank = true }) => (
                   <li key={hint}>
                     <a
                       href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      {...(blank ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                       aria-label={`${hint}: ${label}`}
                       className={`inline-flex items-center gap-2.5 ${footerLink}`}
                     >
                       <span className="text-champagne/80">
-                        <Icon size={16} />
+                        {thiings ? <ThiingsIcon name={thiings} alt="" className="h-5 w-5" /> : <Icon size={16} />}
                       </span>
                       {label}
                     </a>
@@ -90,6 +91,14 @@ export default function Footer() {
         <div className="mt-12 flex flex-col items-center gap-4 border-t border-white/10 pt-7 text-center sm:mt-14 sm:flex-row sm:items-center sm:justify-between sm:text-left">
           <p className="text-[10px] tracking-[0.14em] text-white/35 sm:text-[11px]">
             © {new Date().getFullYear()} SCENTINOVA. All rights reserved.
+            <a
+              href="https://www.thiings.co/things"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 underline-offset-2 hover:text-champagne hover:underline"
+            >
+              Icons by Thiings
+            </a>
             <Link
               to="/admin"
               className="ml-1 opacity-25 transition hover:opacity-100 hover:text-champagne"

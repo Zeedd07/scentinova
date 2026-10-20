@@ -1,100 +1,56 @@
 /**
- * Ingredients / notes - horizontal scroll glassmorphism cards with gold icons.
+ * Ingredients / notes. Saffron stays a gold mark; Thiings has no saffron-thread icon.
  */
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
+import ThiingsIcon from './ThiingsIcon'
 
 const NOTES = [
   {
     title: 'Bergamot',
     layer: 'Top',
     copy: 'Sunlit peel and bright green zest - the first breath.',
-    icon: (
-      <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none" aria-hidden>
-        <circle cx="24" cy="24" r="14" stroke="url(#g1)" strokeWidth="1.2" />
-        <path d="M24 12v24M12 24h24" stroke="url(#g1)" strokeWidth="1" opacity="0.6" />
-        <defs>
-          <linearGradient id="g1" x1="8" y1="8" x2="40" y2="40">
-            <stop stopColor="#d4af37" />
-            <stop offset="1" stopColor="#f4e5b2" />
-          </linearGradient>
-        </defs>
-      </svg>
-    ),
+    icon: <ThiingsIcon name="bergamot" className="h-16 w-16" />,
   },
   {
     title: 'Amber',
     layer: 'Heart',
     copy: 'Warm resin and soft spice - the gold at the center.',
-    icon: (
-      <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none" aria-hidden>
-        <path
-          d="M24 8l4.5 11.5L40 24l-11.5 4.5L24 40l-4.5-11.5L8 24l11.5-4.5L24 8z"
-          stroke="url(#g2)"
-          strokeWidth="1.2"
-        />
-        <defs>
-          <linearGradient id="g2" x1="8" y1="8" x2="40" y2="40">
-            <stop stopColor="#d4af37" />
-            <stop offset="1" stopColor="#f4e5b2" />
-          </linearGradient>
-        </defs>
-      </svg>
-    ),
+    icon: <ThiingsIcon name="amber" className="h-16 w-16" />,
   },
   {
     title: 'Oud',
     layer: 'Base',
     copy: 'Smoked wood and velvet depth - what lingers on skin.',
-    icon: (
-      <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none" aria-hidden>
-        <rect x="14" y="10" width="20" height="28" rx="2" stroke="url(#g3)" strokeWidth="1.2" />
-        <path d="M18 18h12M18 24h12M18 30h8" stroke="url(#g3)" strokeWidth="1" opacity="0.7" />
-        <defs>
-          <linearGradient id="g3" x1="14" y1="10" x2="34" y2="38">
-            <stop stopColor="#d4af37" />
-            <stop offset="1" stopColor="#f4e5b2" />
-          </linearGradient>
-        </defs>
-      </svg>
-    ),
+    icon: <ThiingsIcon name="oud" className="h-16 w-16" />,
   },
   {
     title: 'Saffron',
     layer: 'Accent',
     copy: 'A thread of fire woven through the amber heart.',
     icon: (
-      <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none" aria-hidden>
-        <path
-          d="M24 10c0 8-10 12-10 22a10 10 0 0020 0c0-10-10-14-10-22z"
-          stroke="url(#g4)"
-          strokeWidth="1.2"
-        />
-        <defs>
-          <linearGradient id="g4" x1="14" y1="10" x2="34" y2="40">
-            <stop stopColor="#d4af37" />
-            <stop offset="1" stopColor="#f4e5b2" />
-          </linearGradient>
-        </defs>
-      </svg>
+      <span className="flex h-16 w-16 items-center justify-center" aria-hidden>
+        <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none">
+          <path
+            d="M24 10c0 8-10 12-10 22a10 10 0 0020 0c0-10-10-14-10-22z"
+            stroke="url(#g4)"
+            strokeWidth="1.2"
+          />
+          <defs>
+            <linearGradient id="g4" x1="14" y1="10" x2="34" y2="40">
+              <stop stopColor="#d4af37" />
+              <stop offset="1" stopColor="#f4e5b2" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </span>
     ),
   },
   {
     title: 'Vanilla',
     layer: 'Dry-down',
     copy: 'Creamed warmth that softens the oud into silk.',
-    icon: (
-      <svg viewBox="0 0 48 48" className="h-10 w-10" fill="none" aria-hidden>
-        <ellipse cx="24" cy="24" rx="12" ry="16" stroke="url(#g5)" strokeWidth="1.2" />
-        <path d="M24 12v24" stroke="url(#g5)" strokeWidth="1" opacity="0.5" />
-        <defs>
-          <linearGradient id="g5" x1="12" y1="8" x2="36" y2="40">
-            <stop stopColor="#d4af37" />
-            <stop offset="1" stopColor="#f4e5b2" />
-          </linearGradient>
-        </defs>
-      </svg>
-    ),
+    icon: <ThiingsIcon name="vanilla" className="h-16 w-16" />,
   },
 ]
 

@@ -2,7 +2,8 @@
  * Admin login - maison cream / charcoal / gold.
  */
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeftIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,13 +16,19 @@ const labelClass = 'text-[12px] tracking-[0.18em] text-muted uppercase'
 export default function AdminLogin() {
   const { login, isAuthenticated, bootstrapping } = useAdminAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from
+  const returnTo =
+    from?.pathname?.startsWith('/admin') && from.pathname !== '/admin/login'
+      ? `${from.pathname}${from.search || ''}`
+      : '/admin'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   if (!bootstrapping && isAuthenticated) {
-    return <Navigate to="/admin" replace />
+    return <Navigate to={returnTo} replace />
   }
 
   const onSubmit = async (e) => {
@@ -30,7 +37,7 @@ export default function AdminLogin() {
     setSubmitting(true)
     try {
       await login(email.trim(), password)
-      navigate('/admin', { replace: true })
+      navigate(returnTo, { replace: true })
     } catch (err) {
       setError(
         err instanceof ApiClientError
@@ -104,9 +111,12 @@ export default function AdminLogin() {
         </Card>
 
         <p className="mt-6 text-center">
-          <Link to="/" className="text-sm text-bronze hover:underline">
-            ← Back to store
-          </Link>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/">
+              <ArrowLeftIcon />
+              Back to store
+            </Link>
+          </Button>
         </p>
       </div>
     </div>

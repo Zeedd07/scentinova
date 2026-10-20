@@ -8,6 +8,7 @@ import { formatPrice } from '../data/products'
 import { trackOrder, trackOrderByLegacyToken } from '../services/checkoutApi'
 import { ApiClientError } from '../services/apiClient'
 import { easeOutExpo } from '../lib/motion'
+import ThiingsIcon from '../components/ThiingsIcon'
 
 const MSG = {
   emptyOrder: 'Please enter your order number.',
@@ -19,7 +20,7 @@ const MSG = {
 const REFRESH_MS = 60_000
 
 const inputCls =
-  'mt-2 w-full border border-stone bg-white px-4 py-3.5 text-base text-charcoal uppercase tracking-[0.08em] placeholder:normal-case placeholder:tracking-normal placeholder:text-muted/70 outline-none transition-colors focus:border-scent-red aria-[invalid=true]:border-burgundy'
+  'mt-2 w-full rounded-none border border-stone bg-white px-4 py-3.5 text-base text-charcoal uppercase tracking-[0.08em] placeholder:normal-case placeholder:tracking-normal placeholder:text-muted/70 outline-none transition-colors focus:border-scent-red aria-[invalid=true]:border-burgundy'
 
 const rupees = (paise) => formatPrice((paise || 0) / 100)
 
@@ -426,6 +427,7 @@ export default function TrackOrderPage() {
           transition={{ duration: 0.5, ease: easeOutExpo }}
           className="text-center"
         >
+          <ThiingsIcon name="parcel" alt="" className="mx-auto mb-5 h-24 w-24" />
           <p className="text-[11px] tracking-[0.42em] text-muted uppercase">Order tracking</p>
           <h1 className="mt-3 font-display text-4xl text-charcoal sm:text-5xl">Track Your Order</h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted">

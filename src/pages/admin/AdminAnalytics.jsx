@@ -1,13 +1,20 @@
 /**
  * Analytics - money from real orders (only what was actually collected) plus storefront activity.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import FilterTabs from '../../components/admin/ui/FilterTabs'
+import AnalyticsRangeFilter from '../../components/admin/analytics/AnalyticsRangeFilter'
 import ResponsiveTable from '../../components/admin/ui/ResponsiveTable'
+import {
+  OrdersTrend,
+  RevenueTrend,
+  ShopperFunnel,
+  StatusMix,
+} from '../../components/admin/analytics/AnalyticsCharts'
 import { formatPrice } from '../../data/products'
 import { adminAnalyticsReport } from '../../services/analyticsApi'
 import { ApiClientError } from '../../services/apiClient'
@@ -17,6 +24,7 @@ const RANGES = [
   { key: '30d', label: 'Last 30 days' },
   { key: '90d', label: 'Last 90 days' },
   { key: 'all', label: 'All time' },
+  { key: 'custom', label: 'Custom dates' },
 ]
 
 const rupees = (paise) => formatPrice((paise || 0) / 100)
@@ -24,24 +32,11 @@ const count = (n) => (n || 0).toLocaleString('en-IN')
 const percent = (part, whole) => (whole ? `${((part / whole) * 100).toFixed(1).replace(/\.0$/, '')}%` : '-')
 const plural = (n, word) => `${count(n)} ${word}${n === 1 ? '' : 's'}`
 
-/** Chart keys are calendar dates in India time: 'YYYY-MM-DD' or 'YYYY-MM'. */
-function bucketLabel(key, unit, long = false) {
-  const [y, m, d] = key.split('-').map(Number)
-  const date = new Date(Date.UTC(y, m - 1, d || 1))
-  const options =
-    unit === 'month'
-      ? { month: long ? 'long' : 'short', year: 'numeric' }
-      : { day: 'numeric', month: 'short', ...(long ? { weekday: 'short', year: 'numeric' } : {}) }
-  return date.toLocaleDateString('en-IN', { ...options, timeZone: 'UTC' })
-}
-
-const RANGE_OPTIONS = RANGES.map((r) => ({ value: r.key, label: r.label }))
-
 function StatCard({ label, value, hint, highlight = false, tone, wide = false }) {
   return (
     <div
       className={cn(
-        'min-w-0 rounded-sm px-4 py-4',
+        'min-w-0 rounded-md px-4 py-4',
         highlight ? 'border border-[#1b1917] bg-[#1b1917] text-[#faf9f6]' : 'border border-[#e2dbcf] bg-card',
         wide && 'col-span-2 sm:col-span-1',
       )}
@@ -68,84 +63,8 @@ function Section({ title, description, children, className = '' }) {
     <Card className={cn('min-w-0 gap-0 p-4 sm:p-5', className)}>
       <h3 className="text-base font-semibold text-[#1b1917]">{title}</h3>
       {description && <p className="mt-1 text-[14px] admin-muted">{description}</p>}
-      <div className="mt-4">{children}</div>
+      <div className="mt-4 min-w-0">{children}</div>
     </Card>
-  )
-}
-
-function RevenueChart({ timeline }) {
-  const { points, unit } = timeline
-  const [active, setActive] = useState(null)
-  const max = Math.max(...points.map((p) => p.netPaise), 0)
-  const labelEvery = Math.max(1, Math.ceil(points.length / 6))
-  const shown = active != null ? points[active] : null
-  const totals = points.reduce(
-    (acc, p) => ({ net: acc.net + p.netPaise, orders: acc.orders + p.orders }),
-    { net: 0, orders: 0 },
-  )
-
-  if (max <= 0) {
-    return (
-      <p className="py-10 text-center text-[15px] admin-muted">
-        No money was collected in this period.
-      </p>
-    )
-  }
-
-  return (
-    <div>
-      <p className="min-h-[2.75rem] text-[14px] text-[#4a4136]" aria-live="polite">
-        {shown ? (
-          <>
-            <span className="font-semibold text-[#1b1917]">{bucketLabel(shown.key, unit, true)}</span>
-            <br />
-            {rupees(shown.netPaise)} net from {plural(shown.orders, 'paid order')}
-            {shown.refundedPaise > 0 && ` (after ${rupees(shown.refundedPaise)} refunded)`}
-          </>
-        ) : (
-          <>
-            <span className="font-semibold text-[#1b1917]">{rupees(totals.net)}</span> net from{' '}
-            {plural(totals.orders, 'paid order')}
-            <br />
-            <span className="admin-muted">Hover or tap a bar to see that {unit}.</span>
-          </>
-        )}
-      </p>
-
-      <div className="relative mt-3 flex h-36 items-end sm:h-48 gap-[3px] border-b border-l border-[#e0d6c4] pl-1 sm:gap-1">
-        <span className="absolute -top-1 left-2 text-[11px] admin-muted">{rupees(max)}</span>
-        {points.map((p, i) => {
-          const height = p.netPaise > 0 ? Math.max(3, (p.netPaise / max) * 100) : 0
-          return (
-            <button
-              key={p.key}
-              type="button"
-              aria-label={`${bucketLabel(p.key, unit, true)}: ${rupees(p.netPaise)} from ${plural(p.orders, 'order')}`}
-              onMouseEnter={() => setActive(i)}
-              onMouseLeave={() => setActive(null)}
-              onFocus={() => setActive(i)}
-              onBlur={() => setActive(null)}
-              onClick={() => setActive(i)}
-              className="group flex h-full min-w-0 flex-1 items-end focus:outline-none"
-            >
-              <span
-                className={`block w-full transition-colors ${
-                  active === i ? 'bg-[#1b1917]' : 'bg-gold group-hover:bg-bronze'
-                }`}
-                style={{ height: `${height}%` }}
-              />
-            </button>
-          )
-        })}
-      </div>
-      <div className="mt-1.5 flex gap-[3px] pl-1 sm:gap-1">
-        {points.map((p, i) => (
-          <span key={p.key} className="min-w-0 flex-1 text-center text-[10px] whitespace-nowrap admin-muted">
-            {i % labelEvery === 0 ? bucketLabel(p.key, unit) : ''}
-          </span>
-        ))}
-      </div>
-    </div>
   )
 }
 
@@ -165,8 +84,8 @@ function MoneyBreakdown({ money }) {
       key={label}
       className={`flex justify-between gap-4 py-2 text-[15px] ${strong ? 'font-semibold text-[#1b1917]' : 'text-[#4a4136]'}`}
     >
-      <span>{label}</span>
-      <span className={`tabular-nums ${paise < 0 ? 'text-[#6e1118]' : ''}`}>
+      <span className="min-w-0">{label}</span>
+      <span className={`shrink-0 tabular-nums ${paise < 0 ? 'text-[#6e1118]' : ''}`}>
         {paise < 0 ? `−${rupees(-paise)}` : rupees(paise)}
       </span>
     </div>
@@ -185,44 +104,36 @@ function MoneyBreakdown({ money }) {
   )
 }
 
-function Funnel({ funnel }) {
-  const steps = [
-    ['Product page views', funnel.views, 'Shoppers opening a product page'],
-    ['Added to cart', funnel.addToCarts, 'Times a perfume was added to the bag'],
-    ['Started checkout', funnel.checkoutStarted, 'Visits to the checkout page'],
-    ['Paid orders', funnel.paidOrders, 'Orders where money was collected'],
-  ]
-  const max = Math.max(funnel.views, funnel.addToCarts, funnel.checkoutStarted, funnel.paidOrders, 1)
-
+function CategorySales({ categories }) {
+  if (categories.length === 0) return <p className="text-[15px] admin-muted">No sales in this period.</p>
+  const max = categories[0].revenuePaise || 1
   return (
-    <div className="space-y-4">
-      {steps.map(([label, value, hint], i) => (
-        <div key={label}>
-          <div className="flex items-baseline justify-between gap-3 text-[15px]">
-            <span className="text-[#1b1917]">{label}</span>
-            <span className="tabular-nums">
-              <span className="font-semibold text-[#1b1917]">{count(value)}</span>
-              {i > 0 && (
-                <span className="ml-2 text-[13px] admin-muted">{percent(value, funnel.views)} of views</span>
-              )}
+    <ul className="space-y-3">
+      {categories.map((c) => (
+        <li key={c.category}>
+          <div className="flex justify-between gap-3 text-[15px]">
+            <span className="min-w-0 break-words text-[#1b1917]">{c.category}</span>
+            <span className="shrink-0 tabular-nums">
+              <span className="font-semibold">{rupees(c.revenuePaise)}</span>
+              <span className="ml-2 text-[13px] admin-muted">{plural(c.units, 'unit')}</span>
             </span>
           </div>
-          <div className="mt-1 h-2.5 bg-[#ebe4d6]">
+          <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-[#ebe4d6]">
             <div
-              className={i === steps.length - 1 ? 'h-full bg-[#3f6b3a]' : 'h-full bg-gold'}
-              style={{ width: `${value ? Math.max(1.5, (value / max) * 100) : 0}%` }}
+              className="h-full rounded-full bg-[var(--chart-1)]"
+              style={{ width: `${Math.max(2, (c.revenuePaise / max) * 100)}%` }}
             />
           </div>
-          <p className="mt-1 text-[12px] admin-muted">{hint}</p>
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }
 
 function productNote(p, topRevenueId) {
   if (p.id === topRevenueId) return { text: 'Best seller', tone: 'good' }
   if (p.views >= 10 && p.unitsSold === 0) return { text: 'Viewed, not bought yet', tone: 'warn' }
+  if (p.stock != null && p.stock <= 0 && p.active) return { text: 'Out of stock', tone: 'warn' }
   if (p.stock != null && p.stock <= 8 && p.active) return { text: `Only ${p.stock} in stock`, tone: 'warn' }
   if (!p.active) return { text: 'Hidden from store', tone: 'muted' }
   return null
@@ -244,13 +155,15 @@ function ProductTable({ products }) {
     const note = productNote(p, topRevenueId)
     return (
       note && (
-        <span className={`inline-block border px-2 py-0.5 text-[12px] ${NOTE_STYLES[note.tone]}`}>{note.text}</span>
+        <span className={`inline-block rounded-full border px-2 py-0.5 text-[12px] ${NOTE_STYLES[note.tone]}`}>
+          {note.text}
+        </span>
       )
     )
   }
   const name = (p) => (
     <>
-      <Link to={`/admin/products/${p.id}`} className="font-medium hover:underline">
+      <Link to={`/admin/products/${p.id}`} className="font-medium break-words hover:underline">
         {p.name}
       </Link>
       {p.category && <span className="block text-[12px] admin-muted">{p.category}</span>}
@@ -304,7 +217,7 @@ function ProductTable({ products }) {
             <div className="min-w-0">{name(p)}</div>
             <span className="shrink-0 font-semibold tabular-nums">{rupees(p.revenuePaise)}</span>
           </div>
-          <dl className="grid grid-cols-4 gap-2">
+          <dl className="grid grid-cols-2 gap-2 min-[380px]:grid-cols-4">
             {stat('Views', count(p.views))}
             {stat('In cart', count(p.addToCarts))}
             {stat('Sold', count(p.unitsSold))}
@@ -317,41 +230,77 @@ function ProductTable({ products }) {
   )
 }
 
+function LoadingState() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading analytics">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-24 bg-secondary" />
+        ))}
+      </div>
+      <Skeleton className="h-80 bg-secondary" />
+    </div>
+  )
+}
+
+function periodText(shown) {
+  if (shown.range.key === 'custom' && shown.range.from && shown.range.to) {
+    const fmt = (iso) =>
+      new Date(iso).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'Asia/Kolkata',
+      })
+    return `${fmt(shown.range.from)} – ${fmt(shown.range.to)}, India time`
+  }
+  const label = RANGES.find((r) => r.key === shown.range.key)?.label.toLowerCase()
+  const from = shown.range.from
+    ? ` (${new Date(shown.range.from).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })} – today, India time)`
+    : ''
+  return `${label}${from}`
+}
+
 export default function AdminAnalytics() {
   const [range, setRange] = useState('30d')
+  const [custom, setCustom] = useState(null)
   const [report, setReport] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const requestId = useRef(0)
 
-  const load = useCallback(async (key, isCancelled = () => false) => {
+  const load = useCallback(async () => {
+    const id = ++requestId.current
     setLoading(true)
     setError('')
     try {
-      const data = await adminAnalyticsReport(key)
-      if (!isCancelled()) setReport(data)
+      const data = await adminAnalyticsReport(
+        range === 'custom' ? { range: 'custom', from: custom.from, to: custom.to } : range,
+      )
+      if (id === requestId.current) setReport(data)
     } catch (err) {
-      if (!isCancelled()) {
+      if (id === requestId.current) {
         setError(err instanceof ApiClientError ? err.message : 'Could not load analytics.')
       }
     } finally {
-      if (!isCancelled()) setLoading(false)
+      if (id === requestId.current) setLoading(false)
     }
-  }, [])
+  }, [range, custom])
 
   useEffect(() => {
-    let cancelled = false
-    load(range, () => cancelled)
+    if (range === 'custom' && (!custom?.from || !custom?.to)) return undefined
+    load()
     return () => {
-      cancelled = true
+      requestId.current += 1
     }
-  }, [range, load])
+  }, [range, custom, load])
 
-  const rangeLabel = RANGES.find((r) => r.key === range)?.label.toLowerCase()
+  const shown = report
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h2 className="admin-title">Analytics</h2>
           <p className="mt-1 max-w-2xl text-[15px] admin-muted">
             Revenue comes straight from your orders and counts only money you have actually received.
@@ -359,31 +308,43 @@ export default function AdminAnalytics() {
           </p>
         </div>
         <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
-          <FilterTabs
-            wrap
-            className="min-w-0 flex-1"
-            label="Time period"
-            options={RANGE_OPTIONS}
+          <AnalyticsRangeFilter
             value={range}
-            onValueChange={setRange}
+            custom={custom}
             disabled={loading && !report}
+            onChange={({ range: next, custom: nextCustom }) => {
+              setRange(next)
+              setCustom(nextCustom)
+            }}
           />
-          <Button type="button" variant="quiet" size="sm" className="shrink-0 self-end sm:self-auto" onClick={() => load(range)} disabled={loading}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 self-end sm:self-auto"
+            onClick={() => load()}
+            disabled={loading}
+          >
             {loading && report ? 'Refreshing…' : 'Refresh'}
           </Button>
         </div>
       </div>
 
-      {error && <p className="text-[#6e1118]">{error}</p>}
-      {!report && loading && <p className="admin-muted">Loading analytics…</p>}
+      {error && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[#e6c2c5] bg-[#fbeeef] px-4 py-3 text-[14px] text-[#6e1118]">
+          <span className="min-w-0">{error}</span>
+          <Button type="button" variant="outline" size="sm" onClick={() => load()} disabled={loading}>
+            Try again
+          </Button>
+        </div>
+      )}
+      {!report && loading && <LoadingState />}
 
-      {report && (
-        <div className={`space-y-6 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+      {shown && (
+        <div className={`space-y-6 transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
           <p className="text-[13px] admin-muted">
-            Showing {rangeLabel}
-            {report.range.from &&
-              ` (${new Date(report.range.from).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} – today)`}
-            . Updated {new Date(report.generatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}.
+            Showing {periodText(shown)}. Updated{' '}
+            {new Date(shown.generatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}.
           </p>
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -391,51 +352,59 @@ export default function AdminAnalytics() {
               highlight
               wide
               label="Net revenue"
-              value={rupees(report.money.netPaise)}
+              value={rupees(shown.money.netPaise)}
               hint="Money received minus refunds"
             />
             <StatCard
               wide
               label="Money received"
-              value={rupees(report.money.receivedPaise)}
-              hint={`${plural(report.money.paidOrders, 'paid order')} · online ${rupees(report.money.online.paise)} · cash ${rupees(report.money.cod.paise)}`}
+              value={rupees(shown.money.receivedPaise)}
+              hint={`${plural(shown.money.paidOrders, 'paid order')} · online ${rupees(shown.money.online.paise)} · cash ${rupees(shown.money.cod.paise)}`}
             />
             <StatCard
               label="Refunds"
-              value={rupees(report.money.refundedPaise)}
-              tone={report.money.refundedPaise > 0 ? 'bad' : undefined}
+              value={rupees(shown.money.refundedPaise)}
+              tone={shown.money.refundedPaise > 0 ? 'bad' : undefined}
               hint="Returned or being returned to customers"
             />
             <StatCard
               label="Average order"
               value={
-                report.money.paidOrders ? rupees(Math.round(report.money.averageOrderPaise / 100) * 100) : '-'
+                shown.money.paidOrders ? rupees(Math.round(shown.money.averageOrderPaise / 100) * 100) : '-'
               }
               hint="Typical amount paid per order"
             />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="admin-surface border-dashed px-4 py-3.5">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="admin-surface min-w-0 rounded-md px-4 py-3.5">
+              <p className="text-[13px] font-medium text-[#4a4136]">Orders placed</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-[#1b1917]">{count(shown.placed?.orders)}</p>
+              <p className="mt-1 text-[13px] admin-muted">
+                {count(shown.placed?.byMethod.PREPAID)} prepaid · {count(shown.placed?.byMethod.COD)} cash on delivery.
+                Every order, paid or not.
+              </p>
+            </div>
+            <div className="admin-surface min-w-0 rounded-md border-dashed px-4 py-3.5">
               <p className="text-[13px] font-medium text-[#4a4136]">Cash on delivery - not collected yet</p>
               <p className="mt-1 text-xl font-semibold tabular-nums text-[#1b1917]">
-                {rupees(report.money.codAwaiting.paise)}
+                {rupees(shown.money.codAwaiting.paise)}
                 <span className="ml-2 text-[14px] font-normal admin-muted">
-                  {plural(report.money.codAwaiting.orders, 'order')}
+                  {plural(shown.money.codAwaiting.orders, 'order')}
                 </span>
               </p>
               <p className="mt-1 text-[13px] admin-muted">
                 Counted as revenue once you mark the cash as received on the order.
               </p>
             </div>
-            <div className="admin-surface border-dashed px-4 py-3.5">
+            <div className="admin-surface min-w-0 rounded-md border-dashed px-4 py-3.5">
               <p className="text-[13px] font-medium text-[#4a4136]">Orders that were never paid</p>
               <p className="mt-1 text-xl font-semibold tabular-nums text-[#1b1917]">
-                {count(report.money.unpaid.orders)}
+                {count(shown.money.unpaid.orders)}
               </p>
               <p className="mt-1 text-[13px] admin-muted">
-                {count(report.money.unpaid.cancelled)} cancelled · {count(report.money.unpaid.failedOrExpired)} payment
-                failed or expired · {count(report.money.unpaid.awaitingPayment)} still awaiting payment. Not counted as
+                {count(shown.money.unpaid.cancelled)} cancelled · {count(shown.money.unpaid.failedOrExpired)} payment
+                failed or expired · {count(shown.money.unpaid.awaitingPayment)} still awaiting payment. Not counted as
                 revenue.
               </p>
             </div>
@@ -444,19 +413,33 @@ export default function AdminAnalytics() {
           <div className="grid gap-6 lg:grid-cols-5">
             <Section
               className="lg:col-span-3"
-              title={report.timeline.unit === 'month' ? 'Net revenue by month' : 'Net revenue by day'}
+              title={shown.timeline.unit === 'month' ? 'Net revenue by month' : 'Net revenue by day'}
               description="Money received each day (India time), after refunds."
             >
-              <RevenueChart key={range} timeline={report.timeline} />
+              <RevenueTrend key={shown.range.key} timeline={shown.timeline} />
             </Section>
             <Section
               className="lg:col-span-2"
               title="Where the money came from"
               description="Paid orders in this period, line by line."
             >
-              <MoneyBreakdown money={report.money} />
+              <MoneyBreakdown money={shown.money} />
             </Section>
           </div>
+
+          {shown.placed && (
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Section
+                title={shown.timeline.unit === 'month' ? 'Orders placed by month' : 'Orders placed by day'}
+                description="Every order on the day it was placed, including ones that were never paid."
+              >
+                <OrdersTrend key={shown.range.key} timeline={shown.timeline} placed={shown.placed} />
+              </Section>
+              <Section title="Where those orders are now" description="Current status of the orders placed in this period.">
+                <StatusMix key={shown.range.key} placed={shown.placed} />
+              </Section>
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-5">
             <Section
@@ -464,39 +447,14 @@ export default function AdminAnalytics() {
               title="Shopper journey"
               description="How many shoppers moved from looking to paying."
             >
-              <Funnel funnel={report.funnel} />
+              <ShopperFunnel key={shown.range.key} funnel={shown.funnel} />
             </Section>
             <Section
               className="lg:col-span-3"
               title="Sales by category"
               description="Units sold and product sales (excluding shipping and fees)."
             >
-              {report.categories.length === 0 ? (
-                <p className="text-[15px] admin-muted">No sales in this period.</p>
-              ) : (
-                <div className="space-y-3">
-                  {report.categories.map((c) => {
-                    const max = report.categories[0].revenuePaise || 1
-                    return (
-                      <div key={c.category}>
-                        <div className="flex justify-between gap-3 text-[15px]">
-                          <span className="text-[#1b1917]">{c.category}</span>
-                          <span className="tabular-nums">
-                            <span className="font-semibold">{rupees(c.revenuePaise)}</span>
-                            <span className="ml-2 text-[13px] admin-muted">{plural(c.units, 'unit')}</span>
-                          </span>
-                        </div>
-                        <div className="mt-1 h-2.5 bg-[#ebe4d6]">
-                          <div
-                            className="h-full bg-gold"
-                            style={{ width: `${Math.max(2, (c.revenuePaise / max) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+              <CategorySales categories={shown.categories} />
             </Section>
           </div>
 
@@ -504,10 +462,10 @@ export default function AdminAnalytics() {
             title="Perfume performance"
             description="Sales are what customers paid for the perfume itself (after sale discounts), from paid orders that weren't refunded."
           >
-            <ProductTable products={report.products} />
+            <ProductTable products={shown.products} />
           </Section>
 
-          <details className="admin-surface p-4 text-[14px] sm:p-5">
+          <details className="admin-surface rounded-md p-4 text-[14px] sm:p-5">
             <summary className="cursor-pointer font-semibold text-[#1b1917]">How these numbers are calculated</summary>
             <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[#4a4136]">
               <li>
@@ -516,15 +474,20 @@ export default function AdminAnalytics() {
               </li>
               <li>
                 <strong>Refunds</strong> use the refund amount recorded with the payment; orders marked “refund in
-                progress” count in full.
+                progress” count in full. A refund is shown against the day the order was paid, not the day it was
+                refunded.
               </li>
               <li>
                 <strong>Not counted:</strong> orders awaiting payment, failed or expired payments, cancelled orders and
                 cash-on-delivery orders whose cash hasn&apos;t been collected yet.
               </li>
               <li>
-                <strong>Views</strong> count each shopper once per perfume every 30 minutes. Views, carts and checkouts
-                are recorded by the storefront as shoppers browse.
+                <strong>Orders placed</strong> counts every order on the day it was created, whatever happened next, so
+                it can be higher than paid orders.
+              </li>
+              <li>
+                <strong>Views</strong> count each shopper once per perfume every 30 minutes. Carts and checkouts count
+                every time they happen. All three are recorded by the storefront as shoppers browse.
               </li>
               <li>Every figure, including test orders you paid for yourself, comes from the live database - nothing is estimated.</li>
             </ul>

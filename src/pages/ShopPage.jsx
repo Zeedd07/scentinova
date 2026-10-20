@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCatalog } from '../context/CatalogContext'
 import ProductCard from '../components/ProductCard'
+import ThiingsIcon from '../components/ThiingsIcon'
 import { easeOutExpo, fadeUp } from '../lib/motion'
 
 /** Fewer live products spread across the full row instead of leaving empty columns. */
@@ -44,7 +45,7 @@ function SortMenu({ value, onChange }) {
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex min-w-[11.5rem] items-center justify-between gap-4 border border-stone bg-warm-white px-4 py-2.5 text-left text-[11px] tracking-[0.2em] text-charcoal uppercase transition hover:border-scent-red"
+        className="inline-flex min-w-[11.5rem] items-center justify-between gap-4 rounded-none border border-stone bg-warm-white px-4 py-2.5 text-left text-[11px] tracking-[0.2em] text-charcoal uppercase transition hover:border-scent-red"
       >
         <span>{current.label.split(' · ')[0]}</span>
         <span
@@ -159,7 +160,10 @@ export default function ShopPage() {
             ))}
           </div>
         ) : !loading ? (
-          <p className="py-20 text-center text-muted">No fragrances available.</p>
+          <div className="py-20 text-center">
+            <ThiingsIcon name="perfume-bottle" alt="" className="mx-auto mb-6 h-32 w-32" />
+            <p className="text-muted">No fragrances available.</p>
+          </div>
         ) : null}
       </section>
     </div>

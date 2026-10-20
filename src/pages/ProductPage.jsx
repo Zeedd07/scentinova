@@ -10,6 +10,7 @@ import { fetchProductBySlug } from '../services/productApi'
 import ProductCard from '../components/ProductCard'
 import ProductGallery from '../components/ProductGallery'
 import PriceTag from '../components/PriceTag'
+import ThiingsIcon from '../components/ThiingsIcon'
 import { easeOutExpo } from '../lib/motion'
 import { mediaForSize, productSizes } from '../lib/productSizes'
 
@@ -101,6 +102,7 @@ export default function ProductPage() {
   if (!product || product.active === false) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center bg-ivory px-6 pt-[calc(var(--page-top)+0.5rem)] text-center">
+        <ThiingsIcon name="perfume-bottle" alt="" className="mb-6 h-32 w-32" />
         <h1 className="font-display text-3xl text-charcoal">Fragrance not found</h1>
         <Link to="/shop" className="mt-6 text-[11px] tracking-[0.28em] text-scent-red uppercase">
           Back to shop →
@@ -241,7 +243,7 @@ export default function ProductPage() {
           </div>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
-            <div className="flex items-center border border-stone">
+            <div className="flex items-center overflow-hidden rounded-none border border-stone">
               <button
                 type="button"
                 className="px-4 py-3 text-muted hover:text-charcoal"

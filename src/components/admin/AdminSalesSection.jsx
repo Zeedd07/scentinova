@@ -425,11 +425,11 @@ export default function AdminSalesSection() {
                     />
                     {sale.active ? 'On' : 'Off'}
                   </Label>
-                  <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                  <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
                     <Button
                       type="button"
-                      variant="link"
-                      className="min-h-10"
+                      variant="outline"
+                      size="sm"
                       onClick={() => startEdit(sale)}
                       disabled={busy}
                     >
@@ -437,8 +437,8 @@ export default function AdminSalesSection() {
                     </Button>
                     <Button
                       type="button"
-                      variant="link"
-                      className="min-h-10 text-destructive"
+                      variant="danger"
+                      size="sm"
                       onClick={() => setPendingDelete(sale)}
                       disabled={busy}
                     >

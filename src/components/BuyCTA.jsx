@@ -63,7 +63,7 @@ export default function BuyCTA() {
           transition={{ duration: 1 }}
           className="relative my-10 w-48 sm:w-56"
         >
-          <Link to="/product/aurum" className="gold-border block rounded-sm p-[1px]">
+          <Link to="/product/aurum" className="gold-border block rounded-none p-[1px]">
             <div className="overflow-hidden rounded-sm bg-ink">
               <img
                 src="/frames/frame-001.jpg"
@@ -92,7 +92,7 @@ export default function BuyCTA() {
             type="button"
             onClick={onAdd}
             whileTap={{ scale: 0.97 }}
-            className="btn-shimmer gold-border rounded-sm px-12 py-4 text-xs tracking-[0.32em] text-cream uppercase transition hover:text-gold-light"
+            className="btn-shimmer gold-border rounded-none px-12 py-4 text-xs tracking-[0.32em] text-cream uppercase transition hover:text-gold-light"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.span

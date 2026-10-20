@@ -275,7 +275,7 @@ export default function AdminOffers() {
                     </p>
                   )}
 
-                  <div className="flex w-full items-center justify-between gap-3 pl-12 sm:w-auto sm:justify-end sm:pl-0">
+                  <div className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 pl-12 sm:w-auto sm:flex-nowrap sm:justify-end sm:pl-0">
                     <Label className="min-h-10 cursor-pointer font-normal">
                       <Switch
                         checked={offer.active}
@@ -286,19 +286,19 @@ export default function AdminOffers() {
                       {offer.active ? 'Shown' : 'Hidden'}
                     </Label>
 
-                    <div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                    <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
                       {isEditing ? (
                         <>
                           <Button
                             type="button"
-                            variant="link"
-                            className="min-h-10"
+                            variant="default"
+                            size="sm"
                             onClick={saveEdit}
                             disabled={busy || !editing.text.trim()}
                           >
                             Save
                           </Button>
-                          <Button type="button" variant="link" className="min-h-10" onClick={() => setEditing(null)}>
+                          <Button type="button" variant="outline" size="sm" onClick={() => setEditing(null)}>
                             Cancel
                           </Button>
                         </>
@@ -306,8 +306,8 @@ export default function AdminOffers() {
                         <>
                           <Button
                             type="button"
-                            variant="link"
-                            className="min-h-10"
+                            variant="outline"
+                            size="sm"
                             onClick={() => setEditing({ id: offer.id, text: offer.text })}
                             disabled={busy}
                           >
@@ -315,8 +315,8 @@ export default function AdminOffers() {
                           </Button>
                           <Button
                             type="button"
-                            variant="link"
-                            className="min-h-10 text-destructive"
+                            variant="danger"
+                            size="sm"
                             onClick={() => setPendingDelete(offer)}
                             disabled={busy}
                           >

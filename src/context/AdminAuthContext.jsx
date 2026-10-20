@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react'
 import * as authApi from '../services/authApi'
-import { clearAccessToken } from '../services/apiClient'
+import { clearAccessToken, onSessionExpired } from '../services/apiClient'
 
 const AdminAuthContext = createContext(null)
 

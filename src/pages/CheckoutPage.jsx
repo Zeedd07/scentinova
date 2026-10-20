@@ -17,6 +17,7 @@ import { trackEvent } from '../services/analyticsApi'
 import { saveTrackingToken } from '../services/trackingStorage'
 import FieldLabel from '../components/forms/FieldLabel'
 import IndiaStateCityFields from '../components/forms/IndiaStateCityFields'
+import ThiingsIcon from '../components/ThiingsIcon'
 import { COUNTRY_NAME } from '../lib/indiaLocations'
 
 const IDEMPOTENCY_STORAGE_KEY = 'scentinova-checkout-idempotency'
@@ -32,7 +33,7 @@ const ADDRESS_FIELDS = [...Object.keys(ADDRESS_PARTS), 'state', 'city', 'postalC
 
 const cleanText = (value) => String(value || '').trim().replace(/\s+/g, ' ')
 
-const inputBase = 'w-full border bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red'
+const inputBase = 'w-full rounded-none border bg-ivory px-4 py-3 text-base outline-none focus:border-scent-red'
 const inputClass = `${inputBase} border-stone`
 
 function AddressTextField({ id, label, required = false, error, inputRef, className = '', ...input }) {
@@ -502,6 +503,7 @@ export default function CheckoutPage() {
   if (!count) {
     return (
       <div className="bg-ivory px-6 pt-[calc(var(--page-top)+3.5rem)] pb-20 text-center">
+        <ThiingsIcon name="shopping-bag" alt="" className="mx-auto mb-6 h-28 w-28 sm:h-36 sm:w-36" />
         <h1 className="font-display text-4xl text-charcoal">Your bag is empty</h1>
         <Link
           to="/shop"
@@ -679,7 +681,7 @@ export default function CheckoutPage() {
                   aria-required="true"
                   value={form.country}
                   title="We currently ship within India only."
-                  className="w-full cursor-default border border-stone bg-stone/20 px-4 py-3 text-base text-charcoal outline-none"
+                  className="w-full cursor-default rounded-none border border-stone bg-stone/20 px-4 py-3 text-base text-charcoal outline-none"
                 />
               </label>
             </div>
@@ -692,7 +694,7 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={() => setPaymentMethod('PREPAID')}
                 aria-pressed={paymentMethod === 'PREPAID'}
-                className={`relative border px-4 py-4 text-left transition ${
+                className={`relative rounded-none border px-4 py-4 text-left transition ${
                   paymentMethod === 'PREPAID'
                     ? 'border-scent-red bg-ivory'
                     : 'border-stone bg-warm-white hover:border-charcoal/40'
@@ -716,7 +718,7 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('COD')}
                 disabled={!codEnabled}
                 aria-pressed={paymentMethod === 'COD'}
-                className={`relative border px-4 py-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`relative rounded-none border px-4 py-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   paymentMethod === 'COD'
                     ? 'border-scent-red bg-ivory'
                     : 'border-stone bg-warm-white enabled:hover:border-charcoal/40'
@@ -791,7 +793,10 @@ export default function CheckoutPage() {
               <dd>{formatPrice(display.subtotal)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-muted">Shipping</dt>
+              <dt className="flex items-center gap-2 text-muted">
+                <ThiingsIcon name="parcel" className="h-6 w-6" />
+                Shipping
+              </dt>
               <dd>
                 {display.shipping === 0
                   ? 'Complimentary'
